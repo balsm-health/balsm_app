@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:collection/collection.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -14,6 +13,7 @@ import '../responsive.dart';
 import '../shell.dart';
 import '../storage_target.dart';
 import '../widgets/data_loc_pill.dart';
+import 'family/family_kit.dart' show BloodTypeGrid;
 
 /// Profile sub-screens ported from `home.jsx`: Medical profile, Care team,
 /// Privacy & data, Emergency numbers. Each opens as a pushed full-screen route
@@ -190,6 +190,9 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   bool saved = false;
   bool _measurementsSeeded = false;
 
+  /// The patient chose "Not sure" (the blood type is cleared): the choice shows, as an unset type would not.
+  bool _bloodUnsure = false;
+
   @override
   void dispose() {
     algInput.dispose();
@@ -207,11 +210,14 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
 
   /// Toggle blood type via UpdateHealthProfileUseCase. Tapping the currently
   /// selected type clears it (back to unknown).
-  Future<void> _setBloodType(BloodType bt) async {
+  /// Records [bt], or clears the blood type for "Not sure" (null). Tapping the
+  /// type already recorded also clears it.
+  Future<void> _setBloodType(BloodType? bt) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
     final current = ref.read(_source).value?.bloodType;
-    final toClear = current == bt;
+    final toClear = bt == null || current == bt;
+    setState(() => _bloodUnsure = bt == null);
     final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
           userId: userId,
           profileId: widget.profileId,
@@ -410,13 +416,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         _SectionHead(LucideIcons.droplet, s.strings.profile.pd_blood, s: s),
         PCard(
           padding: const EdgeInsets.all(12),
-          child: _BloodTypeGrid(
-            selected: selectedBlood,
-            accentBg: s.accent.bg,
-            accent: s.accent.main,
-            accentFg: s.accent.d,
-            onSelect: _setBloodType,
-          ),
+          child: BloodTypeGrid(value: selectedBlood, unsure: _bloodUnsure, onChanged: _setBloodType),
         ),
         _SectionHead(LucideIcons.ruler, s.strings.profile.pd_measurements, s: s),
         PCard(
@@ -562,80 +562,6 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           ),
         ],
       );
-}
-
-/// Compact 4×2 blood-type picker. ABO codes stay LTR so the grid does not
-/// mirror in Arabic.
-class _BloodTypeGrid extends StatelessWidget {
-  const _BloodTypeGrid({
-    required this.selected,
-    required this.accentBg,
-    required this.accent,
-    required this.accentFg,
-    required this.onSelect,
-  });
-
-  final BloodType? selected;
-  final Color accentBg;
-  final Color accent;
-  final Color accentFg;
-  final ValueChanged<BloodType> onSelect;
-
-  static const _cols = 4;
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = BloodType.values.slices(_cols).toList();
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Table(
-        children: rows.indexed
-            .map(
-              (r) => TableRow(
-                // Table requires every row to hold the same number of cells,
-                // so a list that does not divide by _cols is padded with
-                // blanks rather than throwing.
-                children: List.generate(_cols, (c) {
-                  final bt = c < r.$2.length ? r.$2[c] : null;
-                  return Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: c == 0 ? 0 : 4,
-                      end: c == _cols - 1 ? 0 : 4,
-                      bottom: r.$1 == rows.length - 1 ? 0 : 8,
-                    ),
-                    child: bt == null ? const SizedBox.shrink() : _cell(bt),
-                  );
-                }),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _cell(BloodType bt) {
-    final on = selected == bt;
-    return Pressable(
-      onTap: () => onSelect(bt),
-      scale: 0.96,
-      child: AnimatedContainer(
-        duration: Motion.base,
-        curve: Motion.easeOut,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: on ? accentBg : AppColors.white,
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          border: Border.all(color: on ? accent : AppColors.border, width: 1.5),
-        ),
-        child: Text(
-          bt.label,
-          style:
-              Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: on ? accentFg : AppColors.textSecondary),
-        ),
-      ),
-    );
-  }
 }
 
 /// Chip list + single-line add field. Backed by real data: [labels] render the

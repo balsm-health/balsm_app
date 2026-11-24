@@ -219,7 +219,17 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
               },
             ),
           ),
-          LabelledField(label: '${f.f_blood} · ${p.blood_if_known}', child: _bloodGrid(s)),
+          LabelledField(
+            label: '${f.f_blood} · ${p.blood_if_known}',
+            child: BloodTypeGrid(
+              value: _blood,
+              unsure: _bloodUnsure,
+              onChanged: (b) => setState(() {
+                _blood = b;
+                _bloodUnsure = b == null;
+              }),
+            ),
+          ),
           LabelledField(
             label: p.moves,
             help: p.me_stay,
@@ -249,49 +259,6 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
           ),
         ],
       ],
-    );
-  }
-
-  Widget _bloodGrid(PatientAppState s) {
-    final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
-    return LayoutBuilder(
-      builder: (context, c) {
-        const gap = 8.0;
-        final w = (c.maxWidth - gap * 3) / 4;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final b in types)
-              SizedBox(
-                width: w,
-                child: BChip(
-                  b.code.replaceAll('-', '−'),
-                  active: !_bloodUnsure && _blood == b,
-                  accent: s.accent.main,
-                  ar: s.rtl,
-                  onTap: () => setState(() {
-                    _blood = b;
-                    _bloodUnsure = false;
-                  }),
-                ),
-              ),
-            SizedBox(
-              width: c.maxWidth,
-              child: BChip(
-                s.strings.family.blood_unsure,
-                active: _bloodUnsure,
-                accent: s.accent.main,
-                ar: s.rtl,
-                onTap: () => setState(() {
-                  _bloodUnsure = true;
-                  _blood = null;
-                }),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
