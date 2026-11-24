@@ -130,62 +130,123 @@ class IllustrationCreditDto {
       };
 }
 
-/// Guidance for one week of pregnancy, in the document's language.
+/// The baby's side of a week: a development fact, the size and the artwork.
+class BabyDto {
+  const BabyDto({this.fact = '', this.fetalSize = const FetalSizeDto(), this.illustration, this.sources = const []});
+
+  factory BabyDto.fromJson(Object? json) {
+    final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
+    return BabyDto(
+      fact: _text(map['fact']),
+      fetalSize: FetalSizeDto.fromJson(map['fetal_size']),
+      illustration: IllustrationDto.fromJson(map['illustration']),
+      sources: _keys(map['sources']),
+    );
+  }
+
+  final String fact;
+  final FetalSizeDto fetalSize;
+
+  /// The week's artwork, or null when it has none.
+  final IllustrationDto? illustration;
+
+  /// Ids of [PregnancyWeeksResponse.sources] behind the baby's copy.
+  final List<String> sources;
+
+  Map<String, dynamic> toJson() => {
+        'fact': fact,
+        'fetal_size': fetalSize.toJson(),
+        'illustration': illustration?.toJson(),
+        'sources': sources,
+      };
+}
+
+/// A common pregnancy symptom: its name, what helps, and when to call the
+/// doctor ([callDoctorIf] is null where the sources name nothing).
+class SymptomDto {
+  const SymptomDto({required this.label, required this.selfCare, this.callDoctorIf, this.sources = const []});
+
+  factory SymptomDto.fromJson(Map<String, dynamic> json) => SymptomDto(
+        label: _text(json['label']),
+        selfCare: _text(json['self_care']),
+        callDoctorIf: json['call_doctor_if'] as String?,
+        sources: _keys(json['sources']),
+      );
+
+  final String label;
+  final String selfCare;
+  final String? callDoctorIf;
+  final List<String> sources;
+
+  Map<String, dynamic> toJson() =>
+      {'label': label, 'self_care': selfCare, 'call_doctor_if': callDoctorIf, 'sources': sources};
+}
+
+/// Guidance for one week of pregnancy, in the document's language: the
+/// mother's week, then [baby]'s.
 class PregnancyWeekDto {
   const PregnancyWeekDto({
     required this.week,
     required this.title,
-    required this.body,
-    this.fetalSize = const FetalSizeDto(),
+    required this.summary,
+    this.symptoms = const [],
+    this.feelings = '',
+    this.tips = const [],
     this.testsDue = const [],
     this.dangerSigns = const [],
     this.topics = const [],
-    this.illustration,
     this.sources = const [],
+    this.baby = const BabyDto(),
   });
 
   factory PregnancyWeekDto.fromJson(Map<String, dynamic> json) => PregnancyWeekDto(
         week: (json['week'] as num).toInt(),
         title: _text(json['title']),
-        body: _text(json['body']),
-        fetalSize: FetalSizeDto.fromJson(json['fetal_size']),
+        summary: _text(json['summary']),
+        symptoms: _keys(json['symptoms']),
+        feelings: _text(json['feelings']),
+        tips: _keys(json['tips']),
         testsDue: _keys(json['tests_due']),
         dangerSigns: _keys(json['danger_signs']),
         topics: _keys(json['topics']),
-        illustration: IllustrationDto.fromJson(json['illustration']),
         sources: _keys(json['sources']),
+        baby: BabyDto.fromJson(json['baby']),
       );
 
   final int week;
   final String title;
-  final String body;
-  final FetalSizeDto fetalSize;
+  final String summary;
+
+  /// Keys of [PregnancyWeeksResponse.symptomGuide] common this week.
+  final List<String> symptoms;
+  final String feelings;
+  final List<String> tips;
 
   /// Keys of [PregnancyWeeksResponse.testLabels] usually due this week.
   final List<String> testsDue;
 
-  /// Keys of [PregnancyWeeksResponse.dangerSignLabels] the body warns about.
+  /// Keys of [PregnancyWeeksResponse.dangerSignLabels] to call the doctor about.
   final List<String> dangerSigns;
 
   /// Keys of [PregnancyWeeksResponse.topicLabels].
   final List<String> topics;
 
-  /// The week's artwork, or null when it has none.
-  final IllustrationDto? illustration;
-
-  /// Ids of [PregnancyWeeksResponse.sources] behind this week's copy.
+  /// Ids of [PregnancyWeeksResponse.sources] behind the mother's copy.
   final List<String> sources;
+  final BabyDto baby;
 
   Map<String, dynamic> toJson() => {
         'week': week,
         'title': title,
-        'body': body,
-        'fetal_size': fetalSize.toJson(),
+        'summary': summary,
+        'symptoms': symptoms,
+        'feelings': feelings,
+        'tips': tips,
         'tests_due': testsDue,
         'danger_signs': dangerSigns,
         'topics': topics,
-        'illustration': illustration?.toJson(),
         'sources': sources,
+        'baby': baby.toJson(),
       };
 }
 
@@ -204,6 +265,7 @@ class PregnancyWeeksResponse {
     required this.weeks,
     this.labels = const {},
     this.sources = const [],
+    this.symptomGuide = const {},
     this.dangerSignLabels = const {},
     this.testLabels = const {},
     this.topicLabels = const {},
@@ -235,6 +297,11 @@ class PregnancyWeeksResponse {
         for (final x in json['sources'] is List ? json['sources'] as List : const [])
           if (x is Map<String, dynamic>) ContentSourceDto.fromJson(x),
       ],
+      symptomGuide: {
+        if (json['symptom_guide'] case final Map<String, dynamic> guide)
+          for (final e in guide.entries)
+            if (e.value case final Map<String, dynamic> symptom) e.key: SymptomDto.fromJson(symptom),
+      },
       dangerSignLabels: _labels(json['danger_sign_labels']),
       testLabels: _labels(json['test_labels']),
       topicLabels: _labels(json['topic_labels']),
@@ -263,6 +330,10 @@ class PregnancyWeeksResponse {
   /// Every source the weeks cite.
   final List<ContentSourceDto> sources;
 
+  /// Each [PregnancyWeekDto.symptoms] key's name, self-care and when to call
+  /// the doctor.
+  final Map<String, SymptomDto> symptomGuide;
+
   /// Wording for each [PregnancyWeekDto.dangerSigns] key.
   final Map<String, String> dangerSignLabels;
 
@@ -284,6 +355,7 @@ class PregnancyWeeksResponse {
         'weeks': [for (final w in weeks) w.toJson()],
         'labels': labels,
         'sources': [for (final x in sources) x.toJson()],
+        'symptom_guide': {for (final e in symptomGuide.entries) e.key: e.value.toJson()},
         'danger_sign_labels': dangerSignLabels,
         'test_labels': testLabels,
         'topic_labels': topicLabels,

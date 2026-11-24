@@ -65,13 +65,27 @@ class GuidanceSource {
   final String url;
 }
 
+/// A common pregnancy symptom: its name, what helps, and — where the
+/// sources name it — when to call the doctor.
+class GuidanceSymptom {
+  const GuidanceSymptom({required this.label, required this.selfCare, this.callDoctorIf});
+
+  final String label;
+  final String selfCare;
+  final String? callDoctorIf;
+}
+
 /// Guidance for one gestational week. The keys in [testsDue],
 /// [dangerSigns] and [sources] point into [WeeklyGuidance]'s tables.
 class GuidanceWeek {
   const GuidanceWeek({
     required this.week,
     required this.title,
-    required this.body,
+    required this.summary,
+    this.symptoms = const [],
+    this.feelings = '',
+    this.tips = const [],
+    this.babyFact = '',
     this.fetalSize = const GuidanceFetalSize(),
     this.testsDue = const [],
     this.dangerSigns = const [],
@@ -82,7 +96,19 @@ class GuidanceWeek {
 
   final int week;
   final String title;
-  final String body;
+
+  /// The mother's week in two or three lines.
+  final String summary;
+
+  /// Keys of [WeeklyGuidance.symptomGuide] common this week.
+  final List<String> symptoms;
+
+  /// How she may feel this week.
+  final String feelings;
+  final List<String> tips;
+
+  /// How the baby is developing.
+  final String babyFact;
   final GuidanceFetalSize fetalSize;
   final List<String> testsDue;
   final List<String> dangerSigns;
@@ -105,6 +131,7 @@ class WeeklyGuidance {
     required this.multiplesNote,
     required this.weeks,
     this.sources = const [],
+    this.symptomGuide = const {},
     this.dangerSignLabels = const {},
     this.testLabels = const {},
     this.illustrationCredits = const {},
@@ -139,6 +166,10 @@ class WeeklyGuidance {
 
   /// Every source the weeks cite.
   final List<GuidanceSource> sources;
+
+  /// Each [GuidanceWeek.symptoms] key's name, self-care and when to call
+  /// the doctor.
+  final Map<String, GuidanceSymptom> symptomGuide;
 
   /// Wording for each [GuidanceWeek.dangerSigns] key.
   final Map<String, String> dangerSignLabels;

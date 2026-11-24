@@ -74,7 +74,7 @@ class PregnancyGuidanceCard extends ConsumerWidget {
               style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
-            Text(entry.body, style: Typo.bodySm(ar: s.rtl)),
+            Text(entry.summary, style: Typo.bodySm(ar: s.rtl)),
             const SizedBox(height: 8),
             PregnancyWeekGuide(
               entry: entry,
@@ -187,6 +187,7 @@ class PregnancyWeekGuide extends ConsumerStatefulWidget {
 
 class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
   bool _allDangers = false;
+  String? _openSymptom;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +212,9 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
       ..add(const SizedBox(height: 12))
       ..add(w);
 
+    if (!widget.compact && label('baby_title') != null) {
+      add(_SectionHead(icon: LucideIcons.baby, color: AppColors.hueAquaInk, text: label('baby_title')!));
+    }
     final art = entry.illustration;
     final shipped = ref.watch(_shippedAssetsProvider).value ?? const <String>{};
     if (art != null && shipped.contains(_artworkAsset(art.key))) {
@@ -223,7 +227,43 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
         ),
       );
     }
+    if (entry.babyFact.isNotEmpty) add(Text(entry.babyFact, style: Typo.bodySm(ar: AppScope.of(context).rtl)));
     if (!entry.fetalSize.isEmpty) add(_SizeRow(size: entry.fetalSize, guidance: g));
+    final symptoms = [
+      for (final id in entry.symptoms)
+        if (g.symptomGuide[id] case final symptom?) (id, symptom),
+    ];
+    if (symptoms.isNotEmpty) {
+      add(
+        widget.compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (label('symptoms_common') case final head?)
+                    _SectionHead(icon: LucideIcons.thermometer, color: AppColors.textSecondary, text: head),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [for (final (_, x) in symptoms) _TopicChip(label: x.label)],
+                  ),
+                ],
+              )
+            : _SymptomList(
+                title: label('symptoms_title'),
+                helps: label('symptom_helps'),
+                callIf: label('symptom_call'),
+                symptoms: symptoms,
+                open: _openSymptom,
+                onToggle: (id) => setState(() => _openSymptom = _openSymptom == id ? null : id),
+              ),
+      );
+    }
+    if (!widget.compact && entry.feelings.isNotEmpty) {
+      add(_Feelings(title: label('feelings_title'), text: entry.feelings));
+    }
+    if (!widget.compact && entry.tips.isNotEmpty) {
+      add(_Tips(title: label('tips_title'), tips: entry.tips));
+    }
     if (tests.isNotEmpty) {
       add(
         Column(
@@ -599,8 +639,8 @@ class _DangersToKnow extends StatelessWidget {
 }
 
 class _TopicChip extends StatelessWidget {
-  const _TopicChip({required this.icon, required this.label});
-  final IconData icon;
+  const _TopicChip({required this.label, this.icon});
+  final IconData? icon;
   final String label;
 
   @override
@@ -612,8 +652,10 @@ class _TopicChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.textSecondary),
-          const SizedBox(width: 5),
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: AppColors.textSecondary),
+            const SizedBox(width: 5),
+          ],
           Flexible(
             child: Text(
               label,
@@ -622,6 +664,191 @@ class _TopicChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "What you may feel": each symptom of the week, opening to what helps and,
+/// where the content names it, when to call the doctor.
+class _SymptomList extends StatelessWidget {
+  const _SymptomList({
+    required this.title,
+    required this.helps,
+    required this.callIf,
+    required this.symptoms,
+    required this.open,
+    required this.onToggle,
+  });
+  final String? title;
+  final String? helps;
+  final String? callIf;
+  final List<(String, GuidanceSymptom)> symptoms;
+  final String? open;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    Widget line(IconData icon, String? lead, String text) => Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(icon, size: 15, color: AppColors.textTertiary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      if (lead != null) TextSpan(text: '$lead ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      TextSpan(text: text),
+                    ],
+                  ),
+                  style: Typo.bodySm(ar: s.rtl),
+                ),
+              ),
+            ],
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (title case final title?)
+          _SectionHead(icon: LucideIcons.thermometer, color: AppColors.textSecondary, text: title),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.ink100),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (i, (id, x)) in symptoms.indexed) ...[
+                if (i > 0) const Divider(height: 1, thickness: 1, color: AppColors.ink100),
+                Semantics(
+                  button: true,
+                  expanded: open == id,
+                  child: InkWell(
+                    onTap: () => onToggle(id),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              x.label,
+                              style: Typo.bodySm(ar: s.rtl)
+                                  .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                            ),
+                          ),
+                          if (x.callDoctorIf != null) ...[
+                            const Icon(LucideIcons.stethoscope, size: 14, color: AppColors.danger),
+                            const SizedBox(width: 8),
+                          ],
+                          Icon(
+                            open == id ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                            size: 16,
+                            color: AppColors.textTertiary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (open == id)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        line(LucideIcons.handHeart, helps, x.selfCare),
+                        if (x.callDoctorIf case final call?) line(LucideIcons.phone, callIf, call),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "How you may feel": the week's feelings line.
+class _Feelings extends StatelessWidget {
+  const _Feelings({required this.title, required this.text});
+  final String? title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: AppColors.hueViolet50, borderRadius: BorderRadius.circular(AppRadii.lg)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(LucideIcons.heart, size: 16, color: AppColors.hueVioletInk),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  if (title != null)
+                    TextSpan(
+                      text: '$title\n',
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.hueVioletInk),
+                    ),
+                  TextSpan(text: text),
+                ],
+              ),
+              style: Typo.bodySm(ar: s.rtl),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Tips for this week": each tip with a check.
+class _Tips extends StatelessWidget {
+  const _Tips({required this.title, required this.tips});
+  final String? title;
+  final List<String> tips;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (title case final title?) _SectionHead(icon: LucideIcons.listChecks, color: s.accent.d, text: title),
+        for (final (i, tip) in tips.indexed)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(LucideIcons.checkCircle2, size: 16, color: s.accent.main),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(tip, style: Typo.bodySm(ar: s.rtl))),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -894,7 +1121,7 @@ class _WeekTile extends StatelessWidget {
                     style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 10),
-                  Text(entry.body, style: Typo.bodySm(ar: s.rtl)),
+                  Text(entry.summary, style: Typo.bodySm(ar: s.rtl)),
                   const SizedBox(height: 10),
                   PregnancyWeekGuide(entry: entry, guidance: guidance, multiples: multiples),
                 ],

@@ -24,7 +24,7 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
 
   /// Where [lang]'s copy is kept. Bump the version when the stored shape
   /// changes; an older copy is then ignored and fetched again.
-  static String storageKey(String lang) => 'content.pregnancy_weeks.v3.$lang';
+  static String storageKey(String lang) => 'content.pregnancy_weeks.v4.$lang';
 
   final ContentApi _api;
   final GlobalKVDataSource _kv;
@@ -77,6 +77,11 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
         sources: [
           for (final x in r.sources) GuidanceSource(id: x.id, title: x.title, publisher: x.publisher, url: x.url),
         ],
+        symptomGuide: {
+          for (final e in r.symptomGuide.entries)
+            e.key:
+                GuidanceSymptom(label: e.value.label, selfCare: e.value.selfCare, callDoctorIf: e.value.callDoctorIf),
+        },
         dangerSignLabels: r.dangerSignLabels,
         testLabels: r.testLabels,
         topicLabels: r.topicLabels,
@@ -87,19 +92,24 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
       );
 
   static GuidanceWeek _week(PregnancyWeekDto w) {
-    final size = w.fetalSize;
-    final art = w.illustration;
+    final size = w.baby.fetalSize;
+    final art = w.baby.illustration;
     return GuidanceWeek(
       week: w.week,
       title: w.title,
-      body: w.body,
+      summary: w.summary,
+      symptoms: w.symptoms,
+      feelings: w.feelings,
+      tips: w.tips,
+      babyFact: w.baby.fact,
       fetalSize: GuidanceFetalSize(lengthMm: size.lengthMm, weightG: size.weightG, comparison: size.comparison),
       testsDue: w.testsDue,
       dangerSigns: w.dangerSigns,
       topics: w.topics,
       illustration:
           art == null ? null : GuidanceIllustration(key: art.key, credit: art.credit, sourceUrl: art.sourceUrl),
-      sources: w.sources,
+      // The week's sources then the baby's, each once.
+      sources: {...w.sources, ...w.baby.sources}.toList(),
     );
   }
 }

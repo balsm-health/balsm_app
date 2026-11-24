@@ -45,6 +45,13 @@ PregnancyWeeksResponse _content({String version = 'v-test', String lang = 'en'})
           ('sources_title', 'Test sources heading'),
           ('sources_more', 'Test sources ({n}) and more'),
           ('illustration', 'Test week {week} art'),
+          ('baby_title', 'Test baby heading'),
+          ('symptoms_common', 'Test common heading'),
+          ('symptoms_title', 'Test feel heading'),
+          ('symptom_helps', 'Test helps:'),
+          ('symptom_call', 'Test call if:'),
+          ('feelings_title', 'Test feelings heading'),
+          ('tips_title', 'Test tips heading'),
         ])
           k: _t(lang, en, 'ع $en'),
       },
@@ -60,6 +67,14 @@ PregnancyWeeksResponse _content({String version = 'v-test', String lang = 'en'})
           'accessed': '2026-11-24',
         },
       ],
+      'symptom_guide': {
+        'nausea': {
+          'label': _t(lang, 'Test nausea', 'غثيان'),
+          'self_care': _t(lang, 'Test ginger', 'زنجبيل'),
+          'call_doctor_if': _t(lang, 'Test cannot keep fluids', 'قيء مستمر'),
+          'sources': ['s1'],
+        },
+      },
       'danger_sign_labels': {
         'bleeding': _t(lang, 'Test bleeding', 'نزيف تجريبي'),
         'fever': _t(lang, 'Test fever', 'حرارة تجريبية'),
@@ -72,21 +87,28 @@ PregnancyWeeksResponse _content({String version = 'v-test', String lang = 'en'})
           {
             'week': w,
             'title': _t(lang, 'Test title $w', 'عنوان تجريبي $w'),
-            'body': _t(lang, 'Test body $w ($version)', 'نص تجريبي $w'),
+            'summary': _t(lang, 'Test body $w ($version)', 'نص تجريبي $w'),
+            'symptoms': [if (w == 24) 'nausea'],
+            'feelings': _t(lang, 'Test feelings $w', 'مشاعر $w'),
+            'tips': [_t(lang, 'Test tip $w', 'نصيحة $w')],
             // Week 24 is the current week in the screen tests: a size, a
             // test, topics (one with no label) and no danger sign;
             // week 25 warns of bleeding.
-            'fetal_size': {'length_mm': w == 24 ? 210 : null, 'weight_g': w == 24 ? 630 : null, 'comparison': null},
             'tests_due': [if (w == 24) 'gdm'],
             'danger_signs': [if (w == 25) 'bleeding'],
             'topics': [
               if (w == 24) ...['movements', 'not-a-topic'],
             ],
-            // Week 24 names artwork the app does not ship: no picture.
-            'illustration': w == 24
-                ? {'key': 'pregnancy/week-24', 'credit': 'art', 'source_url': 'https://example.test/art'}
-                : null,
             'sources': ['s1'],
+            'baby': {
+              'fact': _t(lang, 'Test fact $w', 'حقيقة $w'),
+              'fetal_size': {'length_mm': w == 24 ? 210 : null, 'weight_g': w == 24 ? 630 : null, 'comparison': null},
+              // Week 24 names artwork the app does not ship: no picture.
+              'illustration': w == 24
+                  ? {'key': 'pregnancy/week-24', 'credit': 'art', 'source_url': 'https://example.test/art'}
+                  : null,
+              'sources': ['s1'],
+            },
           },
       ],
     });
@@ -151,7 +173,7 @@ void main() {
 
       expect((await source.refresh())!.version, 'v-test');
       final kept = await ApiPregnancyGuidance(api: api, kv: kv, language: 'en').cached();
-      expect(kept!.forWeek(4)!.body, 'Test body 4 (v-test)');
+      expect(kept!.forWeek(4)!.summary, 'Test body 4 (v-test)');
     });
 
     test('nothing kept and the fetch fails: null, no throw', () async {
@@ -281,6 +303,10 @@ void main() {
         reason: 'the compact guide has no danger list for a quiet week',
       );
       expect(find.text('Test sources (1) and more'), findsOne);
+      expect(find.text('Test fact 24'), findsOne);
+      expect(find.text('Test common heading'), findsOne);
+      expect(find.text('Test nausea'), findsOne);
+      expect(find.text('Test tip 24'), findsNothing, reason: 'tips are in Week by week');
       expect(
         find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Test week 24 art'),
         findsNothing,
@@ -403,6 +429,14 @@ void main() {
       expect(find.text('Test bleeding'), findsOne);
       expect(find.text('Test fever'), findsOne);
       expect(find.text('Test topics heading'), findsOne);
+      expect(find.text('Test baby heading'), findsOne);
+      expect(find.text('Test tip 24'), findsOne);
+      expect(find.textContaining('Test feelings 24', findRichText: true), findsOne);
+      expect(find.textContaining('Test ginger', findRichText: true), findsNothing);
+      await tester.tap(find.text('Test nausea'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Test ginger', findRichText: true), findsOne);
+      expect(find.textContaining('Test cannot keep fluids', findRichText: true), findsOne);
       expect(find.text('Test sources heading'), findsOne);
       expect(find.text('Test guideline — Test publisher', findRichText: true), findsOne);
 

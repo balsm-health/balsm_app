@@ -9,8 +9,8 @@ WeeklyGuidance _guidance(String version) => WeeklyGuidance(
       disclaimer: 'Test disclaimer',
       multiplesNote: 'Test multiples',
       weeks: const [
-        GuidanceWeek(week: 4, title: 'T4', body: 'B4'),
-        GuidanceWeek(week: 5, title: 'T5', body: 'B5'),
+        GuidanceWeek(week: 4, title: 'T4', summary: 'B4'),
+        GuidanceWeek(week: 5, title: 'T5', summary: 'B5'),
       ],
       labels: const {'sources_more': 'Sources ({n}) for week {week}'},
     );

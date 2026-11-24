@@ -18,7 +18,7 @@ Map<String, dynamic> _payload({String version = 'v-test'}) => {
           {
             'week': w,
             'title': 'عنوان $w',
-            'body': 'نص $w',
+            'summary': 'نص $w',
           },
       ],
     };
@@ -55,22 +55,37 @@ Map<String, dynamic> _full() => _payload()
   ..['test_labels'] = {
     'early_ultrasound': 'سونار مبكر',
   }
+  ..['symptom_guide'] = {
+    'nausea': {
+      'label': 'غثيان',
+      'self_care': 'زنجبيل',
+      'call_doctor_if': 'قيء مستمر',
+      'sources': ['src-1'],
+    },
+  }
   ..['weeks'] = [
     for (final w in (_payload()['weeks'] as List).cast<Map<String, dynamic>>())
       {
         ...w,
-        'fetal_size': {
-          'length_mm': null,
-          'weight_g': w['week'] == 5 ? 45 : null,
-          'comparison': w['week'] == 4 ? 'بذرة' : null,
-        },
+        'symptoms': ['nausea'],
+        'feelings': 'مشاعر ${w['week']}',
+        'tips': ['نصيحة ${w['week']}'],
         'tests_due': ['early_ultrasound'],
         'danger_signs': ['bleeding'],
         'topics': ['visits'],
-        'illustration': w['week'] == 5
-            ? {'key': 'pregnancy/week-05', 'credit': 'art', 'source_url': 'https://example.test/art'}
-            : null,
         'sources': ['src-1'],
+        'baby': {
+          'fact': 'حقيقة ${w['week']}',
+          'fetal_size': {
+            'length_mm': null,
+            'weight_g': w['week'] == 5 ? 45 : null,
+            'comparison': w['week'] == 4 ? 'بذرة' : null,
+          },
+          'illustration': w['week'] == 5
+              ? {'key': 'pregnancy/week-05', 'credit': 'art', 'source_url': 'https://example.test/art'}
+              : null,
+          'sources': ['src-1'],
+        },
       },
   ];
 
@@ -135,15 +150,20 @@ void main() {
       expect(parsed.sources.single.accessed, '2026-11-24');
       expect(parsed.dangerSignLabels['bleeding'], 'نزيف');
       expect(parsed.testLabels['early_ultrasound'], 'سونار مبكر');
-      expect((four.fetalSize.lengthMm, four.fetalSize.weightG, four.fetalSize.comparison), (null, null, 'بذرة'));
-      expect((five.fetalSize.weightG, five.fetalSize.comparison), (45, null));
+      final size4 = four.baby.fetalSize;
+      expect((size4.lengthMm, size4.weightG, size4.comparison), (null, null, 'بذرة'));
+      expect((five.baby.fetalSize.weightG, five.baby.fetalSize.comparison), (45, null));
       expect(five.testsDue, ['early_ultrasound']);
       expect(five.dangerSigns, ['bleeding']);
       expect(five.topics, ['visits']);
       expect(five.sources, ['src-1']);
-      expect(four.illustration, isNull);
-      expect((five.illustration!.key, five.illustration!.credit), ('pregnancy/week-05', 'art'));
+      expect(four.baby.illustration, isNull);
+      expect((five.baby.illustration!.key, five.baby.illustration!.credit), ('pregnancy/week-05', 'art'));
       expect(parsed.illustrationCredits['art']!.text, 'رسم: فنان تجريبي');
+      expect(five.symptoms, ['nausea']);
+      expect(five.tips, ['نصيحة 5']);
+      expect((five.feelings, five.baby.fact), ('مشاعر 5', 'حقيقة 5'));
+      expect(parsed.symptomGuide['nausea']!.callDoctorIf, 'قيء مستمر');
       expect(parsed.labels['sources_more'], 'المصادر ({n})');
       expect(parsed.topicLabels['visits'], 'زيارات');
     });
@@ -157,7 +177,8 @@ void main() {
       expect(parsed.testLabels, isEmpty);
       expect(parsed.labels, isEmpty);
       expect(parsed.topicLabels, isEmpty);
-      expect((week.fetalSize.lengthMm, week.fetalSize.comparison, week.illustration), (null, null, null));
+      final baby = week.baby;
+      expect((baby.fetalSize.lengthMm, baby.fetalSize.comparison, baby.illustration), (null, null, null));
       expect(week.testsDue, isEmpty);
     });
 
