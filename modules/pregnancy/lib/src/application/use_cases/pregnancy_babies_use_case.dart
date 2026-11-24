@@ -17,7 +17,9 @@ class PregnancyBabiesUseCase {
   final PregnanciesDataSource _pregnancies;
   final PregnancyBabiesPort _babies;
 
-  /// A new baby after the last one of pregnancy [id].
+  /// A new baby after the last one of pregnancy [id]. Refused with
+  /// [PregnancyRuleViolation.babyCount] once the pregnancy holds
+  /// [Pregnancy.maxBabies] babies, the same limit the start screen keeps.
   Future<AppResult<PregnancyBaby>> add(
     PregnancyId id, {
     required HealthProfileId motherId,
@@ -26,6 +28,9 @@ class PregnancyBabiesUseCase {
     final p = await activePregnancy(_pregnancies, id, motherId);
     if (p.isFailure) return AppResult.failure(p.error);
     final existing = await _babies.listBabies(id);
+    if (existing.length >= Pregnancy.maxBabies) {
+      return AppResult.failure(ValidationFailure(PregnancyRuleViolation.babyCount.name));
+    }
     final last = existing.fold<int>(0, (m, b) => b.sequence > m ? b.sequence : m);
     return _babies.addBaby(id, sequence: last + 1, now: now);
   }

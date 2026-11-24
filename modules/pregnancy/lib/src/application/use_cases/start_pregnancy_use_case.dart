@@ -6,8 +6,9 @@ import '../ports/pregnancy_babies_port.dart';
 
 /// Starts tracking a pregnancy on the mother's own profile (design
 /// `MCPregStartScreen`) with `babyCount` babies, each its own prenatal
-/// profile ("Baby", or "Baby A", "Baby B"…). Refused while another pregnancy
-/// is being tracked on that profile.
+/// profile ("Baby", or "Baby A", "Baby B"…), and an optional next antenatal
+/// visit (`nextVisitOn`). Refused while another pregnancy is being tracked on
+/// that profile.
 class StartPregnancyUseCase {
   const StartPregnancyUseCase({required PregnanciesDataSource pregnancies, required PregnancyBabiesPort babies})
       : _pregnancies = pregnancies,
@@ -23,6 +24,7 @@ class StartPregnancyUseCase {
     required DateTime now,
     String? obName,
     String? obPhone,
+    DateTime? nextVisitOn,
   }) async {
     if (babyCount < 1 || babyCount > Pregnancy.maxBabies) {
       return AppResult.failure(ValidationFailure(PregnancyRuleViolation.babyCount.name));
@@ -39,7 +41,12 @@ class StartPregnancyUseCase {
       obPhone: obPhone,
     );
     if (started.isFailure) return started;
-    final p = started.value;
+    // The optional next visit on the start form: a date only (time and clinic
+    // are added later from the pregnancy screen).
+    final withVisit =
+        nextVisitOn == null ? started : started.value.withNextVisit(NextVisit(date: nextVisitOn), now: now);
+    if (withVisit.isFailure) return withVisit;
+    final p = withVisit.value;
     await _pregnancies.put(p.id, p, scope: motherId);
     for (var i = 1; i <= babyCount; i++) {
       final added = await _babies.addBaby(p.id, sequence: i, now: now);

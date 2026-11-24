@@ -146,6 +146,46 @@ void main() {
       expect(added.value.sequence, 3);
     });
 
+    test('adding a baby stops at the most one pregnancy can hold, and a baby no longer followed still counts',
+        () async {
+      final p = (await start()(
+        motherId: self,
+        dueDate: DateTime(2027, 2, 21),
+        babyCount: Pregnancy.maxBabies,
+        now: now,
+      ))
+          .value;
+      final use = PregnancyBabiesUseCase(pregnancies: ds, babies: babies);
+
+      final refused = await use.add(p.id, motherId: self, now: now);
+      expect(refused.error.message, 'babyCount');
+      expect(await babies.listBabies(p.id), hasLength(Pregnancy.maxBabies));
+
+      final [first, ...] = await babies.listBabies(p.id);
+      await use.stopFollowing(p.id, first.id, motherId: self, now: now);
+      final stillRefused = await use.add(p.id, motherId: self, now: now);
+      expect(stillRefused.error.message, 'babyCount');
+    });
+
+    test('start keeps an optional next visit as a date only, and none when it is not given', () async {
+      final without = await start()(motherId: self, dueDate: DateTime(2027, 2, 21), babyCount: 1, now: now);
+      expect(without.value.nextVisit, isNull);
+      await ds.delete(without.value.id);
+
+      final withVisit = await start()(
+        motherId: self,
+        dueDate: DateTime(2027, 2, 21),
+        babyCount: 1,
+        now: now,
+        nextVisitOn: DateTime(2026, 11, 14, 15, 30),
+      );
+
+      final stored = (await ds.find(withVisit.value.id))!.nextVisit!;
+      expect(stored.date, DateTime.utc(2026, 11, 14));
+      expect(stored.time, isNull);
+      expect(stored.clinic, isNull);
+    });
+
     test('stopping one baby closes that profile only; the last one closes the pregnancy as ended', () async {
       final p = await twins();
       final [a, b] = await babies.listBabies(p.id);

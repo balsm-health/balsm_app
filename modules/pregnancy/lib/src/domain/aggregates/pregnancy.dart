@@ -42,7 +42,9 @@ class Pregnancy {
   /// The longest a due date may already have passed when tracking starts.
   static const maxDaysPast = 42;
 
-  /// Most babies one pregnancy can start with (the design's stepper).
+  /// Most babies one pregnancy can hold, whether they are all there at the
+  /// start (the design's stepper) or added later ("Add a baby"). Babies who
+  /// were born or are no longer followed still count: they keep their letter.
   static const maxBabies = 8;
 
   /// A new active pregnancy for [motherId], or a [ValidationFailure] naming
