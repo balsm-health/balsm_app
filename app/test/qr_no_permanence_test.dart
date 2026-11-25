@@ -34,8 +34,13 @@ void main() {
       2,
       reason: 'identity must render under the QR and before minting',
     );
-    // The handle reads as a handle, not as the copyable URL.
-    expect(s, contains(r"Text('@$handle'"));
+    // The handle reads as a handle, not as the copyable URL. Tolerates the
+    // formatter wrapping the call onto several lines.
+    expect(
+      RegExp(r"Text\(\s*'@\$handle'").hasMatch(s),
+      isTrue,
+      reason: 'the handle must render as a Text showing @handle',
+    );
     expect(s, isNot(contains(r'balsm.health/@$handle')), reason: 'the URL belongs to the link row');
   });
 
