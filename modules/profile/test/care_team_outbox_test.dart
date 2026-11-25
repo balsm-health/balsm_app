@@ -121,6 +121,35 @@ void main() {
     expect(await outbox.pendingCount(), 0);
   });
 
+  /// The cloud care team belongs to the account: a family member's doctors are
+  /// theirs, stay on this phone, and must never be queued for the account's cloud.
+  test("a family member's providers are saved locally and never queued", () async {
+    await db.customStatement(
+      'INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at) '
+      "VALUES ('hp-member', ?, 0, 'dependent', 'active', 0)",
+      [user.value],
+    );
+    const member = HealthProfileId.value('hp-member');
+    final id = CareProviderId.uuid();
+
+    await providers.put(
+      id,
+      CareProvider(
+        id: id,
+        healthProfileId: member,
+        type: CareProviderType.doctor,
+        name: 'Provider Gamma',
+        createdAt: DateTime.utc(2026, 9, 1, 12),
+      ),
+      scope: member,
+    );
+    expect((await providers.findAll(scope: member)).single.name, 'Provider Gamma');
+    await providers.delete(id, scope: member);
+
+    expect(await providers.findAll(scope: member), isEmpty);
+    expect(await outbox.pendingCount(), 0);
+  });
+
   test('the local row is written even though a push is queued', () async {
     final id = CareProviderId.uuid();
 

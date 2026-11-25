@@ -66,6 +66,10 @@ class CareTeamSyncService {
       _status.set(SyncState.idle);
       return;
     }
+    // The cloud care team belongs to the account, so it syncs into the account
+    // holder's own profile only: with a family member active, pulling would
+    // merge the account's doctors into that member's partition.
+    if (!await _db.isSelfHealthProfile(profileId)) return;
     _inFlight = true;
     _status.set(SyncState.syncing);
     try {
@@ -93,6 +97,7 @@ class CareTeamSyncService {
   /// Pulls rows changed since the stored cursor and merges them.
   Future<void> pull(HealthProfileId profileId) async {
     if (!await _isEnabled()) return;
+    if (!await _db.isSelfHealthProfile(profileId)) return; // see [sync]
     try {
       await _pullInner(profileId);
     } on Object catch (e) {

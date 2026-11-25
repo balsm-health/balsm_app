@@ -199,6 +199,17 @@ class AppDatabase extends _$AppDatabase {
     return rows.isEmpty ? null : HealthProfileId.value(rows.first.read<String>('id'));
   }
 
+  /// Whether [profileId] is an account holder's own (self) profile, as opposed
+  /// to a family member's. For data that is the account's and must never be
+  /// attributed to — or mirrored from — a dependant.
+  Future<bool> isSelfHealthProfile(HealthProfileId profileId) async {
+    final rows = await customSelect(
+      'SELECT 1 FROM health_profile WHERE id = ? AND is_self = 1',
+      variables: [Variable.withString(profileId.value)],
+    ).get();
+    return rows.isNotEmpty;
+  }
+
   /// Returns [userId]'s self health-profile id, creating the (empty) row on
   /// first call — the guarantee behind `currentProfileIdProvider`: every
   /// signed-in session has a profile scope. Resolves by `is_self`, never by

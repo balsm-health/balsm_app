@@ -51,18 +51,30 @@ void main() {
   });
 
   /// Pumps the screen over a recording API, pulls the list down, and returns
-  /// how many times the network was reached.
-  Future<int> pullsAfterFling(WidgetTester tester, {required bool syncOn}) async {
-    const profileId = HealthProfileId.value('hp-1');
+  /// how many times the network was reached. [familyMemberActive] makes a
+  /// family member, not the account holder, the active profile.
+  Future<int> pullsAfterFling(
+    WidgetTester tester, {
+    required bool syncOn,
+    bool familyMemberActive = false,
+  }) async {
+    const user = UserId.value('u-wiring-1');
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
+    final self = await db.ensureSelfHealthProfile(user);
+    const member = HealthProfileId.value('hp-member');
+    await db.customStatement(
+      "INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at) VALUES (?, ?, 0, 'dependent', 'active', 0)",
+      [member.value, user.value],
+    );
+    final profileId = familyMemberActive ? member : self;
     final api = _RecordingCareTeamApi();
     final service = CareTeamSyncService(
       api: api,
       outbox: SyncOutboxDao(db),
       db: db,
       status: SyncStatusNotifier(),
-      activeUser: () => const UserId.value('u-wiring-1'),
+      activeUser: () => user,
     );
 
     await tester.pumpWidget(
@@ -99,5 +111,9 @@ void main() {
 
   testWidgets('with the sync flags off, pulling the list down reaches no server', (tester) async {
     expect(await pullsAfterFling(tester, syncOn: false), 0);
+  });
+
+  testWidgets("with a family member active, the account's care team is not pulled into them", (tester) async {
+    expect(await pullsAfterFling(tester, syncOn: true, familyMemberActive: true), 0);
   });
 }

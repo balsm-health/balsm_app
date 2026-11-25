@@ -1,0 +1,1 @@
+A family member's doctors stay on this phone: care-team cloud sync now covers only your own profile, so a member's doctors are never uploaded with your account and your care team is never pulled into a member's profile. ([#168](https://github.com/balsm-health/balsm_app/pull/168))
