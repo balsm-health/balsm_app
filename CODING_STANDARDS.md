@@ -173,6 +173,12 @@ pubspec `version:` line skips them, and the pull request keeps its last green st
   - After every `await` in a `Notifier`/`AsyncNotifier` method, check `if (!ref.mounted) return …;` before touching
     `state` or `ref`: Riverpod 3 throws when a disposed notifier is used, which an auto-dispose screen leaving
     mid-request does.
+  - **Every provider filters updates with `==`** (Riverpod 3 changelog: "All providers now use `==` to compare
+    previous/new values and filter updates"; it was `identical` in 2). A type a provider holds and that can change
+    under the same id — an edited record, a renamed member — needs value equality over its fields, or the edit
+    equals the old value and no widget is told. Do not define `==` as "same id" on such a type (identity by id
+    belongs to entities that are never edited in place). A `Notifier` may override `updateShouldNotify` instead;
+    a function provider cannot.
   - Read `AsyncValue.value` (nullable on loading and error); `valueOrNull` is gone. A failed provider read
     through `.future` or `requireValue` throws `ProviderException`; inspect `e.exception`.
   - Widgets off screen (`TickerMode` disabled, e.g. a hidden tab) pause their providers. A listener that must keep

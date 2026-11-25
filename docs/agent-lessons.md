@@ -13,6 +13,18 @@ Format — one entry per lesson, newest first:
 
 ---
 
+### Check the Riverpod 3 rules before touching a provider (2026-11-25)
+- **Mistake:** I fixed a failing record test as "a stale assertion" and wrote `await _ref.refresh(...)` with no disposed
+  check, without first reading what Riverpod 3 changed. The user had to remind me the project is on Riverpod 3. The
+  failing test was a real bug: Riverpod 3 filters provider updates with `==`, and `RecordDocument` defined `==` as
+  "same id", so an edit never reached the detail screen.
+- **Rule:** before changing a provider, a notifier or a test that reads one, read CODING_STANDARDS §7 and the
+  package's `CHANGELOG.md` (`~/.pub-cache/hosted/pub.dev/riverpod-<version>/`) for the behaviour involved: `==`
+  filtering, `Ref.mounted` after every `await`, `ProviderException`, retry, pausing. A test that fails after the
+  Riverpod 3 upgrade is a suspect for one of these before it is a stale assertion; reproduce it without widgets first.
+  Do not add `riverpod_generator`/`riverpod_annotation`: the generator needs `analyzer >=13`, which the
+  `balsm_boundary_lint` and `drift_dev` pins block. Write `Notifier`s by hand.
+
 ### Name for the reader, not for the source file (2026-11-22)
 - **Mistake:** the colour roles `fg1…fg4` and the `…Bg` suffix were carried over from the prototype's CSS variables. They
   are the app's most-used colours and still say nothing without the stylesheet.
