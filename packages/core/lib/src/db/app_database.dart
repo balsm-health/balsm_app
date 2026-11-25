@@ -91,27 +91,32 @@ class AppDatabase extends _$AppDatabase {
 
   /// Idempotently adds [column] (with SQL [ddlType]) to [table] when it is not
   /// already present. Evolves the raw-SQL PHI schema (see [_phiSchema]) without
-  /// a full drift migration; safe to run on every open. Returns true when the
-  /// column was added on this open, so a one-time backfill can key off it.
-  Future<bool> _ensureColumn(String table, String column, String ddlType) async {
+  /// a full drift migration; safe to run on every open. A backfill must not key
+  /// off "the column was just added": an open killed after the `ALTER` would
+  /// never run it. Make the backfill convergent instead.
+  Future<void> _ensureColumn(String table, String column, String ddlType) async {
     final info = await customSelect('PRAGMA table_info($table)').get();
     final hasColumn = info.any((r) => r.read<String>('name') == column);
     if (!hasColumn) {
       await customStatement('ALTER TABLE $table ADD COLUMN $column $ddlType');
     }
-    return !hasColumn;
   }
 
   /// Family-member columns on `health_profile` (Mother & Child, stage 1).
   ///
-  /// Before these, every row was its account's self profile. When `is_self`
-  /// arrives on an existing DB the backfill marks the account's earliest row
-  /// self (and kind `self`); any later row of the same account — which only a
-  /// past merge could have left — becomes a dependent rather than a second
-  /// self. Runs once: on later opens the column exists and nothing changes,
-  /// so a real dependent is never promoted.
+  /// Before these, every row was its account's self profile. Each account owns
+  /// exactly one self row, so on every open the account's earliest row becomes
+  /// its self (kind `self`) when it has none, and a row that is not a self
+  /// cannot carry kind `self` — a later row of the same account, which only a
+  /// past merge could have left, becomes a dependent rather than a second self.
+  ///
+  /// Both steps converge instead of keying off "the column was just added":
+  /// an open killed between the `ALTER` and the backfill would otherwise leave
+  /// every row `is_self = 0` for good, and the next session would create an
+  /// empty self beside the patient's real profile. An account that already has
+  /// a self is never touched, so a real dependent is never promoted.
   Future<void> _ensureMultiProfileColumns() async {
-    final addedIsSelf = await _ensureColumn('health_profile', 'is_self', 'INTEGER NOT NULL DEFAULT 0');
+    await _ensureColumn('health_profile', 'is_self', 'INTEGER NOT NULL DEFAULT 0');
     await _ensureColumn('health_profile', 'kind', "TEXT NOT NULL DEFAULT 'self'");
     await _ensureColumn('health_profile', 'display_name', 'TEXT');
     await _ensureColumn('health_profile', 'date_of_birth', 'TEXT');
@@ -124,12 +129,11 @@ class AppDatabase extends _$AppDatabase {
     await _ensureColumn('health_profile', 'pregnancy_id', 'TEXT');
     await _ensureColumn('health_profile', 'sequence', 'INTEGER');
     await _ensureColumn('member_group', 'system_key', 'TEXT');
-    if (addedIsSelf) {
-      await customStatement(
-        'UPDATE health_profile SET is_self = 1 WHERE rowid IN (SELECT MIN(rowid) FROM health_profile GROUP BY user_id)',
-      );
-      await customStatement("UPDATE health_profile SET kind = CASE WHEN is_self = 1 THEN 'self' ELSE 'dependent' END");
-    }
+    await customStatement(
+      "UPDATE health_profile SET is_self = 1, kind = 'self' WHERE rowid IN "
+      '(SELECT MIN(rowid) FROM health_profile GROUP BY user_id HAVING SUM(is_self) = 0)',
+    );
+    await customStatement("UPDATE health_profile SET kind = 'dependent' WHERE is_self = 0 AND kind = 'self'");
   }
 
   /// Rebuilds `check_in_pain_region` so one check-in can store the same region

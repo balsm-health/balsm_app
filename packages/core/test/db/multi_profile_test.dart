@@ -72,6 +72,26 @@ void main() {
       expect(await db.ensureSelfHealthProfile(u1), const HealthProfileId.value('hp-u1'));
     });
 
+    test('an open killed right after is_self was added still gives each account its self', () async {
+      // The state a kill between the ALTER and the backfill leaves behind: the
+      // column exists, every row is still 0. The next open must not treat that
+      // as "already migrated", or the account would get an empty second self.
+      sqlite3.open(file.path)
+        ..execute('ALTER TABLE health_profile ADD COLUMN is_self INTEGER NOT NULL DEFAULT 0')
+        ..dispose();
+
+      final db = AppDatabase(NativeDatabase(file));
+      addTearDown(db.close);
+
+      expect(await rows(db, 'SELECT id, is_self, kind FROM health_profile ORDER BY id'), [
+        'hp-u1|1|self',
+        'hp-u1-dup|0|dependent',
+        'hp-u2|1|self',
+      ]);
+      expect(await db.ensureSelfHealthProfile(u1), const HealthProfileId.value('hp-u1'));
+      expect(await rows(db, 'SELECT COUNT(*) FROM health_profile'), ['3']);
+    });
+
     test('the patch is idempotent: later opens never promote a dependent', () async {
       final first = AppDatabase(NativeDatabase(file));
       await addDependent(first, 'hp-kid', u2);
