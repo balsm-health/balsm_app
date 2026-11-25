@@ -587,9 +587,15 @@ class PButton extends StatelessWidget {
     this.ar = false,
     this.color,
     this.gradient = false,
+    this.animateLabel = false,
   });
   final String label;
   final IconData? icon;
+
+  /// Cross-fade the label when it changes (Next → Get started) instead of
+  /// snapping, while the button itself stays put. Off by default: most labels
+  /// never change, and a change should be seen as the new state, not a fade.
+  final bool animateLabel;
 
   /// An icon after the label (a "Next" arrow); use [forwardArrow] so it follows reading order.
   final IconData? trailingIcon;
@@ -617,6 +623,14 @@ class PButton extends StatelessWidget {
   double get _radius =>
       switch (_size) { BtnSize.sm => AppRadii.sm, BtnSize.md => AppRadii.md, BtnSize.lg => AppRadii.lg };
   double get _gap => switch (_size) { BtnSize.sm => 6, BtnSize.md => 9, BtnSize.lg => 10 };
+
+  Widget labelText(Color fg) => Text(
+        label,
+        key: ValueKey(label),
+        textAlign: TextAlign.center,
+        overflow: TextOverflow.ellipsis,
+        style: Typo.bodyFace(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -705,12 +719,14 @@ class PButton extends StatelessWidget {
           // label overflows sideways instead of ellipsizing. Arabic runs longer
           // than English for the same string, so it hits this first.
           Flexible(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: Typo.bodyFace(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
-            ),
+            child: animateLabel
+                ? AnimatedSwitcher(
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.base,
+                    switchInCurve: Motion.easeOut,
+                    switchOutCurve: Motion.easeOut,
+                    child: labelText(fg),
+                  )
+                : labelText(fg),
           ),
           if (trailingIcon != null) ...[SizedBox(width: _gap), Icon(trailingIcon, size: 20, color: fg)],
         ],

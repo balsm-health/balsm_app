@@ -101,6 +101,27 @@ void main() {
     expect(back, findsNothing);
   });
 
+  testWidgets('Next becomes Get started in the same button: only the label cross-fades', (tester) async {
+    final s = await pump(tester);
+    final wt = s.strings.walkthrough;
+    await tester.tap(find.widgetWithText(PButton, wt.wt_next));
+    await frames(tester);
+
+    final before = tester.element(find.byType(PButton).last);
+    await tester.tap(find.widgetWithText(PButton, wt.wt_next));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    allowDemoOverflow(tester);
+
+    expect(find.text(wt.wt_next), findsOne, reason: 'the old label is still fading out');
+    expect(find.text(wt.wt_start), findsOne, reason: 'the new label is already fading in');
+    expect(identical(tester.element(find.byType(PButton).last), before), isTrue, reason: 'the button is not rebuilt');
+
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text(wt.wt_next), findsNothing);
+    expect(find.text(wt.wt_start), findsOne);
+  });
+
   testWidgets('with reduce-motion on, Back appears at once', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);

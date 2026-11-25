@@ -878,7 +878,7 @@ class _Dots extends StatelessWidget {
 /// who skimmed past a slide can return to it. The first slide has nowhere to go
 /// back to, so Back is not there. It grows in (and shrinks away) as the slide
 /// changes, taking its width from Next rather than popping in and shoving the
-/// layout; the Next label cross-fades when it becomes "Get started". Both
+/// layout; the Next label cross-fades into "Get started" inside the same button. Both
 /// honour the system's reduce-motion setting.
 class _WtActions extends StatelessWidget {
   const _WtActions({
@@ -954,17 +954,16 @@ class _WtActions extends StatelessWidget {
                 SizedBox(width: _gap * t),
               ],
               Expanded(
-                child: AnimatedSwitcher(
-                  duration: duration,
-                  child: PButton(
-                    nextLabel,
-                    key: ValueKey(nextLabel),
-                    trailingIcon: forwardArrow(context),
-                    large: true,
-                    block: true,
-                    ar: ar,
-                    onTap: onNext,
-                  ),
+                // One button for the whole walkthrough: only its label cross-fades
+                // to "Get started"; the fill, glow and arrow never rebuild.
+                child: PButton(
+                  nextLabel,
+                  trailingIcon: forwardArrow(context),
+                  animateLabel: true,
+                  large: true,
+                  block: true,
+                  ar: ar,
+                  onTap: onNext,
                 ),
               ),
             ],
