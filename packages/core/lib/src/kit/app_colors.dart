@@ -91,6 +91,9 @@ class AppColors {
   // and error lines actually use. Darkened to clear both (5.80 and 6.06) without leaving the red it was.
   static const danger = Color(0xFFB4342A);
   static const dangerBackground = Color(0xFFFBEBE7);
+
+  /// Outline of a danger-tinted panel on [dangerBackground] (25% of the red the app used before [danger] was darkened).
+  static const dangerBorder = Color(0x40D44A3C);
   static const Color controlled = hueViolet;
   static const Color controlledBackground = hueViolet50;
   static const expiring = Color(0xFFD97A20);

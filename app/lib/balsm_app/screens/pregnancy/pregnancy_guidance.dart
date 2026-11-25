@@ -553,7 +553,7 @@ class _DangerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.dangerBackground,
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: const Color(0x40D44A3C)),
+        border: Border.all(color: AppColors.dangerBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
