@@ -388,7 +388,8 @@ Future<void> main(List<String> argv) async {
     // collected read this APK's crashes too.
     final apk = _artifacts['apk']!;
     final apkArgs = [
-      for (final a in flutterArgs) a == artifact!.build.single ? apk.build.single : a,
+      for (final a in flutterArgs)
+        if (a == artifact!.build.single) apk.build.single else a,
     ];
     stderr.writeln('\$ (cd app && flutter ${apkArgs.join(' ')})');
     final apkProc = await Process.start(
