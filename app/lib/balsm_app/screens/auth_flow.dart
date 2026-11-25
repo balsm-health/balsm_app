@@ -20,6 +20,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../routes.dart';
 import '../widgets/auth_fields.dart';
+import '../widgets/language_pill.dart';
 import '../widgets/legal_sheet.dart';
 import 'remove_device_account.dart';
 import 'walkthrough_screen.dart';
@@ -302,7 +303,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
             ),
             // auth.jsx WelcomeScreen: the language switch rides the top end
             // corner, a light pill over the watercolour.
-            const PositionedDirectional(top: 12, end: 16, child: _LanguagePill()),
+            const PositionedDirectional(top: 12, end: 16, child: LanguagePill()),
           ],
         ),
       ),
@@ -2740,49 +2741,6 @@ const _kGoogleGSvg = '''
   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
 </svg>
 ''';
-
-/// auth.jsx WelcomeScreen language switch: a light pill in the top end
-/// corner. The label is the language it switches to, in that language's own
-/// face, so each reads right to its own speakers.
-class _LanguagePill extends StatelessWidget {
-  const _LanguagePill();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final toEn = s.lang == LanguageCode.ar;
-    return Semantics(
-      button: true,
-      label: toEn ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
-      excludeSemantics: true,
-      child: MinTapTarget(
-        child: Pressable(
-          onTap: () => s.setLang(toEn ? LanguageCode.en : LanguageCode.ar),
-          child: Container(
-            height: 40,
-            padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: AppColors.white85,
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              border: Border.all(color: AppColors.ink200),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(LucideIcons.languages, size: 17, color: AppColors.textPrimary),
-                const SizedBox(width: 6),
-                Text(
-                  toEn ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
-                  style: Typo.bodySm(ar: !toEn).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Holds [child] to at least [lines] lines of [style], centred inside.
 ///
