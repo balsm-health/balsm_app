@@ -13,7 +13,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  FLUTTER_VERSION: '3.47.4'
   # Every package the pipeline analyzes, in dependency-safe order: core first
   # (everything depends on it), then the API client, then the bounded contexts
   # under modules/, and app last (it aggregates the tree).
@@ -107,11 +106,7 @@ jobs:
     if: needs.changes.outputs.dart == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: pub get (all packages)
         run: |
           set -e
@@ -140,11 +135,7 @@ jobs:
     if: needs.changes.outputs.dart == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: pub get core + app
         run: |
           (cd packages/core && flutter pub get)
@@ -170,11 +161,7 @@ jobs:
       contains(fromJSON('["success", "skipped"]'), needs.analyze.result)
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Validate public-route assets (.well-known)
         run: |
           python3 -c "import json; json.load(open('app/web/.well-known/apple-app-site-association')); print('AASA OK')"
@@ -204,11 +191,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Provision server list (env/shared.json)
@@ -230,11 +213,7 @@ jobs:
       contains(fromJSON('["success", "skipped"]'), needs.analyze.result)
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Provision server list (env/shared.json)
@@ -249,11 +228,7 @@ jobs:
     if: needs.changes.outputs.dart == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: pub get (all packages)
         run: |
           set -e
