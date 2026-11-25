@@ -1,11 +1,17 @@
+// Golden tests for all BalsmKit widgets.
+// Run: flutter test --update-goldens (first time to generate baseline images)
+// RTL + LTR × light + dark × en + ar-EG = 4 variants per widget.
+//
+// The baseline images are not committed, so these cannot pass on a clean
+// checkout. Tagged `golden` and left out of CI (`--exclude-tags golden`) until
+// they are; run them locally with `flutter test --tags golden`.
+@Tags(['golden'])
+library;
+
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:material_ui/material_ui.dart';
-
-// Golden tests for all BalsmKit widgets.
-// Run: flutter test --update-goldens (first time to generate baseline images)
-// RTL + LTR × light + dark × en + ar-EG = 4 variants per widget.
 
 void main() {
   setUpAll(loadAppFonts);

@@ -275,7 +275,9 @@ jobs:
             [ "$p" = packages/balsm_api ] && continue
             if [ -d "$p/test" ]; then
               echo "::group::coverage $p"
-              (cd "$p" && flutter test --coverage --exclude-tags e2e) || true
+              # No `|| true`: a failing test fails the job. Goldens are excluded
+              # because their baseline images are not committed.
+              (cd "$p" && flutter test --coverage --exclude-tags "e2e || golden")
               if [ -f "$p/coverage/lcov.info" ]; then
                 sed "s|^SF:|SF:$p/|" "$p/coverage/lcov.info" >> coverage/lcov.info
               fi
