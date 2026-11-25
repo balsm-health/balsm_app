@@ -1,6 +1,8 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/walkthrough_screen.dart';
+import 'package:app/balsm_app/widgets/language_pill.dart';
+import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -120,6 +122,26 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text(wt.wt_next), findsNothing);
     expect(find.text(wt.wt_start), findsOne);
+  });
+
+  testWidgets('the language pill switches the walkthrough between English and Arabic', (tester) async {
+    final s = await pump(tester);
+    expect(s.lang, LanguageCode.en);
+    final english = s.strings.walkthrough.wt_title_1;
+    expect(find.text(english), findsOne);
+    expect(find.text(LanguageCode.ar.nativeName), findsOne, reason: 'it names the language it switches to');
+
+    await tester.tap(find.byType(LanguagePill));
+    await frames(tester);
+
+    expect(s.lang, LanguageCode.ar);
+    expect(s.strings.walkthrough.wt_title_1, isNot(english));
+    expect(find.text(s.strings.walkthrough.wt_title_1), findsOne, reason: 'the slide is now in Arabic');
+    expect(find.text(LanguageCode.en.nativeName), findsOne);
+
+    await tester.tap(find.byType(LanguagePill));
+    await frames(tester);
+    expect(s.lang, LanguageCode.en);
   });
 
   testWidgets('with reduce-motion on, Back appears at once', (tester) async {

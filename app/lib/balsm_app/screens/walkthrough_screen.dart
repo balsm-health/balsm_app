@@ -11,6 +11,7 @@ import '../responsive.dart';
 import '../routes.dart';
 import '../tokens.dart';
 import '../widgets/balsm_mark.dart';
+import '../widgets/language_pill.dart';
 
 // The 28pt icon tile in a walkthrough demo row.
 const _iconTileRadius = 8.0;
@@ -176,8 +177,12 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                 Padding(
                   padding: const EdgeInsetsDirectional.fromSTEB(20, 5, 20, 0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // The same switch as the welcome screen, at the start edge
+                      // opposite Skip, so a reader can change language before
+                      // reading a word of the story.
+                      const LanguagePill(),
                       _SkipButton(label: wt.wt_skip, onTap: () => _finish(s)),
                     ],
                   ),
