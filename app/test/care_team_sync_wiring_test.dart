@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+import 'package:riverpod/misc.dart' show ProviderException;
 
 import 'support/flag_overrides.dart';
 
@@ -42,7 +43,11 @@ void main() {
     final container = ProviderContainer(retry: noProviderRetry);
     addTearDown(container.dispose);
 
-    expect(() => container.read(careTeamSyncServiceProvider), throwsA(isA<UnimplementedError>()));
+    // Riverpod 3 wraps what a provider throws in a ProviderException.
+    expect(
+      () => container.read(careTeamSyncServiceProvider),
+      throwsA(isA<ProviderException>().having((e) => e.exception, 'exception', isA<UnimplementedError>())),
+    );
   });
 
   /// Pumps the screen over a recording API, pulls the list down, and returns
