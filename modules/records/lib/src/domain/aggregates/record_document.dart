@@ -1,5 +1,5 @@
 import 'package:core/core.dart';
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/foundation.dart' show immutable, listEquals;
 
 import '../value_objects/ids.dart';
 
@@ -113,9 +113,40 @@ class RecordDocument {
         history: history ?? this.history,
       );
 
+  /// Value equality, not "same id": the record is UI state (a stream provider
+  /// follows it), and Riverpod 3 drops an update that compares equal to what it
+  /// already holds — so an edit of one record would never reach its detail.
   @override
-  bool operator ==(Object other) => other is RecordDocument && other.id == id;
+  bool operator ==(Object other) =>
+      other is RecordDocument &&
+      other.id == id &&
+      other.userId == userId &&
+      other.type == type &&
+      other.title == title &&
+      listEquals(other.tags, tags) &&
+      other.source == source &&
+      other.fileType == fileType &&
+      other.filePath == filePath &&
+      other.pages == pages &&
+      other.resultNote == resultNote &&
+      other.takenAt == takenAt &&
+      other.createdAt == createdAt &&
+      other.history == history;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        userId,
+        type,
+        title,
+        Object.hashAll(tags),
+        source,
+        fileType,
+        filePath,
+        pages,
+        resultNote,
+        takenAt,
+        createdAt,
+        history,
+      );
 }
