@@ -24,7 +24,7 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
 
   /// Where [lang]'s copy is kept. Bump the version when the stored shape
   /// changes; an older copy is then ignored and fetched again.
-  static String storageKey(String lang) => 'content.pregnancy_weeks.v4.$lang';
+  static String storageKey(String lang) => 'content.pregnancy_weeks.v5.$lang';
 
   final ContentApi _api;
   final GlobalKVDataSource _kv;
