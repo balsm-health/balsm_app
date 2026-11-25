@@ -208,18 +208,25 @@ class AppDatabase extends _$AppDatabase {
   Future<HealthProfileId> ensureSelfHealthProfile(UserId userId) async {
     final existing = await selfHealthProfileId(userId);
     if (existing != null) return existing;
-    final id = HealthProfileId.uuid();
-    // updated_at is epoch-millis (matches the profile DAO's hydration).
+    // Check and insert are one statement: two callers racing on first sign-in
+    // (the active profile and the own-profile providers) cannot both insert,
+    // so an account never ends up with two self rows. updated_at is
+    // epoch-millis (matches the profile DAO's hydration).
     await customInsert(
-      "INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at) VALUES (?, ?, 1, 'self', 'active', ?)",
+      '''
+      INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at)
+      SELECT ?, ?, 1, 'self', 'active', ?
+      WHERE NOT EXISTS (SELECT 1 FROM health_profile WHERE user_id = ? AND is_self = 1)''',
       variables: [
-        Variable.withString(id.value),
+        Variable.withString(HealthProfileId.uuid().value),
         Variable.withString(userId.value),
         Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+        Variable.withString(userId.value),
       ],
     );
     await runProfileAnchorBackfill();
-    return id;
+    // Whichever caller inserted, every caller returns the one row that exists.
+    return (await selfHealthProfileId(userId))!;
   }
 
   /// The profile [userId] has selected on this device, when it still exists,

@@ -126,6 +126,13 @@ void main() {
       expect(await db.selfHealthProfileId(u1), self);
     });
 
+    test('two callers racing on first sign-in end up with one self profile', () async {
+      final ids = await Future.wait([db.ensureSelfHealthProfile(u1), db.ensureSelfHealthProfile(u1)]);
+
+      expect(ids[0], ids[1]);
+      expect(await rows(db, "SELECT COUNT(*) FROM health_profile WHERE user_id = 'u1' AND is_self = 1"), ['1']);
+    });
+
     test('NULL anchors go to self even with several profiles', () async {
       await addDependent(db, 'hp-kid', u1);
       final self = await db.ensureSelfHealthProfile(u1);
