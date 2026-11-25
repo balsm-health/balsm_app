@@ -82,7 +82,13 @@ Map<String, dynamic> _full() => _payload()
             'comparison': w['week'] == 4 ? 'بذرة' : null,
           },
           'illustration': w['week'] == 5
-              ? {'key': 'pregnancy/week-05', 'credit': 'art', 'source_url': 'https://example.test/art'}
+              ? {
+                  'key': 'pregnancy/week-05',
+                  'credit': 'art',
+                  'source_url': 'https://example.test/art',
+                  'image_url': 'https://cdn.example.test/w5.jpg',
+                  'image_url_dark': 'https://cdn.example.test/w5-dark.jpg',
+                }
               : null,
           'sources': ['src-1'],
         },
@@ -158,7 +164,12 @@ void main() {
       expect(five.topics, ['visits']);
       expect(five.sources, ['src-1']);
       expect(four.baby.illustration, isNull);
-      expect((five.baby.illustration!.key, five.baby.illustration!.credit), ('pregnancy/week-05', 'art'));
+      final art = five.baby.illustration!;
+      expect((art.key, art.credit), ('pregnancy/week-05', 'art'));
+      expect(
+        (art.imageUrl, art.imageUrlDark),
+        ('https://cdn.example.test/w5.jpg', 'https://cdn.example.test/w5-dark.jpg'),
+      );
       expect(parsed.illustrationCredits['art']!.text, 'رسم: فنان تجريبي');
       expect(five.symptoms, ['nausea']);
       expect(five.tips, ['نصيحة 5']);

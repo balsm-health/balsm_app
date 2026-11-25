@@ -73,14 +73,26 @@ class FetalSizeDto {
 
 /// A week's artwork: [key] names the image, [credit] who made it.
 class IllustrationDto {
-  const IllustrationDto({required this.key, required this.credit, required this.sourceUrl});
+  const IllustrationDto({
+    required this.key,
+    required this.credit,
+    required this.sourceUrl,
+    this.imageUrl = '',
+    this.imageUrlDark = '',
+  });
 
   /// Null when [json] is not an artwork object.
   static IllustrationDto? fromJson(Object? json) {
     if (json is! Map<String, dynamic>) return null;
     final key = json['key'];
     if (key is! String || key.isEmpty) return null;
-    return IllustrationDto(key: key, credit: _text(json['credit']), sourceUrl: _text(json['source_url']));
+    return IllustrationDto(
+      key: key,
+      credit: _text(json['credit']),
+      sourceUrl: _text(json['source_url']),
+      imageUrl: _text(json['image_url']),
+      imageUrlDark: _text(json['image_url_dark']),
+    );
   }
 
   /// e.g. `pregnancy/week-12`.
@@ -92,7 +104,20 @@ class IllustrationDto {
   /// Where the artwork was published.
   final String sourceUrl;
 
-  Map<String, dynamic> toJson() => {'key': key, 'credit': credit, 'source_url': sourceUrl};
+  /// The image on the CDN, on a light background; empty when the server
+  /// names none.
+  final String imageUrl;
+
+  /// The same image on a dark background.
+  final String imageUrlDark;
+
+  Map<String, dynamic> toJson() => {
+        'key': key,
+        'credit': credit,
+        'source_url': sourceUrl,
+        'image_url': imageUrl,
+        'image_url_dark': imageUrlDark,
+      };
 }
 
 /// Who made a set of illustrations, and under which licence they are shown.

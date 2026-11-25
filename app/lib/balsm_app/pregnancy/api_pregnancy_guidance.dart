@@ -106,8 +106,10 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
       testsDue: w.testsDue,
       dangerSigns: w.dangerSigns,
       topics: w.topics,
-      illustration:
-          art == null ? null : GuidanceIllustration(key: art.key, credit: art.credit, sourceUrl: art.sourceUrl),
+      // Artwork without an image to show is no artwork.
+      illustration: art == null || art.imageUrl.isEmpty
+          ? null
+          : GuidanceIllustration(key: art.key, credit: art.credit, sourceUrl: art.sourceUrl, imageUrl: art.imageUrl),
       // The week's sources then the baby's, each once.
       sources: {...w.sources, ...w.baby.sources}.toList(),
     );

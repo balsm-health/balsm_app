@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,16 +153,7 @@ class _Footer extends StatelessWidget {
   }
 }
 
-/// Every asset the app ships, read once: a week's artwork shows only when
-/// its image is among them.
-final _shippedAssetsProvider = FutureProvider<Set<String>>(
-  (ref) async => (await AssetManifest.loadFromAssetBundle(rootBundle)).listAssets().toSet(),
-);
-
-/// Where the app keeps the image for an artwork key (`pregnancy/week-12`).
-String _artworkAsset(String key) => 'assets/$key.png';
-
-/// A week's guide (`MCWeekGuide`): the artwork (when the app ships it), the baby's size, tests
+/// A week's guide (`MCWeekGuide`): the artwork (when it loads), the baby's size, tests
 /// due, danger signs, topics, the multiples note and — in full — the sources.
 /// [compact] (the Pregnancy screen's card) leaves out the topics heading, the
 /// "Danger signs to know" list for a week without warnings and the sources,
@@ -191,6 +184,18 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
   bool _sourcesOpen = false;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ask the CDN for every week's artwork, not just this one: a lone
+    // request for week-12.jpg would tell it how far along the patient is.
+    for (final w in widget.guidance.weeks) {
+      if (w.illustration case final art?) {
+        unawaited(precacheImage(NetworkImage(art.imageUrl), context, onError: (_, __) {}));
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
     final g = widget.guidance;
@@ -217,8 +222,7 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
       add(_SectionHead(icon: LucideIcons.baby, color: AppColors.hueAquaInk, text: label('baby_title')!));
     }
     final art = entry.illustration;
-    final shipped = ref.watch(_shippedAssetsProvider).value ?? const <String>{};
-    if (art != null && shipped.contains(_artworkAsset(art.key))) {
+    if (art != null) {
       add(
         _WeekArtwork(
           art: art,
@@ -343,9 +347,9 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
 }
 
 /// The week's artwork and its credit, opening the page it was published on.
-/// Shown only for a week that has artwork the app ships; otherwise the guide
-/// has no picture at all.
-class _WeekArtwork extends StatelessWidget {
+/// Until the image arrives nothing is drawn, and if it cannot be fetched the
+/// guide has no picture at all — never an empty frame.
+class _WeekArtwork extends StatefulWidget {
   const _WeekArtwork({required this.art, required this.credit, required this.label, required this.height});
   final GuidanceIllustration art;
 
@@ -357,16 +361,46 @@ class _WeekArtwork extends StatelessWidget {
   final double height;
 
   @override
+  State<_WeekArtwork> createState() => _WeekArtworkState();
+}
+
+class _WeekArtworkState extends State<_WeekArtwork> {
+  ImageStream? _stream;
+  late final _listener = ImageStreamListener(
+    (_, __) {
+      if (mounted) setState(() => _loaded = true);
+    },
+    onError: (_, __) {},
+  );
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _stream?.removeListener(_listener);
+    _stream = NetworkImage(widget.art.imageUrl).resolve(createLocalImageConfiguration(context))..addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    _stream?.removeListener(_listener);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_loaded) return const SizedBox.shrink();
     final s = AppScope.of(context);
+    final art = widget.art;
+    final credit = widget.credit;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Semantics(
           image: true,
-          label: label,
+          label: widget.label,
           child: Container(
-            height: height,
+            height: widget.height,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadii.tile),
@@ -378,7 +412,7 @@ class _WeekArtwork extends StatelessWidget {
                 stops: [0, 0.7],
               ),
             ),
-            child: Image.asset(_artworkAsset(art.key), fit: BoxFit.contain, excludeFromSemantics: true),
+            child: Image.network(art.imageUrl, fit: BoxFit.contain, excludeFromSemantics: true),
           ),
         ),
         if (credit case final credit?)

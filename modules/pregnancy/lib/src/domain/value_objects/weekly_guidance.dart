@@ -18,15 +18,19 @@ class GuidanceFetalSize {
   bool get isEmpty => lengthMm == null && weightG == null && comparison == null;
 }
 
-/// A week's artwork: [key] names the image, [credit] who made it.
+/// A week's artwork: [imageUrl] is the picture, [credit] who made it.
 class GuidanceIllustration {
   const GuidanceIllustration({
     required this.key,
     required this.credit,
     required this.sourceUrl,
+    required this.imageUrl,
   });
 
   final String key;
+
+  /// The image on the CDN. Public artwork, fetched without a session.
+  final String imageUrl;
 
   /// Key of [WeeklyGuidance.illustrationCredits].
   final String credit;
