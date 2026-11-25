@@ -10,7 +10,7 @@ name: Changelog note
 
 on:
   pull_request:
-    branches: [main, develop, 'release/**']
+    branches: [main, dev, 'release/**']
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   merge_group:
 

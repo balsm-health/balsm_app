@@ -9,7 +9,7 @@ name: Claude changelog note
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
-    branches: [main, develop, 'release/**']
+    branches: [main, dev, 'release/**']
 
 concurrency:
   group: claude-changelog-note-${{ github.event.pull_request.number }}
