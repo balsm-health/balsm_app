@@ -228,6 +228,20 @@ void main() {
       return c;
     }
 
+    test('select and selectSelf complete only once the new profile is active', () async {
+      final c = container()..listen(currentProfileIdProvider, (_, __) {});
+      final self = await c.read(activeProfileProvider.future);
+      await addDependent(db, 'hp-kid', u1);
+      final switcher = c.read(activeProfileSwitcherProvider);
+
+      // No extra await: a null-scope write right after this must hit the kid.
+      expect(await switcher.select(const HealthProfileId.value('hp-kid')), isTrue);
+      expect(c.read(currentProfileIdProvider), const HealthProfileId.value('hp-kid'));
+
+      await switcher.selectSelf();
+      expect(c.read(currentProfileIdProvider), self);
+    });
+
     test('currentProfileIdProvider follows the switcher and the choice persists', () async {
       final c = container()..listen(currentProfileIdProvider, (_, __) {});
       final self = await c.read(activeProfileProvider.future);

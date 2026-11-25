@@ -54,20 +54,32 @@ class ActiveProfileSwitcher {
   /// Makes [profileId] the active profile. Returns false — and leaves the
   /// active profile unchanged — when signed out, or when [profileId] is not
   /// an active (non-closed) profile of the signed-in account.
+  ///
+  /// Completes only once [currentProfileIdProvider] holds the new profile:
+  /// until then it keeps the previous one, so a null-scope write issued right
+  /// after `await select(...)` would land in the previous person's partition.
   Future<bool> select(HealthProfileId profileId) async {
     final userId = _ref.read(currentUserIdProvider);
     if (userId == null) return false;
     final ok = await _ref.read(appDatabaseProvider).setActiveHealthProfile(userId, profileId);
-    if (ok) _ref.invalidate(activeProfileProvider);
+    // Riverpod 3 throws when a disposed ref is used, so check after the await.
+    if (ok && _ref.mounted) await _reresolve();
     return ok;
   }
 
-  /// Back to the account holder's self profile.
+  /// Back to the account holder's self profile. Completes once it is active
+  /// (see [select]).
   Future<void> selectSelf() async {
     final userId = _ref.read(currentUserIdProvider);
     if (userId == null) return;
     await _ref.read(appDatabaseProvider).setActiveHealthProfile(userId, null);
+    if (_ref.mounted) await _reresolve();
+  }
+
+  /// Invalidates [activeProfileProvider] and waits for it to resolve again.
+  Future<void> _reresolve() {
     _ref.invalidate(activeProfileProvider);
+    return _ref.read(activeProfileProvider.future);
   }
 
   /// Re-resolves the active profile without changing the selection — call
