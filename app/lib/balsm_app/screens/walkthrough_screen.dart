@@ -146,8 +146,11 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     // the design's `useWtSwipe`).
     var forward = dx < 0;
     if (rtl) forward = !forward;
+    // A swipe only moves between slides. Past the last one it does nothing:
+    // leaving the walkthrough is a deliberate press of Get started (or Skip),
+    // never a stray gesture.
     if (forward) {
-      _next(total, s);
+      if (_index < total - 1) _next(total, s);
     } else {
       _prev();
     }

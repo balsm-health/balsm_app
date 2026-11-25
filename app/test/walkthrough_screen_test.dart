@@ -1,5 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/walkthrough_screen.dart';
 import 'package:app/balsm_app/widgets/language_pill.dart';
 import 'package:core/core.dart';
@@ -142,6 +143,34 @@ void main() {
     await tester.tap(find.byType(LanguagePill));
     await frames(tester);
     expect(s.lang, LanguageCode.en);
+  });
+
+  testWidgets('swiping forward moves between slides but never leaves from the last one', (tester) async {
+    final s = await pump(tester);
+    s.route = AppRoutes.walkthrough; // the walkthrough is what the app shows first
+    final wt = s.strings.walkthrough;
+    Future<void> swipe(Offset by) async {
+      await tester.drag(find.byType(WalkthroughScreen), by);
+      await frames(tester);
+    }
+
+    await swipe(const Offset(-300, 0)); // toward the next slide
+    await swipe(const Offset(-300, 0));
+    expect(find.widgetWithText(PButton, wt.wt_start), findsOne, reason: 'two swipes reach the last slide');
+    expect(s.route, isNot(AppRoutes.welcome));
+
+    await swipe(const Offset(-300, 0));
+    await swipe(const Offset(-300, 0));
+    expect(find.widgetWithText(PButton, wt.wt_start), findsOne, reason: 'still on the last slide');
+    expect(s.route, isNot(AppRoutes.welcome), reason: 'only Get started leaves');
+
+    await swipe(const Offset(300, 0)); // back still works
+    expect(find.widgetWithText(PButton, wt.wt_next), findsOne);
+
+    await swipe(const Offset(-300, 0));
+    await tester.tap(find.widgetWithText(PButton, wt.wt_start));
+    await frames(tester);
+    expect(s.route, AppRoutes.welcome, reason: 'Get started leaves the walkthrough');
   });
 
   testWidgets('with reduce-motion on, Back appears at once', (tester) async {
