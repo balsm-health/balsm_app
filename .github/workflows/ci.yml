@@ -129,6 +129,9 @@ jobs:
           for p in $PKGS; do
             echo "::group::analyze $p"; (cd "$p" && flutter analyze --no-fatal-warnings --no-fatal-infos); echo "::endgroup::"
           done
+      - name: Design tokens (colours, radii, font sizes, durations)
+        # CODING_STANDARDS.md §13: no bare design value outside its token home.
+        run: bash scripts/check_tokens.sh
 
   test:
     name: Tests (PHI-leak + i18n)
