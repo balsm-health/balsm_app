@@ -24,7 +24,7 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
 
   /// Where [lang]'s copy is kept. Bump the version when the stored shape
   /// changes; an older copy is then ignored and fetched again.
-  static String storageKey(String lang) => 'content.pregnancy_weeks.v5.$lang';
+  static String storageKey(String lang) => 'content.pregnancy_weeks.v6.$lang';
 
   final ContentApi _api;
   final GlobalKVDataSource _kv;
@@ -93,7 +93,7 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
 
   static GuidanceWeek _week(PregnancyWeekDto w) {
     final size = w.baby.fetalSize;
-    final art = w.baby.illustration;
+    final media = Media.fromDto(w.baby.media);
     return GuidanceWeek(
       week: w.week,
       title: w.title,
@@ -106,10 +106,8 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
       testsDue: w.testsDue,
       dangerSigns: w.dangerSigns,
       topics: w.topics,
-      // Artwork without an image to show is no artwork.
-      illustration: art == null || art.imageUrl.isEmpty
-          ? null
-          : GuidanceIllustration(key: art.key, credit: art.credit, sourceUrl: art.sourceUrl, imageUrl: art.imageUrl),
+      // Artwork without a rendition to show is no artwork.
+      illustration: media == null ? null : GuidanceIllustration(media: media),
       // The week's sources then the baby's, each once.
       sources: {...w.sources, ...w.baby.sources}.toList(),
     );

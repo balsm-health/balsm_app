@@ -103,16 +103,38 @@ PregnancyWeeksResponse _content({String version = 'v-test', String lang = 'en'})
             'baby': {
               'fact': _t(lang, 'Test fact $w', 'حقيقة $w'),
               'fetal_size': {'length_mm': w == 24 ? 210 : null, 'weight_g': w == 24 ? 630 : null, 'comparison': null},
-              // Week 24 has artwork on the CDN, week 25 artwork with no image.
-              'illustration': switch (w) {
+              // Week 24 has artwork on the CDN, week 25 artwork with no rendition.
+              'media': switch (w) {
                 24 => {
-                    'key': 'pregnancy/week-24',
+                    'kind': 'image',
+                    'alt': 'Week 24 illustration',
                     'credit': 'art',
                     'source_url': 'https://example.test/art',
-                    'image_url': 'https://cdn.example.test/w24.jpg',
-                    'image_url_dark': 'https://cdn.example.test/w24-dark.jpg',
+                    'axes': [
+                      {'id': 'theme', 'source': 'app'},
+                    ],
+                    'renditions': [
+                      {
+                        'when': {'theme': 'light'},
+                        'url': 'https://cdn.example.test/w24.jpg',
+                        'mime': 'image/jpeg',
+                        'width': 679,
+                        'height': 480,
+                        'bytes': 30795,
+                        'thumbnail': null,
+                      },
+                      {
+                        'when': {'theme': 'dark'},
+                        'url': 'https://cdn.example.test/w24-dark.jpg',
+                        'mime': 'image/jpeg',
+                        'width': 679,
+                        'height': 480,
+                        'bytes': 30100,
+                        'thumbnail': null,
+                      },
+                    ],
                   },
-                25 => {'key': 'pregnancy/week-25', 'credit': 'art', 'source_url': 'https://example.test/art'},
+                25 => {'kind': 'image', 'credit': 'art', 'axes': <Object>[], 'renditions': <Object>[]},
                 _ => null,
               },
               'sources': ['s1'],
@@ -147,11 +169,15 @@ void main() {
       expect((await kv.get<Map<String, dynamic>>(ApiPregnancyGuidance.storageKey('en')))!['etag'], '"e1"');
     });
 
-    test('artwork carries its CDN image; artwork without one counts as none', () async {
+    test('artwork carries its CDN renditions; artwork without one counts as none', () async {
       final api = FakeContentApi(weeks: _content(), etag: '"e1"');
       final guidance = await ApiPregnancyGuidance(api: api, kv: kv, language: 'en').refresh();
 
-      expect(guidance!.forWeek(24)!.illustration!.imageUrl, 'https://cdn.example.test/w24.jpg');
+      final art = guidance!.forWeek(24)!.illustration!;
+      final light = MediaSelector.file(art.media, MediaSelector.contextFor(art.media, app: {'theme': 'light'}));
+      final dark = MediaSelector.file(art.media, MediaSelector.contextFor(art.media, app: {'theme': 'dark'}));
+      expect((art.credit, art.sourceUrl, art.media.alt), ('art', 'https://example.test/art', 'Week 24 illustration'));
+      expect((light?.url, dark?.url), ('https://cdn.example.test/w24.jpg', 'https://cdn.example.test/w24-dark.jpg'));
       expect(guidance.forWeek(25)!.illustration, isNull);
     });
 
