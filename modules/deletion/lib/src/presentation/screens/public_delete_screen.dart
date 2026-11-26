@@ -1,11 +1,12 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../application/ports/reauth_port.dart';
-import '../../application/use_cases/request_deletion_use_case.dart';
 import '../i18n/i18n.dart';
+import '../providers/deletion_flow.dart';
 import '../widgets/reauth_form.dart';
 
 /// Public, session-less account-deletion flow (route `/account/delete`).
@@ -13,7 +14,7 @@ import '../widgets/reauth_form.dart';
 /// NO auth required to reach this screen — re-auth happens inline via the
 /// 3-channel [ReauthForm]. Stages: reauth -> preconfirm -> done. Works on web
 /// and mobile.
-class PublicDeleteScreen extends ConsumerStatefulWidget {
+class PublicDeleteScreen extends ConsumerWidget {
   const PublicDeleteScreen({super.key, this.alreadyVerified = false});
 
   /// True when the person arrived through the emailed deletion link, which the
@@ -23,77 +24,12 @@ class PublicDeleteScreen extends ConsumerStatefulWidget {
   /// and the server refuses it without one.
   final bool alreadyVerified;
 
-  @override
-  ConsumerState<PublicDeleteScreen> createState() => _PublicDeleteScreenState();
-}
-
-enum _Stage { reauth, preconfirm, done }
-
-class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
-  late _Stage _stage = widget.alreadyVerified ? _Stage.preconfirm : _Stage.reauth;
-  bool _submitting = false;
-  String? _error;
-  DateTime? _graceUntil;
-
-  Future<void> _sendCode(ReauthChannel channel, String identifier) async {
-    setState(() => _error = null);
-    final result = await ref.read(reauthPortProvider).requestChallenge(channel, identifier);
-    if (!mounted) return;
-    switch (result) {
-      case AppSuccess():
-        break;
-      case AppFailureResult(:final failure):
-        setState(() => _error = failure.message);
-    }
-  }
-
-  /// Verifies the code before advancing. Nothing here trusts the form: the
-  /// only way past this stage is a success from [ReauthPort], whose default
-  /// implementation refuses. Credentials are never logged or retained.
-  Future<void> _onReauthed(ReauthCredentials credentials) async {
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref.read(reauthPortProvider).verify(credentials);
-    if (!mounted) return;
-    switch (result) {
-      case AppSuccess():
-        setState(() {
-          _submitting = false;
-          _stage = _Stage.preconfirm;
-        });
-      case AppFailureResult(:final failure):
-        setState(() {
-          _submitting = false;
-          _error = failure.message;
-        });
-    }
-  }
-
-  Future<void> _confirmDelete() async {
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref.read(requestDeletionUseCaseProvider).call();
-    if (!mounted) return;
-    result.fold(
-      (intake) => setState(() {
-        _submitting = false;
-        _graceUntil = intake.graceUntil;
-        _stage = _Stage.done;
-      }),
-      (failure) => setState(() {
-        _submitting = false;
-        _error = failure.message;
-      }),
-    );
-  }
+  DeletionEntry get _entry => alreadyVerified ? DeletionEntry.publicDeleteVerified : DeletionEntry.publicDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(deletionStringsProvider);
+    final stage = ref.watch(deletionFlowProvider(_entry).select((f) => f.stage));
     return Scaffold(
       backgroundColor: AppColors.cream50,
       body: SafeArea(
@@ -113,20 +49,10 @@ class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                switch (_stage) {
-                  _Stage.reauth => ReauthForm(
-                      submitLabel: m.verifyContinue,
-                      submitting: _submitting,
-                      error: _error,
-                      onRequestChallenge: _sendCode,
-                      onSubmit: _onReauthed,
-                    ),
-                  _Stage.preconfirm => _PreConfirm(
-                      submitting: _submitting,
-                      error: _error,
-                      onConfirm: _confirmDelete,
-                    ),
-                  _Stage.done => _Done(graceUntil: _graceUntil),
+                switch (stage) {
+                  DeletionStage.reauth => ReauthForm(entry: _entry, submitLabel: m.verifyContinue),
+                  DeletionStage.preconfirm => _PreConfirm(entry: _entry),
+                  DeletionStage.scheduled || DeletionStage.cancelled => _Done(entry: _entry),
                 },
               ],
             ),
@@ -138,19 +64,16 @@ class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
 }
 
 class _PreConfirm extends ConsumerWidget {
-  const _PreConfirm({
-    required this.submitting,
-    required this.error,
-    required this.onConfirm,
-  });
+  const _PreConfirm({required this.entry});
 
-  final bool submitting;
-  final String? error;
-  final VoidCallback onConfirm;
+  final DeletionEntry entry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(deletionStringsProvider);
+    final (:submitting, :failure) =
+        ref.watch(deletionFlowProvider(entry).select((f) => (submitting: f.submitting, failure: f.failure)));
+    void confirm() => unawaited(ref.read(deletionFlowProvider(entry).notifier).requestDeletion());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -158,16 +81,16 @@ class _PreConfirm extends ConsumerWidget {
           m.publicConfirmBody,
           style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
         ),
-        if (error case final error?) ...[
+        if (failure case final failure?) ...[
           const SizedBox(height: 16),
-          BalsmErrorBanner(message: error, onRetry: onConfirm),
+          BalsmErrorBanner(message: failure.message, onRetry: confirm),
         ],
         const SizedBox(height: 20),
         BalsmButton(
           label: m.requestDeletion,
           variant: BalsmButtonVariant.danger,
           loading: submitting,
-          onPressed: submitting ? null : onConfirm,
+          onPressed: submitting ? null : confirm,
         ),
       ],
     );
@@ -175,13 +98,14 @@ class _PreConfirm extends ConsumerWidget {
 }
 
 class _Done extends ConsumerWidget {
-  const _Done({required this.graceUntil});
+  const _Done({required this.entry});
 
-  final DateTime? graceUntil;
+  final DeletionEntry entry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(deletionStringsProvider);
+    final graceUntil = ref.watch(deletionFlowProvider(entry).select((f) => f.graceUntil));
     final dateText = switch (graceUntil) {
       final graceUntil? => DateFormat.yMMMMd().add_jm().format(graceUntil.toLocal()),
       _ => m.soon

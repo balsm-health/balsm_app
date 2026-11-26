@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,7 @@ import '../../application/use_cases/add_medication_use_case.dart';
 import '../../domain/aggregates/medication.dart';
 import '../../domain/value_objects/ids.dart';
 import '../i18n/i18n.dart';
+import '../providers/medication_draft.dart';
 
 /// Form to add a new medication: name, dose, schedule type (segmented),
 /// reminder times, start/end dates, and a controlled-substance toggle.
@@ -21,14 +24,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   final _nameCtrl = TextEditingController();
   final _doseCtrl = TextEditingController();
 
-  ScheduleType _scheduleType = ScheduleType.daily;
-  final List<TimeOfDay> _times = [const TimeOfDay(hour: 8, minute: 0)];
-  final Set<int> _days = {1, 2, 3, 4, 5, 6, 7}; // ISO weekdays
-  DateTime _startDate = DateTime.now();
-  DateTime? _endDate;
-  bool _isControlled = false;
+  /// This form's draft key: a second open form gets its own draft.
+  final _form = Object();
   bool _saving = false;
-  String? _nameError;
 
   @override
   void dispose() {
@@ -40,6 +38,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   @override
   Widget build(BuildContext context) {
     final m = ref.watch(medicationsStringsProvider);
+    // Also keeps the draft alive while sections scroll out of the list.
+    final nameMissing = ref.watch(medicationDraftProvider(_form).select((d) => d.nameMissing));
     return Scaffold(
       backgroundColor: AppColors.cream50,
       appBar: AppBar(
@@ -54,7 +54,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             label: m.fieldName,
             controller: _nameCtrl,
             hint: m.fieldNameHint,
-            errorText: _nameError,
+            errorText: nameMissing ? m.nameRequired : null,
           ),
           const SizedBox(height: 16),
           BalsmTextField(
@@ -63,68 +63,13 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             hint: m.fieldDoseHint,
           ),
           const SizedBox(height: 24),
-          _Label(m.schedule),
-          const SizedBox(height: 8),
-          BalsmSegmented<ScheduleType>(
-            options: const [
-              ScheduleType.daily,
-              ScheduleType.weekly,
-              ScheduleType.custom,
-            ],
-            labelOf: (t) => switch (t) {
-              ScheduleType.daily => m.scheduleDaily,
-              ScheduleType.weekly => m.scheduleWeekly,
-              ScheduleType.custom => m.scheduleCustom,
-              // Not offered by this screen's options above.
-              ScheduleType.once || ScheduleType.everyHours || ScheduleType.everyDays => '',
-            },
-            selected: _scheduleType,
-            onChanged: (t) => setState(() => _scheduleType = t),
-          ),
-          if (_scheduleType != ScheduleType.daily) ...[
-            const SizedBox(height: 16),
-            _DayPicker(
-              selected: _days,
-              onToggle: (d) => setState(() {
-                _days.contains(d) ? _days.remove(d) : _days.add(d);
-              }),
-            ),
-          ],
+          _ScheduleSection(form: _form),
           const SizedBox(height: 24),
-          _Label(m.reminderTimes),
-          const SizedBox(height: 8),
-          ..._times.asMap().entries.map(
-                (entry) => _TimeRow(
-                  time: entry.value,
-                  onEdit: () => _editTime(entry.key),
-                  onRemove: _times.length > 1 ? () => setState(() => _times.removeAt(entry.key)) : null,
-                ),
-              ),
-          TextButton.icon(
-            onPressed: _addTime,
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(m.addTime),
-          ),
+          _TimesSection(form: _form),
           const SizedBox(height: 16),
-          _DateRow(
-            label: m.startDate,
-            value: _startDate,
-            onTap: () => _pickDate(isStart: true),
-          ),
-          _DateRow(
-            label: m.endDateOptional,
-            value: _endDate,
-            onTap: () => _pickDate(isStart: false),
-            onClear: _endDate != null ? () => setState(() => _endDate = null) : null,
-          ),
+          _DatesSection(form: _form),
           const SizedBox(height: 8),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(m.controlledSubstance),
-            value: _isControlled,
-            activeThumbColor: AppColors.controlled,
-            onChanged: (v) => setState(() => _isControlled = v),
-          ),
+          _ControlledSwitch(form: _form),
           const SizedBox(height: 24),
           BalsmButton(
             label: m.saveMedication,
@@ -136,77 +81,39 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
     );
   }
 
-  Future<void> _addTime() async {
-    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-    if (picked != null) setState(() => _times.add(picked));
-  }
-
-  Future<void> _editTime(int index) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _times[index],
-    );
-    if (picked != null) setState(() => _times[index] = picked);
-  }
-
-  Future<void> _pickDate({required bool isStart}) async {
-    final m = ref.read(medicationsStringsProvider);
-    final initial = isStart ? _startDate : (_endDate ?? _startDate);
-    final picked = await showBalsmDatePicker(
-      context,
-      initial: initial,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      title: isStart ? m.startDate : m.endDate,
-      confirmLabel: coreMessagesOf(context).common.confirm,
-    );
-    if (picked == null) return;
-    setState(() {
-      if (isStart) {
-        _startDate = picked;
-      } else {
-        _endDate = picked;
-      }
-    });
-  }
-
   Future<void> _save() async {
     final m = ref.read(medicationsStringsProvider);
     final name = _nameCtrl.text.trim();
-    if (name.isEmpty) {
-      setState(() => _nameError = m.nameRequired);
-      return;
-    }
-    if (_scheduleType != ScheduleType.daily && _days.isEmpty) {
+    if (!ref.read(medicationDraftProvider(_form).notifier).validate(name)) return;
+    final draft = ref.read(medicationDraftProvider(_form));
+    if (!draft.daysValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(m.selectDay)),
       );
       return;
     }
 
-    setState(() {
-      _saving = true;
-      _nameError = null;
-    });
+    setState(() => _saving = true);
 
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
       setState(() => _saving = false);
       return;
     }
+    final daily = draft.scheduleType == ScheduleType.daily;
     final medication = Medication(
       id: MedicationId.uuid(),
       userId: userId,
       name: name,
       doseAmount: _doseCtrl.text.trim().isEmpty ? null : _doseCtrl.text.trim(),
-      scheduleType: _scheduleType,
+      scheduleType: draft.scheduleType,
       scheduleConfig: ScheduleConfig(
-        times: _sortedTimeStrings(),
-        days: _scheduleType == ScheduleType.daily ? null : (_days.toList()..sort()),
+        times: draft.sortedTimes,
+        days: daily ? null : (draft.days.toList()..sort()),
       ),
-      startDate: _startDate,
-      endDate: _endDate,
-      isControlled: _isControlled,
+      startDate: draft.startDate,
+      endDate: draft.endDate,
+      isControlled: draft.isControlled,
     );
 
     try {
@@ -221,13 +128,155 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       );
     }
   }
+}
 
-  List<String> _sortedTimeStrings() {
-    final list = _times.toList()..sort((a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
-    return list.map(_hhmm).toList();
+/// Schedule type, and the weekdays for a schedule that is not daily.
+class _ScheduleSection extends ConsumerWidget {
+  const _ScheduleSection({required this.form});
+  final Object form;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    final (:scheduleType, :days) =
+        ref.watch(medicationDraftProvider(form).select((d) => (scheduleType: d.scheduleType, days: d.days)));
+    final draft = ref.read(medicationDraftProvider(form).notifier);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Label(m.schedule),
+        const SizedBox(height: 8),
+        BalsmSegmented<ScheduleType>(
+          options: const [
+            ScheduleType.daily,
+            ScheduleType.weekly,
+            ScheduleType.custom,
+          ],
+          labelOf: (t) => switch (t) {
+            ScheduleType.daily => m.scheduleDaily,
+            ScheduleType.weekly => m.scheduleWeekly,
+            ScheduleType.custom => m.scheduleCustom,
+            // Not offered by this screen's options above.
+            ScheduleType.once || ScheduleType.everyHours || ScheduleType.everyDays => '',
+          },
+          selected: scheduleType,
+          onChanged: draft.setSchedule,
+        ),
+        if (scheduleType != ScheduleType.daily) ...[
+          const SizedBox(height: 16),
+          _DayPicker(selected: days, onToggle: draft.toggleDay),
+        ],
+      ],
+    );
+  }
+}
+
+/// Reminder times: edit, remove (never the last), add.
+class _TimesSection extends ConsumerWidget {
+  const _TimesSection({required this.form});
+  final Object form;
+
+  Future<void> _addTime(BuildContext context, WidgetRef ref) async {
+    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (picked == null || !context.mounted) return;
+    ref.read(medicationDraftProvider(form).notifier).addTime(picked);
   }
 
-  String _hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  Future<void> _editTime(BuildContext context, WidgetRef ref, int index, TimeOfDay current) async {
+    final picked = await showTimePicker(context: context, initialTime: current);
+    if (picked == null || !context.mounted) return;
+    ref.read(medicationDraftProvider(form).notifier).replaceTime(index, picked);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    final times = ref.watch(medicationDraftProvider(form).select((d) => d.times));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(m.reminderTimes),
+        const SizedBox(height: 8),
+        for (final (i, time) in times.indexed)
+          _TimeRow(
+            time: time,
+            onEdit: () => unawaited(_editTime(context, ref, i, time)),
+            onRemove: times.length > 1 ? () => ref.read(medicationDraftProvider(form).notifier).removeTime(i) : null,
+          ),
+        TextButton.icon(
+          onPressed: () => unawaited(_addTime(context, ref)),
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(m.addTime),
+        ),
+      ],
+    );
+  }
+}
+
+/// Start date, and an optional end date that can be cleared.
+class _DatesSection extends ConsumerWidget {
+  const _DatesSection({required this.form});
+  final Object form;
+
+  Future<void> _pickDate(BuildContext context, WidgetRef ref, {required bool isStart}) async {
+    final m = ref.read(medicationsStringsProvider);
+    final draft = ref.read(medicationDraftProvider(form));
+    final picked = await showBalsmDatePicker(
+      context,
+      initial: isStart ? draft.startDate : (draft.endDate ?? draft.startDate),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      title: isStart ? m.startDate : m.endDate,
+      confirmLabel: coreMessagesOf(context).common.confirm,
+    );
+    if (picked == null || !context.mounted) return;
+    final notifier = ref.read(medicationDraftProvider(form).notifier);
+    if (isStart) {
+      notifier.setStart(picked);
+    } else {
+      notifier.setEnd(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    final (:start, :end) =
+        ref.watch(medicationDraftProvider(form).select((d) => (start: d.startDate, end: d.endDate)));
+    return Column(
+      children: [
+        _DateRow(
+          label: m.startDate,
+          value: start,
+          onTap: () => unawaited(_pickDate(context, ref, isStart: true)),
+        ),
+        _DateRow(
+          label: m.endDateOptional,
+          value: end,
+          onTap: () => unawaited(_pickDate(context, ref, isStart: false)),
+          onClear: end != null ? () => ref.read(medicationDraftProvider(form).notifier).setEnd(null) : null,
+        ),
+      ],
+    );
+  }
+}
+
+class _ControlledSwitch extends ConsumerWidget {
+  const _ControlledSwitch({required this.form});
+  final Object form;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    final controlled = ref.watch(medicationDraftProvider(form).select((d) => d.isControlled));
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(m.controlledSubstance),
+      value: controlled,
+      activeThumbColor: AppColors.controlled,
+      onChanged: (v) => ref.read(medicationDraftProvider(form).notifier).setControlled(controlled: v),
+    );
+  }
 }
 
 class _DayPicker extends ConsumerWidget {

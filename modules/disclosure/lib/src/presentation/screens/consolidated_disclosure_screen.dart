@@ -2,22 +2,8 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../application/use_cases/accept_disclosure_use_case.dart';
-import '../../domain/value_objects/ids.dart';
-import '../../infrastructure/drift/disclosure_dao.dart';
 import '../i18n/i18n.dart';
-
-/// Riverpod provider for [AcceptDisclosureUseCase].
-final acceptDisclosureUseCaseProvider = Provider<AcceptDisclosureUseCase>((ref) {
-  final db = ref.watch(appDatabaseProvider);
-  final api = ref.watch(disclosureApiProvider);
-  final bus = ref.watch(eventBusProvider);
-  return AcceptDisclosureUseCase(
-    dao: DisclosureDao(db),
-    api: api,
-    eventBus: bus,
-  );
-});
+import '../providers/disclosure_providers.dart';
 
 /// Screen that presents the consolidated privacy disclosure to the patient.
 ///
@@ -48,8 +34,6 @@ class ConsolidatedDisclosureScreen extends ConsumerStatefulWidget {
 class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDisclosureScreen> {
   final _scrollController = ScrollController();
   bool _scrolledToEnd = false;
-  bool _loading = false;
-  String? _error;
 
   @override
   void initState() {
@@ -76,36 +60,15 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
   }
 
   Future<void> _accept() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    final registry = ref.read(countryRegistryProvider);
-    final supervisoryAuthority = registry.supervisoryAuthority(widget.countryCode);
-
-    final useCase = ref.read(acceptDisclosureUseCaseProvider);
-    final result = await useCase.execute(
-      disclosureId: DisclosureId.value(widget.disclosureId),
-      version: widget.version,
-      countryCode: widget.countryCode,
-      supervisoryAuthority: supervisoryAuthority,
-      preferredLanguage: widget.preferredLanguage,
-    );
-
-    if (!mounted) return;
-
-    result.fold(
-      (_) {
-        // Navigate to home on success — router handles the redirect.
-        Navigator.of(context).pushReplacementNamed('/home');
-      },
-      (failure) {
-        setState(() => _error = failure.message);
-      },
-    );
-
-    if (mounted) setState(() => _loading = false);
+    final accepted = await ref.read(acceptDisclosureProvider.notifier).accept(
+          disclosureId: widget.disclosureId,
+          version: widget.version,
+          countryCode: widget.countryCode,
+          preferredLanguage: widget.preferredLanguage,
+        );
+    if (!accepted || !mounted) return;
+    // Navigate to home on success — router handles the redirect.
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   @override
@@ -116,6 +79,7 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
 
     final registry = ref.watch(countryRegistryProvider);
     final supervisoryAuthority = registry.supervisoryAuthority(widget.countryCode);
+    final (:busy, :failure) = ref.watch(acceptDisclosureProvider.select((a) => (busy: a.busy, failure: a.failure)));
 
     return Directionality(
       textDirection: _isRtl ? TextDirection.rtl : TextDirection.ltr,
@@ -203,11 +167,11 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
                 ),
               ),
               // ── Error banner ─────────────────────────────────────────────
-              if (_error case final error?)
+              if (failure case final failure?)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: BalsmErrorBanner(
-                    message: error,
+                    message: failure.message,
                     onRetry: _accept,
                   ),
                 ),
@@ -226,8 +190,8 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
                 padding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24, 24),
                 child: BalsmButton(
                   label: m.accept,
-                  onPressed: _scrolledToEnd && !_loading ? _accept : null,
-                  loading: _loading,
+                  onPressed: _scrolledToEnd && !busy ? _accept : null,
+                  loading: busy,
                 ),
               ),
             ],

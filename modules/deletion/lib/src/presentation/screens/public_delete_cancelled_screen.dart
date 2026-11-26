@@ -2,73 +2,26 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../application/ports/reauth_port.dart';
-import '../../application/use_cases/cancel_deletion_use_case.dart';
 import '../i18n/i18n.dart';
+import '../providers/deletion_flow.dart';
 import '../widgets/reauth_form.dart';
 
 /// Public, session-less deletion-cancellation flow
 /// (route `/account/delete-cancelled`).
 ///
 /// NO auth required. Re-auth happens inline via the 3-channel [ReauthForm],
-/// then `POST /deletion/cancel` is invoked. Works on web and mobile.
-class PublicDeleteCancelledScreen extends ConsumerStatefulWidget {
+/// then `POST /deletion/cancel` is invoked. Cancelling is less destructive than
+/// deleting, but it still changes another person's account state, so it takes
+/// the same proof. Works on web and mobile.
+class PublicDeleteCancelledScreen extends ConsumerWidget {
   const PublicDeleteCancelledScreen({super.key});
 
-  @override
-  ConsumerState<PublicDeleteCancelledScreen> createState() => _PublicDeleteCancelledScreenState();
-}
-
-enum _Stage { reauth, done }
-
-class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancelledScreen> {
-  _Stage _stage = _Stage.reauth;
-  bool _submitting = false;
-  String? _error;
-
-  Future<void> _sendCode(ReauthChannel channel, String identifier) async {
-    setState(() => _error = null);
-    final sent = await ref.read(reauthPortProvider).requestChallenge(channel, identifier);
-    if (!mounted) return;
-    if (sent case AppFailureResult(:final failure)) {
-      setState(() => _error = failure.message);
-    }
-  }
-
-  /// Verifies before cancelling. Cancelling is less destructive than deleting,
-  /// but it still changes another person's account state, so it takes the same
-  /// proof. Credentials are never logged or retained.
-  Future<void> _onReauthed(ReauthCredentials credentials) async {
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final proof = await ref.read(reauthPortProvider).verify(credentials);
-    if (!mounted) return;
-    if (proof case AppFailureResult(:final failure)) {
-      setState(() {
-        _submitting = false;
-        _error = failure.message;
-      });
-      return;
-    }
-    final result = await ref.read(cancelDeletionUseCaseProvider).call();
-    if (!mounted) return;
-    result.fold(
-      (_) => setState(() {
-        _submitting = false;
-        _stage = _Stage.done;
-      }),
-      (failure) => setState(() {
-        _submitting = false;
-        _error = failure.message;
-      }),
-    );
-  }
+  static const DeletionEntry _entry = DeletionEntry.publicCancel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(deletionStringsProvider);
+    final cancelled = ref.watch(deletionFlowProvider(_entry).select((f) => f.stage == DeletionStage.cancelled));
     return Scaffold(
       backgroundColor: AppColors.cream50,
       body: SafeArea(
@@ -88,42 +41,43 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
                   ),
                 ),
                 const SizedBox(height: 16),
-                switch (_stage) {
-                  _Stage.reauth => ReauthForm(
-                      submitLabel: m.publicCancelAction,
-                      submitting: _submitting,
-                      error: _error,
-                      onRequestChallenge: _sendCode,
-                      onSubmit: _onReauthed,
-                    ),
-                  _Stage.done => Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Icon(Icons.check_circle_outline, size: 48, color: AppColors.success),
-                        const SizedBox(height: 16),
-                        Text(
-                          m.cancelled,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: FontSizes.subhead,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          m.safeBody,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
-                        ),
-                      ],
-                    ),
-                },
+                if (cancelled) const _Cancelled() else ReauthForm(entry: _entry, submitLabel: m.publicCancelAction),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _Cancelled extends ConsumerWidget {
+  const _Cancelled();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(deletionStringsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Icon(Icons.check_circle_outline, size: 48, color: AppColors.success),
+        const SizedBox(height: 16),
+        Text(
+          m.cancelled,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: FontSizes.subhead,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          m.safeBody,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
+        ),
+      ],
     );
   }
 }

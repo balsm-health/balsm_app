@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../application/use_cases/change_country_use_case.dart';
 import '../failure_text.dart';
 import '../i18n/i18n.dart';
+import '../providers/account_setting_change.dart';
 
 // Account countries come from core's CountryRegistry (the first-class
 // jurisdictions with a supervisory authority) — NOT CountryCode.known,
@@ -21,35 +23,19 @@ class CountrySettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
-  bool _busy = false;
-  String? _error;
+  static final NotifierProvider<AccountSettingChangeNotifier, AccountSettingChange> _change =
+      accountSettingChangeProvider(AccountSetting.country);
 
   Future<void> _onSelect(AccountSummary summary, String code) async {
-    if (code == summary.countryCode || _busy) return;
+    if (code == summary.countryCode || ref.read(_change).busy) return;
 
     final confirmed = await _confirmIdentity();
     if (!confirmed || !mounted) return;
 
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-
-    final result = await ref.read(changeCountryUseCaseProvider).execute(
-          userId: summary.id,
-          oldCountry: summary.countryCode,
-          newCountry: code,
-        );
-
-    if (!mounted) return;
-    setState(() => _busy = false);
-
-    if (result.isSuccess) {
-      await refreshAccountSummary(ref);
-      await _showDisclosure(code);
-    } else {
-      setState(() => _error = accountFailureText(result.error));
-    }
+    final ok = await ref.read(_change.notifier).changeCountry(summary, code);
+    if (!ok || !mounted) return;
+    await refreshAccountSummary(ref);
+    await _showDisclosure(code);
   }
 
   /// Re-auth gate. The real flow re-runs the identity-confirmation route;
@@ -101,6 +87,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(accountSummaryProvider);
     final m = ref.watch(accountStringsProvider);
+    final (:busy, :failure) = ref.watch(_change.select((c) => (busy: c.busy, failure: c.failure)));
 
     return Scaffold(
       backgroundColor: AppColors.cream50,
@@ -131,9 +118,9 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                     children: [
                       const SizedBox(height: 8),
                       _Warning(m.countryWarning),
-                      if (_error case final error?) ...[
+                      if (failure case final failure?) ...[
                         const SizedBox(height: 12),
-                        BalsmErrorBanner(message: error),
+                        BalsmErrorBanner(message: accountFailureText(failure)),
                       ],
                       const SizedBox(height: 16),
                       BalsmListCard(
@@ -153,13 +140,13 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                                         color: AppColors.hueBlue,
                                         size: 22,
                                       )
-                                    : (_busy ? const SizedBox.shrink() : null),
-                                onTap: _busy ? null : () => _onSelect(summary, c.isoCode),
+                                    : (busy ? const SizedBox.shrink() : null),
+                                onTap: busy ? null : () => unawaited(_onSelect(summary, c.isoCode)),
                               ),
                             )
                             .toList(),
                       ),
-                      if (_busy) ...[
+                      if (busy) ...[
                         const SizedBox(height: 16),
                         const BalsmLoadingIndicator(),
                       ],

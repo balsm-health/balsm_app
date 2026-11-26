@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -8,9 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../application/use_cases/claim_handle_use_case.dart';
 import '../failure_text.dart';
 import '../i18n/i18n.dart';
-
-/// Status of the live handle-availability check.
-enum _HandleStatus { idle, checking, available, taken, invalid }
+import '../providers/handle_check.dart';
 
 /// Screen for claiming an `@handle`.
 ///
@@ -29,14 +26,10 @@ class HandleClaimScreen extends ConsumerStatefulWidget {
 
 class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
   final _controller = TextEditingController();
-  Timer? _debounce;
-  _HandleStatus _status = _HandleStatus.idle;
-  String? _message;
   bool _submitting = false;
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -50,105 +43,31 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
         selection: TextSelection.collapsed(offset: value.length),
       );
     }
-
-    _debounce?.cancel();
-
-    if (value.isEmpty) {
-      setState(() {
-        _status = _HandleStatus.idle;
-        _message = null;
-      });
-      return;
-    }
-
-    if (!kHandleFormat.hasMatch(value)) {
-      setState(() {
-        _status = _HandleStatus.invalid;
-        _message = ref.read(accountStringsProvider).handleFormatHint;
-      });
-      return;
-    }
-
-    setState(() {
-      _status = _HandleStatus.checking;
-      _message = null;
-    });
-    _debounce = Timer(const Duration(milliseconds: 500), () => _check(value));
-  }
-
-  Future<void> _check(String handle) async {
-    final api = ref.read(accountApiProvider);
-    try {
-      final res = await api.checkHandleAvailability(handle);
-      if (!mounted || _controller.text != handle) return;
-      final available = res.available;
-      setState(() {
-        _status = available ? _HandleStatus.available : _HandleStatus.taken;
-        _message = available
-            ? ref.read(accountStringsProvider).handle.available
-            : ref.read(accountStringsProvider).handle.taken;
-      });
-    } on ApiException catch (e) {
-      if (!mounted || _controller.text != handle) return;
-      final taken = e.statusCode == 409;
-      setState(() {
-        _status = taken ? _HandleStatus.taken : _HandleStatus.idle;
-        _message =
-            taken ? ref.read(accountStringsProvider).handle.taken : ref.read(accountStringsProvider).handleCheckFailed;
-      });
-    }
-  }
-
-  /// Conflict-aware alternatives for a taken/reserved [handle]. The attempted
-  /// handle is already valid, so append short suffixes while keeping each
-  /// suggestion within the 3-30 char handle format. Never suggests the
-  /// attempted handle verbatim (it is unavailable).
-  List<String> _conflictSuggestions(String handle) {
-    final base = handle.toLowerCase().replaceAll(RegExp('[^a-z0-9_.]+'), '').replaceAll(RegExp(r'^[._]+|[._]+$'), '');
-    if (base.isEmpty) return const [];
-    // Leave room for a short suffix within the 30-char cap.
-    final trimmed = base.length > 28 ? base.substring(0, 28) : base;
-    return <String>[
-      '${trimmed}1',
-      '${trimmed}_',
-      '$trimmed.1',
-    ].where(kHandleFormat.hasMatch).take(3).toList();
+    ref.read(handleCheckProvider.notifier).input(value);
   }
 
   Future<void> _submit() async {
-    final handle = _controller.text.trim();
-    if (handle.isEmpty || _status != _HandleStatus.available) return;
+    if (ref.read(handleCheckProvider).status != HandleStatus.available) return;
     setState(() => _submitting = true);
-    final result = await ref.read(claimHandleUseCaseProvider).execute(handle);
+    final claimed = await ref.read(handleCheckProvider.notifier).claim();
     if (!mounted) return;
     setState(() => _submitting = false);
-    result.fold(
-      (claimed) {
-        // Refresh the account summary so the new handle is reflected.
-        // Must drop the retained row, not just rebuild the provider.
-        unawaited(refreshAccountSummary(ref));
-        Navigator.of(context).maybePop(claimed);
-      },
-      (failure) {
-        setState(() {
-          if (failure is ConflictFailure) {
-            _status = _HandleStatus.taken;
-            _message = ref.read(accountStringsProvider).handle.taken;
-          } else {
-            _message = accountFailureText(failure);
-          }
-        });
-      },
-    );
+    if (claimed == null) return;
+    // Refresh the account summary so the new handle is reflected.
+    // Must drop the retained row, not just rebuild the provider.
+    unawaited(refreshAccountSummary(ref));
+    Navigator.of(context).maybePop(claimed);
+  }
+
+  void _pick(String suggestion) {
+    _controller.text = suggestion;
+    _onChanged(suggestion);
   }
 
   @override
   Widget build(BuildContext context) {
     final m = ref.watch(accountStringsProvider);
-    // Only surface suggestions on a taken/reserved conflict, derived from the
-    // attempted handle (not the unrelated display name).
-    final suggestions =
-        _status == _HandleStatus.taken ? _conflictSuggestions(_controller.text.trim()) : const <String>[];
+    final available = ref.watch(handleCheckProvider.select((c) => c.status == HandleStatus.available));
 
     return Scaffold(
       backgroundColor: AppColors.cream50,
@@ -172,41 +91,10 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
                   const SizedBox(height: 20),
                   _HandleField(
                     controller: _controller,
-                    status: _status,
-                    message: _message,
                     onChanged: _onChanged,
-                    onSubmitted: (_) => _submit(),
+                    onSubmitted: (_) => unawaited(_submit()),
                   ),
-                  if (suggestions.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      m.suggestions,
-                      style: const TextStyle(
-                        fontSize: FontSizes.bodySm,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: suggestions
-                          .map(
-                            (s) => GestureDetector(
-                              onTap: () {
-                                _controller.text = s;
-                                _onChanged(s);
-                              },
-                              child: BalsmPill(
-                                label: '@$s',
-                                variant: BalsmPillVariant.info,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
+                  _Suggestions(onPick: _pick),
                 ],
               ),
             ),
@@ -215,7 +103,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
               child: BalsmButton(
                 label: m.claimAction,
                 loading: _submitting,
-                onPressed: _status == _HandleStatus.available && !_submitting ? _submit : null,
+                onPressed: available && !_submitting ? _submit : null,
               ),
             ),
           ],
@@ -225,55 +113,104 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
   }
 }
 
-class _HandleField extends StatelessWidget {
+/// Up to 3 conflict-aware alternatives, shown only when the attempted handle
+/// is taken or reserved (FR-008), derived from it (not the display name).
+class _Suggestions extends ConsumerWidget {
+  const _Suggestions({required this.onPick});
+
+  final ValueChanged<String> onPick;
+
+  /// The attempted handle is already valid, so append short suffixes while
+  /// keeping each suggestion within the 3-30 char handle format. Never suggests
+  /// the attempted handle verbatim (it is unavailable).
+  static List<String> _conflictSuggestions(String handle) {
+    final base = handle.toLowerCase().replaceAll(RegExp('[^a-z0-9_.]+'), '').replaceAll(RegExp(r'^[._]+|[._]+$'), '');
+    if (base.isEmpty) return const [];
+    // Leave room for a short suffix within the 30-char cap.
+    final trimmed = base.length > 28 ? base.substring(0, 28) : base;
+    return <String>[
+      '${trimmed}1',
+      '${trimmed}_',
+      '$trimmed.1',
+    ].where(kHandleFormat.hasMatch).take(3).toList();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(accountStringsProvider);
+    final suggestions = ref.watch(
+      handleCheckProvider.select(
+        (c) => c.status == HandleStatus.taken ? _conflictSuggestions(c.handle) : const <String>[],
+      ),
+    );
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        Text(
+          m.suggestions,
+          style: const TextStyle(
+            fontSize: FontSizes.bodySm,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final s in suggestions)
+              GestureDetector(
+                onTap: () => onPick(s),
+                child: BalsmPill(
+                  label: '@$s',
+                  variant: BalsmPillVariant.info,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HandleField extends ConsumerWidget {
   const _HandleField({
     required this.controller,
-    required this.status,
-    required this.message,
     required this.onChanged,
     required this.onSubmitted,
   });
 
   final TextEditingController controller;
-  final _HandleStatus status;
-  final String? message;
   final ValueChanged<String> onChanged;
   final ValueChanged<String> onSubmitted;
 
-  Color get _borderColor {
-    switch (status) {
-      case _HandleStatus.available:
-        return AppColors.success;
-      case _HandleStatus.taken:
-      case _HandleStatus.invalid:
-        return AppColors.danger;
-      case _HandleStatus.idle:
-      case _HandleStatus.checking:
-        return AppColors.border;
-    }
-  }
+  static Color _borderColor(HandleStatus status) => switch (status) {
+        HandleStatus.available => AppColors.success,
+        HandleStatus.taken || HandleStatus.invalid => AppColors.danger,
+        HandleStatus.idle || HandleStatus.checking => AppColors.border,
+      };
 
-  Widget? get _suffix {
-    switch (status) {
-      case _HandleStatus.checking:
-        return const SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        );
-      case _HandleStatus.available:
-        return const Icon(Icons.check_circle, color: AppColors.success, size: 22);
-      case _HandleStatus.taken:
-      case _HandleStatus.invalid:
-        return const Icon(Icons.cancel, color: AppColors.danger, size: 22);
-      case _HandleStatus.idle:
-        return null;
-    }
+  static String? _message(Messages m, HandleCheck check) {
+    if (check.claimFailure case final failure?) return accountFailureText(failure);
+    if (check.checkFailed) return m.handleCheckFailed;
+    return switch (check.status) {
+      HandleStatus.invalid => m.handleFormatHint,
+      HandleStatus.available => m.handle.available,
+      HandleStatus.taken => m.handle.taken,
+      HandleStatus.idle || HandleStatus.checking => null,
+    };
   }
 
   @override
-  Widget build(BuildContext context) {
-    final messageColor = status == _HandleStatus.available ? AppColors.success : AppColors.danger;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(accountStringsProvider);
+    final check = ref.watch(handleCheckProvider);
+    final status = check.status;
+    final message = _message(m, check);
+    final messageColor = status == HandleStatus.available ? AppColors.success : AppColors.danger;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -283,7 +220,7 @@ class _HandleField extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: _borderColor, width: 1.5),
+            border: Border.all(color: _borderColor(status), width: 1.5),
           ),
           child: Row(
             children: [
@@ -312,11 +249,11 @@ class _HandleField extends StatelessWidget {
                   onSubmitted: onSubmitted,
                 ),
               ),
-              if (_suffix case final suffix?) suffix,
+              _StatusIcon(status: status),
             ],
           ),
         ),
-        if (message case final message?) ...[
+        if (message != null) ...[
           const SizedBox(height: 6),
           Text(
             message,
@@ -326,4 +263,23 @@ class _HandleField extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Spinner while checking, a check when available, a cross when not.
+class _StatusIcon extends StatelessWidget {
+  const _StatusIcon({required this.status});
+
+  final HandleStatus status;
+
+  @override
+  Widget build(BuildContext context) => switch (status) {
+        HandleStatus.checking => const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        HandleStatus.available => const Icon(Icons.check_circle, color: AppColors.success, size: 22),
+        HandleStatus.taken || HandleStatus.invalid => const Icon(Icons.cancel, color: AppColors.danger, size: 22),
+        HandleStatus.idle => const SizedBox.shrink(),
+      };
 }
