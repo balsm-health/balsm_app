@@ -1,30 +1,41 @@
 import 'dart:async';
+
 import 'package:account/account.dart';
-import 'package:auth/auth.dart';
 import 'package:app_links/app_links.dart';
+import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
+import 'package:family/family.dart';
+import 'package:family_link/family_link.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:geofence_block/geofence_block.dart';
-import 'package:profile/profile.dart';
-import 'package:app/balsm_app/app_state.dart';
-import 'package:app/balsm_app/auth/boot_session.dart';
-import 'package:app/balsm_app/auth/go_online_controller.dart';
-import 'package:app/balsm_app/routes.dart';
-import 'package:app/balsm_app/flags.dart';
-import 'package:app/balsm_app/prefs.dart';
-import 'package:app/balsm_app/storage_target.dart';
-import 'package:app/balsm_app/screens/care_team_screen.dart';
-import 'package:app/balsm_app/shell.dart';
-import 'package:app/balsm_app/vault/bind_file_store.dart';
-import 'package:app/balsm_app/care/map_packs/drift_map_pack_download_store.dart';
-import 'package:app/balsm_app/care/map_packs/map_pack_download_controller.dart';
-import 'package:app/balsm_app/care/map_packs/map_pack_download_store.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pregnancy/pregnancy.dart';
+import 'package:profile/profile.dart';
+
+import '../../balsm_app/app_state.dart';
+import '../../balsm_app/auth/boot_session.dart';
+import '../../balsm_app/auth/go_online_controller.dart';
+import '../../balsm_app/care/map_packs/drift_map_pack_download_store.dart';
+import '../../balsm_app/care/map_packs/map_pack_download_controller.dart';
+import '../../balsm_app/care/map_packs/map_pack_download_store.dart';
+import '../../balsm_app/family/profile_family_members.dart';
+import '../../balsm_app/family/profile_own_emergency_card.dart';
+import '../../balsm_app/flags.dart';
+import '../../balsm_app/prefs.dart';
+import '../../balsm_app/pregnancy/api_pregnancy_guidance.dart';
+import '../../balsm_app/pregnancy/profile_pregnancy_babies.dart';
+import '../../balsm_app/routes.dart';
+import '../../balsm_app/screens/care_team_screen.dart';
+import '../../balsm_app/shell.dart';
+import '../../balsm_app/storage_target.dart';
+import '../../balsm_app/vault/bind_file_store.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads
 /// this, so an in-session sign-in / sign-out is reflected immediately (the
@@ -62,12 +73,14 @@ Future<void> bootstrap({
   // under the buttons; the tab bar already keeps its labels clear of them.
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      systemNavigationBarColor: Color(0x00000000),
-      systemNavigationBarDividerColor: Color(0x00000000),
-      systemNavigationBarContrastEnforced: false,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        systemNavigationBarColor: AppColors.transparent,
+        systemNavigationBarDividerColor: AppColors.transparent,
+        systemNavigationBarContrastEnforced: false,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
   }
 
   // Telemetry: crash reporting + user-action analytics via the AnalyticsLogger
@@ -111,9 +124,13 @@ Future<void> bootstrap({
   AnalyticsLogger? surveyRefusals; // bound once the app logger exists, below
   if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
     final surveyGuard = ChoiceOnlySurveyPlatform.install(
-      onRefused: (reason) => surveyRefusals?.log('PostHog survey refused', level: LogLevel.warning, props: {
-        'reason': reason,
-      }),
+      onRefused: (reason) => surveyRefusals?.log(
+        'PostHog survey refused',
+        level: LogLevel.warning,
+        props: {
+          'reason': reason,
+        },
+      ),
     );
     analyticsConsent.addSink(surveyGuard);
   }
@@ -174,7 +191,7 @@ Future<void> bootstrap({
     ),
   );
   final accountMode = boot.accountMode;
-  UserId? containerUserId = boot.sessionUserId;
+  var containerUserId = boot.sessionUserId;
 
   // Route on the credentials, not just the prefs flag — see load()'s doc.
   final state = await PatientAppState.load(
@@ -202,95 +219,115 @@ Future<void> bootstrap({
     keychain: keychain,
   );
 
-  final container = ProviderContainer(overrides: [
-    // The app-shell state: one instance, owned by Riverpod (see app_state).
-    patientAppStateProvider.overrideWith((ref) => state),
-    featureFlagsProvider.overrideWithValue(flags),
-    // Fan out telemetry to a list of providers: Sentry (crash/diagnostics) and
-    // PostHog (product analytics, consent-gated) always, plus a console sink
-    // (scrubbed) added only in debug builds, and the Dev Config log buffer in
-    // dev/staging.
-    analyticsLoggerProvider.overrideWithValue(
-      MultiAnalyticsLogger([
-        const SentryAnalyticsLogger(),
-        postHogAnalytics,
-        if (kDebugMode) const ConsoleAnalyticsLogger(),
-        // Feeds Dev Config's log bundle; only where that buffer is installed.
-        if (FlavorConfig.current.serverSwitchingEnabled) DevLogAnalyticsLogger(),
-      ]),
-    ),
-    // In-app feedback → Sentry's User Feedback inbox.
-    feedbackReporterProvider.overrideWithValue(const SentryFeedbackReporter()),
-    // The patient's product-analytics choice, so Privacy & data can flip it.
-    analyticsConsentProvider.overrideWith((ref) => analyticsConsent),
-    replayConsentProvider.overrideWith((ref) => replayConsent),
-    // Bind the account module's adapter into core's cross-module read port so
-    // other modules (e.g. home) read the account summary without importing it.
-    readAccountRepositoryProvider.overrideWith((ref) => buildAccountAdapter(ref, locale: () {
-          final s = ref.read(patientAppStateProvider);
-          return (country: s.country.value, language: s.lang.value);
-        })),
-    globalKVDataSourceProvider.overrideWithValue(globalKV),
-    // ── Real P001 module provider seams (recovered from bootstrap.dart) ─────
-    appDatabaseProvider.overrideWithValue(db),
-    // Cached server read models (account summary, deny list, care directory).
-    // Shares the encrypted database but its own table — see `_cacheSchema`.
-    cacheStoreProvider.overrideWithValue(DriftCacheStore(db)),
-    // Map-pack download state — its own two tables, see `_mapPacksSchema`.
-    mapPackDownloadStoreProvider.overrideWithValue(DriftMapPackDownloadStore(db)),
-    if (mapPacksDir != null) mapPackSupportDirProvider.overrideWithValue(mapPacksDir),
-    // Reactive: reads the in-session holder (seeded from storage below), so
-    // sign-in/out updates every PHI reader without an app restart.
-    currentUserIdProvider.overrideWith((ref) => ref.watch(_sessionUserIdProvider)),
-    // Flutter-side API controller owns the shared BalsmApiClient; the derived
-    // balsmApiClientProvider reads `.client` off it.
-    balsmApiControllerProvider.overrideWith(
-      (ref) => BalsmApiController.create(
-        storage: SecureStorageWrapper.storage,
-        bus: ref.watch(eventBusProvider),
+  final container = ProviderContainer(
+    retry: noProviderRetry,
+    overrides: [
+      // The app-shell state: one instance, owned by Riverpod (see app_state).
+      patientAppStateProvider.overrideWith((ref) => state),
+      featureFlagsProvider.overrideWithValue(flags),
+      // Fan out telemetry to a list of providers: Sentry (crash/diagnostics) and
+      // PostHog (product analytics, consent-gated) always, plus a console sink
+      // (scrubbed) added only in debug builds, and the Dev Config log buffer in
+      // dev/staging.
+      analyticsLoggerProvider.overrideWithValue(
+        MultiAnalyticsLogger([
+          const SentryAnalyticsLogger(),
+          postHogAnalytics,
+          if (kDebugMode) const ConsoleAnalyticsLogger(),
+          // Feeds Dev Config's log bundle; only where that buffer is installed.
+          if (FlavorConfig.current.serverSwitchingEnabled) DevLogAnalyticsLogger(),
+        ]),
       ),
-    ),
-    secureStorageProvider.overrideWithValue(keychain),
-    userFileStoreProvider.overrideWithValue(fileStore),
-    // Emergency card reads the on-device HealthProfile (PHI stays on-device).
-    emergencySnapshotReaderProvider.overrideWith(
-      (ref) => _ProfileEmergencySnapshotReader(ref),
-    ),
-    // Profile QR identity payload (spec v2.0): name/DOB/gender from the
-    // account profile, language from app prefs. Offline → null identity
-    // fields; the standing refresh path fills them in later.
-    profileIdentityReaderProvider.overrideWith(
-      (ref) => _AccountProfileIdentityReader(ref, PatientAppPrefs(globalKV)),
-    ),
-    // Account country-change consults the geofence denied-countries repo.
-    apiLanguageProvider.overrideWithValue(() => state.lang.value),
-    reauthPortProvider.overrideWith((ref) => _AuthReauthPort(ref)),
-    deniedCountriesPortProvider.overrideWith(
-      (ref) => _GeofenceDeniedCountriesPort(
-        ref.watch(deniedCountriesRepositoryProvider),
+      // In-app feedback → Sentry's User Feedback inbox.
+      feedbackReporterProvider.overrideWithValue(const SentryFeedbackReporter()),
+      // The patient's product-analytics choice, so Privacy & data can flip it.
+      analyticsConsentProvider.overrideWith((ref) => analyticsConsent),
+      replayConsentProvider.overrideWith((ref) => replayConsent),
+      // Bind the account module's adapter into core's cross-module read port so
+      // other modules (e.g. home) read the account summary without importing it.
+      readAccountRepositoryProvider.overrideWith(
+        (ref) => buildAccountAdapter(
+          ref,
+          locale: () {
+            final s = ref.read(patientAppStateProvider);
+            return (country: s.country.value, language: s.lang.value);
+          },
+        ),
       ),
-    ),
-    // ── Encrypted offline backup/sync (PHI → user's own cloud) ──────────────
-    // Google Drive on both platforms (iCloud adapter deferred). The blob is
-    // keyed to the signed-in user; 'local' when signed out.
-    backupServiceProvider.overrideWith((ref) {
-      final service = BackupService(
-        bus: ref.watch(eventBusProvider),
-        snapshot: ref.watch(snapshotServiceProvider),
-        adapter: DriveBackupAdapter(),
-        storage: ref.watch(secureStorageProvider),
-        status: ref.watch(syncStatusProvider.notifier),
-        userId: ref.watch(currentUserIdProvider)?.value ?? 'local',
-        onlineStream: connectivityOnlineStream(),
-      );
-      ref.onDispose(service.dispose);
-      return service;
-    }),
-    // ── Care-team cloud sync (structured PHI rows → Balsm's own database) ──
-    // Distinct from the Drive blob backup above, and running alongside it: this
-    // mirrors care_provider rows to Balsm so the roster survives device loss for
-    // patients with no Google session (email-OTP / Apple), who get no blob at all.
-    careTeamSyncServiceProvider.overrideWith((ref) => CareTeamSyncService(
+      globalKVDataSourceProvider.overrideWithValue(globalKV),
+      // ── Real P001 module provider seams (recovered from bootstrap.dart) ─────
+      appDatabaseProvider.overrideWithValue(db),
+      // Cached server read models (account summary, deny list, care directory).
+      // Shares the encrypted database but its own table — see `_cacheSchema`.
+      cacheStoreProvider.overrideWithValue(DriftCacheStore(db)),
+      // Map-pack download state — its own two tables, see `_mapPacksSchema`.
+      mapPackDownloadStoreProvider.overrideWithValue(DriftMapPackDownloadStore(db)),
+      if (mapPacksDir != null) mapPackSupportDirProvider.overrideWithValue(mapPacksDir),
+      // Reactive: reads the in-session holder (seeded from storage below), so
+      // sign-in/out updates every PHI reader without an app restart.
+      currentUserIdProvider.overrideWith((ref) => ref.watch(_sessionUserIdProvider)),
+      // Flutter-side API controller owns the shared BalsmApiClient; the derived
+      // balsmApiClientProvider reads `.client` off it.
+      balsmApiControllerProvider.overrideWith(
+        (ref) => BalsmApiController.create(
+          storage: SecureStorageWrapper.storage,
+          bus: ref.watch(eventBusProvider),
+        ),
+      ),
+      secureStorageProvider.overrideWithValue(keychain),
+      userFileStoreProvider.overrideWithValue(fileStore),
+      // Family (Mother & Child) reads and writes member profiles through the
+      // profile module; the two modules never import each other.
+      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+      // Pregnancy's babies are prenatal profiles of the profile module, bound
+      // the same way.
+      pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
+      // Weekly pregnancy guidance: general content from the API, last good copy
+      // kept on the device.
+      pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
+      // Family links seal the account holder's own emergency card from the
+      // profile and account modules, bound the same way.
+      ownEmergencyCardReaderProvider.overrideWith(profileOwnEmergencyCard),
+      // Emergency card reads the on-device HealthProfile (PHI stays on-device).
+      emergencySnapshotReaderProvider.overrideWith(
+        _ProfileEmergencySnapshotReader.new,
+      ),
+      // Profile QR identity payload (spec v2.0): name/DOB/gender from the
+      // account profile, language from app prefs. Offline → null identity
+      // fields; the standing refresh path fills them in later.
+      profileIdentityReaderProvider.overrideWith(
+        (ref) => _AccountProfileIdentityReader(ref, PatientAppPrefs(globalKV)),
+      ),
+      // Account country-change consults the geofence denied-countries repo.
+      apiLanguageProvider.overrideWithValue(() => state.lang.value),
+      reauthPortProvider.overrideWith(_AuthReauthPort.new),
+      deniedCountriesPortProvider.overrideWith(
+        (ref) => _GeofenceDeniedCountriesPort(
+          ref.watch(deniedCountriesRepositoryProvider),
+        ),
+      ),
+      // ── Encrypted offline backup/sync (PHI → user's own cloud) ──────────────
+      // Google Drive on both platforms (iCloud adapter deferred). The blob is
+      // keyed to the signed-in user; 'local' when signed out.
+      backupServiceProvider.overrideWith((ref) {
+        final service = BackupService(
+          bus: ref.watch(eventBusProvider),
+          snapshot: ref.watch(snapshotServiceProvider),
+          adapter: DriveBackupAdapter(),
+          storage: ref.watch(secureStorageProvider),
+          status: ref.watch(syncStatusProvider.notifier),
+          userId: ref.watch(currentUserIdProvider)?.value ?? 'local',
+          onlineStream: connectivityOnlineStream(),
+        );
+        ref.onDispose(service.dispose);
+        return service;
+      }),
+      // ── Care-team cloud sync (structured PHI rows → Balsm's own database) ──
+      // Distinct from the Drive blob backup above, and running alongside it: this
+      // mirrors care_provider rows to Balsm so the roster survives device loss for
+      // patients with no Google session (email-OTP / Apple), who get no blob at all.
+      careTeamSyncServiceProvider.overrideWith(
+        (ref) => CareTeamSyncService(
           api: ref.watch(careTeamApiProvider),
           outbox: SyncOutboxDao(ref.watch(appDatabaseProvider)),
           db: ref.watch(appDatabaseProvider),
@@ -303,15 +340,19 @@ Future<void> bootstrap({
           // customStatement does not notify drift streams, so merged rows stay
           // invisible without this.
           onChanged: () => ref.invalidate(careTeamProvider),
-        )),
-    restoreServiceProvider.overrideWith((ref) => RestoreService(
+        ),
+      ),
+      restoreServiceProvider.overrideWith(
+        (ref) => RestoreService(
           adapter: DriveBackupAdapter(),
           snapshot: ref.watch(snapshotServiceProvider),
           storage: ref.watch(secureStorageProvider),
           userId: ref.watch(currentUserIdProvider)?.value ?? 'local',
-        )),
-    ...extraOverrides,
-  ]);
+        ),
+      ),
+      ...extraOverrides,
+    ],
+  );
   final analytics = container.read(analyticsLoggerProvider);
   surveyRefusals = analytics;
 
@@ -367,10 +408,12 @@ Future<void> bootstrap({
     // the mode is read after the event because go-online flips it to online
     // before announcing the sign-in.
     analytics.setUser(null);
-    unawaited(telemetryUserIdAfterSignIn(keychain, e).then((id) {
-      // Skip if another account took over while the mode was read.
-      if (id != null && containerUserId == e.userId) analytics.setUser(id);
-    }).catchError((Object _) {}));
+    unawaited(
+      telemetryUserIdAfterSignIn(keychain, e).then((id) {
+        // Skip if another account took over while the mode was read.
+        if (id != null && containerUserId == e.userId) analytics.setUser(id);
+      }).catchError((Object _) {}),
+    );
   });
   container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
     containerUserId = null;
@@ -438,7 +481,7 @@ Future<void> bootstrap({
     // Same reason as the UserSignedOut sweep: the session is over, so the
     // analytics identity must not carry into whoever signs in next.
     analytics.setUser(null);
-    paPrefs.setSignedIn(false);
+    unawaited(paPrefs.setSignedIn(false));
     unawaited(container.read(cacheStoreProvider).clearAll());
     if (state.route == AppRoutes.app) state.go(AppRoutes.welcome);
   });
@@ -446,13 +489,15 @@ Future<void> bootstrap({
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: _replayRoot(
+      child: _ReplayRoot(
         replayOnThisPlatform,
-        PatientApp(navObservers: [
-          AnalyticsRouteObserver(analytics),
-          // Where a survey sheet opens; sends no screen events of its own.
-          surveyContextObserver(),
-        ]),
+        PatientApp(
+          navObservers: [
+            AnalyticsRouteObserver(analytics),
+            // Where a survey sheet opens; sends no screen events of its own.
+            surveyContextObserver(),
+          ],
+        ),
       ),
     ),
   );
@@ -480,7 +525,7 @@ class _AccountProfileIdentityReader implements ProfileIdentityReader {
         dob = details.dateOfBirth;
         gender = details.gender?.name;
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Offline or signed out mid-flow — mint an identity-less payload; the
       // refresh use case rewrites it once the profile is reachable.
     }
@@ -542,7 +587,7 @@ class _GeofenceDeniedCountriesPort implements DeniedCountriesPort {
 Future<Uri?> _launchUri() async {
   try {
     return await AppLinks().getInitialLink().timeout(const Duration(seconds: 2));
-  } catch (_) {
+  } on Object catch (_) {
     return null;
   }
 }
@@ -585,4 +630,11 @@ class _AuthReauthPort implements ReauthPort {
   }
 }
 
-Widget _replayRoot(bool enabled, Widget app) => enabled ? sessionReplayRoot(app) : app;
+class _ReplayRoot extends StatelessWidget {
+  const _ReplayRoot(this.enabled, this.app);
+  final bool enabled;
+  final Widget app;
+
+  @override
+  Widget build(BuildContext context) => enabled ? sessionReplayRoot(app) : app;
+}

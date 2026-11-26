@@ -18,7 +18,7 @@ void main() {
   }) =>
       Medication(
         id: MedicationId.uuid(),
-        userId: UserId.value('u'),
+        userId: const UserId.value('u'),
         name: 'x',
         scheduleType: type,
         scheduleConfig: ScheduleConfig(times: times, days: days, interval: interval),
@@ -40,7 +40,7 @@ void main() {
       expect(on(m, plus(30)), hasLength(3));
     });
 
-    test('a med added mid-morning still lists that morning\'s dose — new meds start at midnight', () {
+    test("a med added mid-morning still lists that morning's dose — new meds start at midnight", () {
       expect(on(med(ScheduleType.daily, ['08:00']), monday), ['5/10 08:00']);
     });
 
@@ -91,7 +91,7 @@ void main() {
 
     test('stays on schedule across a month boundary', () {
       final m = med(ScheduleType.everyDays, ['08:00'], interval: 2, start: DateTime(2026, 10, 30));
-      expect(on(m, DateTime(2026, 11, 1)), ['1/11 08:00']);
+      expect(on(m, DateTime(2026, 11)), ['1/11 08:00']);
     });
   });
 
@@ -124,7 +124,7 @@ void main() {
       expect(suggestedTimes(4), ['08:00', '12:30', '17:00', '21:30']);
     });
 
-    test('never past midnight, even at the form\'s maximum', () {
+    test("never past midnight, even at the form's maximum", () {
       final t = suggestedTimes(12);
       expect(t, hasLength(12));
       expect(t.last.compareTo('22:00') <= 0, isTrue, reason: t.last);
@@ -142,9 +142,10 @@ void main() {
     expect(ScheduleConfig.fromJson(cfg.toJson()), cfg);
     // A row written before these fields existed still reads.
     expect(
-        ScheduleConfig.fromJson({
-          'times': ['09:00']
-        }).durationKind,
-        DurationKind.ongoing);
+      ScheduleConfig.fromJson(const {
+        'times': ['09:00'],
+      }).durationKind,
+      DurationKind.ongoing,
+    );
   });
 }

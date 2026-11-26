@@ -3,10 +3,13 @@ import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../i18n/strings.i69n.dart' show CareStrings;
 import 'infrastructure/api_care_directory_data_source.dart';
 import 'infrastructure/caching_care_directory_repository.dart';
 import 'infrastructure/drift_care_directory_data_source.dart';
@@ -46,29 +49,36 @@ String careDirectionsUrl(CareEntity e) =>
 /// Kind of nearby health place. Icon/colour/label are presentation config that
 /// mirrors the design's `ENTITY_TYPES`. [wire] is the API `type` value.
 enum CareEntityType {
-  hospital('hospital', LucideIcons.building2, 0xFFD44A3C, 0xFFFAEAE8, (en: 'Hospitals', ar: 'مستشفيات')),
-  clinic('clinic', LucideIcons.stethoscope, 0xFF1283FF, 0xFFE4F0FF, (en: 'Clinics', ar: 'عيادات')),
+  hospital('hospital', LucideIcons.building2, AppColors.danger, AppColors.dangerBackground),
+  clinic('clinic', LucideIcons.stethoscope, AppColors.hueBlue, AppColors.hueBlue50),
   // Mint is the one brand hue no other care type claims, and the 600 shade
   // (not the base #55D77F) because the pin puts a white glyph on this colour
   // when selected — the design system itself sets dark text on base mint.
   // Icon: the DS iconography card is Lucide at stroke 1.75 and has no tooth
   // glyph, nor does lucide_icons 0.257.0; `smile` is the documented stand-in.
-  dentist('dentist', LucideIcons.smile, 0xFF3FC366, 0xFFE8F9EE, (en: 'Dentists', ar: 'أطباء أسنان')),
-  pharmacy('pharmacy', LucideIcons.pill, 0xFF01C4A2, 0xFFE1F8F1, (en: 'Pharmacies', ar: 'صيدليات')),
-  lab('lab', LucideIcons.flaskConical, 0xFF8350DE, 0xFFEEE7FB, (en: 'Labs', ar: 'مختبرات')),
-  scan('scan', LucideIcons.scanLine, 0xFF02BBB5, 0xFFE2F8F6, (en: 'Scan centers', ar: 'مراكز أشعة')),
-  store('store', LucideIcons.shoppingBag, 0xFFD97A20, 0xFFFDF0E0, (en: 'Med. stores', ar: 'أدوات طبية'));
+  dentist('dentist', LucideIcons.smile, AppColors.hueMint600, AppColors.hueMint50),
+  pharmacy('pharmacy', LucideIcons.pill, AppColors.hueEmerald, AppColors.hueEmerald50),
+  lab('lab', LucideIcons.flaskConical, AppColors.hueViolet, AppColors.hueViolet50),
+  scan('scan', LucideIcons.scanLine, AppColors.hueAqua, AppColors.hueAqua50),
+  store('store', LucideIcons.shoppingBag, AppColors.expiring, AppColors.expiringBackground);
 
-  const CareEntityType(this.wire, this.icon, this._color, this._bg, this.label);
+  const CareEntityType(this.wire, this.icon, this.color, this.bg);
 
   final String wire;
   final IconData icon;
-  final int _color;
-  final int _bg;
-  final L10nText label;
+  final Color color;
+  final Color bg;
 
-  Color get color => Color(_color);
-  Color get bg => Color(_bg);
+  /// The plural label of this kind in the active language (`care.type_*`).
+  String label(CareStrings c) => switch (this) {
+        CareEntityType.hospital => c.type_hospital,
+        CareEntityType.clinic => c.type_clinic,
+        CareEntityType.dentist => c.type_dentist,
+        CareEntityType.pharmacy => c.type_pharmacy,
+        CareEntityType.lab => c.type_lab,
+        CareEntityType.scan => c.type_scan,
+        CareEntityType.store => c.type_store,
+      };
 
   /// Maps the API `type` string to a type; unknown values fall back to clinic.
   static CareEntityType fromWire(String value) =>
@@ -90,6 +100,30 @@ class CareEntity {
     required this.phone,
   });
 
+  factory CareEntity.fromResponse(CareEntityResponse r) => CareEntity(
+        id: r.id,
+        type: CareEntityType.fromWire(r.type),
+        position: LatLng(r.lat, r.lng),
+        name: (en: r.nameEn ?? '', ar: r.nameAr ?? ''),
+        addr: (en: r.addressEn ?? '', ar: r.addressAr ?? ''),
+        hours: r.hours ?? '',
+        distance: r.distanceKm == null ? '' : '${r.distanceKm!.toStringAsFixed(1)} km',
+        rating: switch (r.rating) { final rating? => rating.toStringAsFixed(1), _ => '' },
+        phone: r.phone ?? '',
+      );
+
+  factory CareEntity.fromJson(Map<String, dynamic> j) => CareEntity(
+        id: j['id'] as String,
+        type: CareEntityType.fromWire(j['type'] as String),
+        position: LatLng((j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()),
+        name: (en: j['name_en'] as String? ?? '', ar: j['name_ar'] as String? ?? ''),
+        addr: (en: j['addr_en'] as String? ?? '', ar: j['addr_ar'] as String? ?? ''),
+        hours: j['hours'] as String? ?? '',
+        distance: j['distance'] as String? ?? '',
+        rating: j['rating'] as String? ?? '',
+        phone: j['phone'] as String? ?? '',
+      );
+
   final String id;
   final CareEntityType type;
   final LatLng position;
@@ -103,18 +137,6 @@ class CareEntity {
   /// Rating out of 5 (e.g. "4.2"); empty when unrated.
   final String rating;
   final String phone;
-
-  factory CareEntity.fromResponse(CareEntityResponse r) => CareEntity(
-        id: r.id,
-        type: CareEntityType.fromWire(r.type),
-        position: LatLng(r.lat, r.lng),
-        name: (en: r.nameEn ?? '', ar: r.nameAr ?? ''),
-        addr: (en: r.addressEn ?? '', ar: r.addressAr ?? ''),
-        hours: r.hours ?? '',
-        distance: r.distanceKm == null ? '' : '${r.distanceKm!.toStringAsFixed(1)} km',
-        rating: r.rating == null ? '' : r.rating!.toStringAsFixed(1),
-        phone: r.phone ?? '',
-      );
 
   /// Round-trip for the retained-results cache. Every field the UI reads is
   /// carried; a field omitted here would come back empty after a relaunch,
@@ -133,18 +155,6 @@ class CareEntity {
         'rating': rating,
         'phone': phone,
       };
-
-  factory CareEntity.fromJson(Map<String, dynamic> j) => CareEntity(
-        id: j['id'] as String,
-        type: CareEntityType.fromWire(j['type'] as String),
-        position: LatLng((j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()),
-        name: (en: j['name_en'] as String? ?? '', ar: j['name_ar'] as String? ?? ''),
-        addr: (en: j['addr_en'] as String? ?? '', ar: j['addr_ar'] as String? ?? ''),
-        hours: j['hours'] as String? ?? '',
-        distance: j['distance'] as String? ?? '',
-        rating: j['rating'] as String? ?? '',
-        phone: j['phone'] as String? ?? '',
-      );
 }
 
 /// A map pin: a place reduced to what a dot on the map needs.
@@ -154,10 +164,6 @@ class CareEntity {
 /// full [CareEntity] only when one is tapped.
 class CarePin {
   const CarePin({required this.id, required this.type, required this.position});
-
-  final String id;
-  final CareEntityType type;
-  final LatLng position;
 
   factory CarePin.fromResponse(CarePinResponse r) => CarePin(
         id: r.id,
@@ -169,6 +175,16 @@ class CarePin {
   /// second fetch.
   factory CarePin.of(CareEntity e) => CarePin(id: e.id, type: e.type, position: e.position);
 
+  factory CarePin.fromJson(Map<String, dynamic> j) => CarePin(
+        id: j['id'] as String,
+        type: CareEntityType.fromWire(j['type'] as String),
+        position: LatLng((j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()),
+      );
+
+  final String id;
+  final CareEntityType type;
+  final LatLng position;
+
   /// Round-trip for the retained-pins cache.
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -176,12 +192,6 @@ class CarePin {
         'lat': position.latitude,
         'lng': position.longitude,
       };
-
-  factory CarePin.fromJson(Map<String, dynamic> j) => CarePin(
-        id: j['id'] as String,
-        type: CareEntityType.fromWire(j['type'] as String),
-        position: LatLng((j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()),
-      );
 }
 
 /// The area the directory covers.
@@ -200,7 +210,7 @@ class CarePin {
 /// rounded up, which keeps Jerusalem and Amman out for free.
 final LatLngBounds kCareCoverage = LatLngBounds(
   const LatLng(21.5, 24.5), // south-west, below Halayib
-  const LatLng(31.72, 37.0), // north-east: Egypt's northern coast, past Halayib
+  const LatLng(31.72, 37), // north-east: Egypt's northern coast, past Halayib
 );
 
 /// Home market fallback center (Cairo) when the device location is unavailable
@@ -232,7 +242,7 @@ typedef DeviceLocation = ({LatLng? position, DeviceLocationIssue? issue});
 /// Kept for the session once found, so leaving the map tab and coming back
 /// does not wait on a fresh GPS fix; the recenter button invalidates it to ask
 /// again. A miss is not kept, so the next visit retries.
-final deviceLocationProvider = FutureProvider.autoDispose<DeviceLocation>((ref) async {
+final FutureProvider<DeviceLocation> deviceLocationProvider = FutureProvider.autoDispose<DeviceLocation>((ref) async {
   final found = await _locate();
   if (found.position != null) ref.keepAlive();
   return found;
@@ -252,12 +262,12 @@ Future<DeviceLocation> _locate() async {
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 15)),
       );
       return (position: LatLng(pos.latitude, pos.longitude), issue: null);
-    } catch (_) {
+    } on Object catch (_) {
       // No fresh fix (indoors, GPS cold): the last known one beats nothing.
       final last = await Geolocator.getLastKnownPosition();
       if (last != null) return (position: LatLng(last.latitude, last.longitude), issue: null);
     }
-  } catch (_) {
+  } on Object catch (_) {
     // Fall through.
   }
   return (position: null, issue: DeviceLocationIssue.unavailable);
@@ -266,7 +276,7 @@ Future<DeviceLocation> _locate() async {
 /// The center for directory queries: the device position, or
 /// [kCareFallbackCenter] when it is unknown so the directory still returns
 /// something. A search center only — never show it as the user's position.
-final userLatLngProvider = FutureProvider.autoDispose<LatLng>((ref) async {
+final FutureProvider<LatLng> userLatLngProvider = FutureProvider.autoDispose<LatLng>((ref) async {
   final position = (await ref.watch(deviceLocationProvider.future)).position;
   // Kept alive with the position it follows, so the queries built on it are too.
   if (position != null) ref.keepAlive();
@@ -406,7 +416,7 @@ final careDirectoryRepositoryProvider = Provider<CareDirectoryRepository>(
 /// repository, and cancels on rebuild. Where the answer comes from — retained
 /// locally or fetched — is the repository's decision, so the map screen stays
 /// ignorant of caching entirely.
-final careDirectoryProvider = FutureProvider.autoDispose<CareResults>((ref) async {
+final FutureProvider<CareResults> careDirectoryProvider = FutureProvider.autoDispose<CareResults>((ref) async {
   final search = ref.watch(careSearchProvider);
   // Zoomed too far out to answer honestly — see kCareMinQueryZoom.
   if (search.tooZoomedOut) return const CareResults.fresh([]);
@@ -433,7 +443,7 @@ final careDirectoryProvider = FutureProvider.autoDispose<CareResults>((ref) asyn
 /// Separate from [careDirectoryProvider] because the map and the list want
 /// different things: the map wants everything in view and needs only
 /// coordinates, the list wants names and details for the nearest handful.
-final carePinsProvider = FutureProvider.autoDispose<CarePinResults>((ref) async {
+final FutureProvider<CarePinResults> carePinsProvider = FutureProvider.autoDispose<CarePinResults>((ref) async {
   final search = ref.watch(careSearchProvider);
 
   // Lifting the floor also lifts the radius and pin caps to their ceilings:
@@ -461,10 +471,11 @@ final carePinsProvider = FutureProvider.autoDispose<CarePinResults>((ref) async 
 ///
 /// Pins carry no name or contact details, so this is where the detail sheet gets
 /// them. Null means the place has left the directory since the pin was drawn.
-final careEntityProvider = FutureProvider.autoDispose.family<CareEntity?, String>((ref, id) async {
+final FutureProviderFamily<CareEntity?, String> careEntityProvider =
+    FutureProvider.autoDispose.family<CareEntity?, String>((ref, id) async {
   final search = ref.watch(careSearchProvider);
   final focus = search.focus;
-  final LatLng center = focus ?? (await ref.watch(userLatLngProvider.future));
+  final center = _roundCenter(focus ?? (await ref.watch(userLatLngProvider.future)));
 
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);

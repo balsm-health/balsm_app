@@ -1,6 +1,6 @@
 import 'package:app/balsm_app/kit.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// `showAppSheet` — app.css `.app-sheet` in both placements.
 ///
@@ -16,24 +16,26 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (context) => TextButton(
-          onPressed: () => showAppSheet<void>(
-            context,
-            size: size,
-            builder: (_) => Container(
-              key: const Key('body'),
-              color: Colors.white,
-              width: double.infinity,
-              height: 200,
-              child: const Column(mainAxisSize: MainAxisSize.min, children: [SheetGrab()]),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showAppSheet<void>(
+              context,
+              size: size,
+              builder: (_) => Container(
+                key: const Key('body'),
+                color: Colors.white,
+                width: double.infinity,
+                height: 200,
+                child: const Column(mainAxisSize: MainAxisSize.min, children: [SheetGrab()]),
+              ),
             ),
+            child: const Text('open'),
           ),
-          child: const Text('open'),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
   }
@@ -71,17 +73,19 @@ void main() {
     for (final window in const [Size(390, 844), Size(834, 1194)]) {
       tester.view.physicalSize = window;
       tester.view.devicePixelRatio = 1.0;
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () => showAppSheet<void>(
-              context,
-              builder: (ctx) => TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('close')),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showAppSheet<void>(
+                context,
+                builder: (ctx) => TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('close')),
+              ),
+              child: const Text('open'),
             ),
-            child: const Text('open'),
           ),
         ),
-      ));
+      );
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       expect(find.text('close'), findsOneWidget);

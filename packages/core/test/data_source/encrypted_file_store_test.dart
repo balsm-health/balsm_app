@@ -28,7 +28,7 @@ void main() {
   });
 
   tearDown(() async {
-    if (await root.exists()) await root.delete(recursive: true);
+    if (root.existsSync()) await root.delete(recursive: true);
   });
 
   test('round-trips bytes through the active partition', () async {
@@ -87,7 +87,7 @@ void main() {
     expect(await store.exists(b), isTrue);
     await store.clear();
     expect(await store.exists(b), isFalse);
-    expect(await Directory('${root.path}/alice').exists(), isFalse);
+    expect(Directory('${root.path}/alice').existsSync(), isFalse);
   });
 
   test('path traversal is rejected', () async {

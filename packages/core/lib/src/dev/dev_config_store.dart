@@ -10,13 +10,13 @@ import 'server_url.dart';
 /// A user-defined backend saved from the Dev Config Environment tab.
 class SavedEnv {
   const SavedEnv({required this.id, required this.name, required this.url});
+  factory SavedEnv.fromJson(Map<String, dynamic> j) =>
+      SavedEnv(id: j['id'] as String, name: j['name'] as String, url: j['url'] as String);
   final String id;
   final String name;
   final String url;
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'url': url};
-  factory SavedEnv.fromJson(Map<String, dynamic> j) =>
-      SavedEnv(id: j['id'] as String, name: j['name'] as String, url: j['url'] as String);
 }
 
 /// Feature-flag descriptor for the Environment tab (mirrors devconfig.jsx
@@ -35,7 +35,10 @@ const kFlagMapNoZoomFloor = 'map_no_zoom_floor';
 
 const kDevFlags = <DevFlag>[
   DevFlag(
-      kFlagMapNoZoomFloor, 'Map: no zoom floor', 'Query the care directory at any zoom, to inspect national coverage'),
+    kFlagMapNoZoomFloor,
+    'Map: no zoom floor',
+    'Query the care directory at any zoom, to inspect national coverage',
+  ),
   DevFlag('offline', 'Force offline mode', 'Simulate no network connectivity'),
   DevFlag('slow_net', 'Throttle to 3G', 'Limit API throughput to 400 kbps'),
   DevFlag('mock_api', 'Mock API responses', 'Serve fixture data instead of live'),
@@ -49,7 +52,8 @@ class DevConfigStore extends ChangeNotifier {
   DevConfigStore({FlutterSecureStorage? secureStorage})
       // macOS: legacy file keychain — the data-protection keychain needs a
       // provisioned keychain-access-group entitlement (-34018 without it).
-      : _secure = secureStorage ?? const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
+      : _secure =
+            secureStorage ?? const FlutterSecureStorage(mOptions: MacOsOptions(usesDataProtectionKeychain: false));
 
   /// Shared instance, so a flag toggled in Dev Config is visible to the code it
   /// affects. The screen and the features that read flags must see the same
@@ -91,7 +95,7 @@ class DevConfigStore extends ChangeNotifier {
         if (!listEquals(_savedEnvs.map((e) => e.url).toList(), loaded.map((e) => e.url).toList())) {
           await _persistEnvs();
         }
-      } catch (_) {
+      } on Object catch (_) {
         _savedEnvs = [];
       }
     }

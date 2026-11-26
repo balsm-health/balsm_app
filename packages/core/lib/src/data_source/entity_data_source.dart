@@ -1,5 +1,7 @@
+import '../../core.dart' show UserDataSource;
 import '../domain/value_objects/entity_id.dart';
 import 'data_source.dart';
+import 'user_data_source.dart' show UserDataSource;
 
 /// Data partitioned by entity — a healthcare facility (clinic, hospital,
 /// pharmacy). The user switches the active entity; null scope = the active

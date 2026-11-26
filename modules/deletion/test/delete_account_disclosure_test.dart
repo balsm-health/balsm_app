@@ -1,7 +1,8 @@
+import 'package:core/core.dart' show noProviderRetry;
 import 'package:deletion/deletion.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// FR-031 / FR-513: the pre-confirm screen is a compliance artifact — it must
 /// list exhaustively and accurately what is kept, deleted from Balsm's servers,
@@ -13,9 +14,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// the moment they are deciding.
 void main() {
   Future<void> pump(WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(
-      child: MaterialApp(home: DeleteAccountScreen()),
-    ));
+    await tester.pumpWidget(
+      const ProviderScope(
+        retry: noProviderRetry,
+        child: MaterialApp(home: DeleteAccountScreen()),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// A self-reportable metric the patient may include in a check-in.
 ///
 /// Closed catalog — adding a metric is a product decision, not free-form
@@ -7,6 +9,7 @@
 /// [id] is the stable persistence / wizard-step key. [kind] orders the
 /// wizard (feeling → vital → journal) and tells the composer where to
 /// insert the medications step (before the first journal metric).
+@immutable
 class CheckInMetric {
   const CheckInMetric._(
     this.id, {

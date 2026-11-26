@@ -1,9 +1,16 @@
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../assets.dart';
 import '../storage_target.dart';
 import '../tokens.dart';
+
+// Google Drive's own green, set literally because it is a vendor mark in a list of vendors (`storage.jsx`
+// does the same). Deliberately not in the Balsm palette.
+const _googleDriveGreen = Color(0xFF1E8E3E);
+const _googleDriveWash = Color(0xFFE6F4EA);
+const _googleDriveBorder = Color(0xFFB3DFBB);
 
 /// Visual chrome for a [StorageTarget] (icon + hue). Copy is on the enum.
 typedef StorageChrome = ({IconData icon, Color color, Color bg, Color border});
@@ -11,32 +18,30 @@ typedef StorageChrome = ({IconData icon, Color color, Color bg, Color border});
 StorageChrome storageCfg(StorageTarget which) => switch (which) {
       StorageTarget.icloud => (
           icon: LucideIcons.cloud,
-          color: T.hueBlue,
-          bg: T.hueBlue50,
-          border: const Color(0xFFB8D4FF),
+          color: AppColors.hueBlue,
+          bg: AppColors.hueBlue50,
+          border: AppColors.hueBlue100,
         ),
-      // Drive keeps Google's own green rather than a Balsm hue: it is a vendor
-      // mark in a list of vendors, and `storage.jsx` sets it literally for the
-      // same reason. Deliberately not a token.
+      // Drive keeps Google's own green; see the constants above.
       StorageTarget.gdrive => (
           icon: LucideIcons.folderOpen,
-          color: const Color(0xFF1E8E3E),
-          bg: const Color(0xFFE6F4EA),
-          border: const Color(0xFFB3DFBB),
+          color: _googleDriveGreen,
+          bg: _googleDriveWash,
+          border: _googleDriveBorder,
         ),
       // Ours, so it does use tokens. Drawn as the Balsm mark by [StorageIcon];
       // `icon` here is only the glyph fallback.
       StorageTarget.balsmCloud => (
           icon: LucideIcons.flower,
-          color: T.hueAqua600,
-          bg: T.hueAqua50,
-          border: const Color(0xFFB8EDE8),
+          color: AppColors.hueAqua600,
+          bg: AppColors.hueAqua50,
+          border: AppColors.hueAqua100,
         ),
       StorageTarget.local => (
           icon: LucideIcons.smartphone,
-          color: T.ink600,
-          bg: T.ink100,
-          border: T.ink200,
+          color: AppColors.ink600,
+          bg: AppColors.ink100,
+          border: AppColors.ink200,
         ),
     };
 
@@ -62,7 +67,7 @@ const _kGrayscale = ColorFilter.matrix(<double>[
 /// [muted] is the design's `grayscale(1) opacity(.55)`, for a cloud that is
 /// off or not connected.
 class StorageIcon extends StatelessWidget {
-  const StorageIcon(this.target, {super.key, required this.size, this.color, this.muted = false});
+  const StorageIcon(this.target, {required this.size, super.key, this.color, this.muted = false});
   final StorageTarget target;
   final double size;
   final Color? color;
@@ -88,7 +93,7 @@ class StorageIcon extends StatelessWidget {
 
 /// Small storage indicator chip.
 class StorageBadge extends StatelessWidget {
-  const StorageBadge({super.key, required this.storage});
+  const StorageBadge({required this.storage, super.key});
   final StorageTarget storage;
   @override
   Widget build(BuildContext context) {
@@ -97,7 +102,7 @@ class StorageBadge extends StatelessWidget {
       width: 26,
       height: 26,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(T.rSm)),
+      decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(AppRadii.sm)),
       child: StorageIcon(storage, size: 14, color: c.color),
     );
   }

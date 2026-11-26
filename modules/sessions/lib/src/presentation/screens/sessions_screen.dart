@@ -1,13 +1,15 @@
-import 'package:core/core.dart';
 import 'package:balsm_api/balsm_api.dart' show isOfflineError;
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/list_active_sessions_use_case.dart';
 import '../../application/use_cases/revoke_session_use_case.dart';
 import '../../application/use_cases/sign_out_everywhere_use_case.dart';
 import '../../domain/aggregates/active_session.dart';
+import '../i18n/i18n.dart';
 
 /// Loads the current user's active device sessions.
 ///
@@ -34,15 +36,16 @@ class SessionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionsAsync = ref.watch(sessionsProvider);
+    final m = ref.watch(sessionsStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BalsmAppBar.withBack(
-              title: 'Active sessions',
+              title: m.title,
               onBack: () => context.pop(),
             ),
             Expanded(
@@ -53,15 +56,12 @@ class SessionsScreen extends ConsumerWidget {
                 // as signed in that was revoked, or hide one that was added.
                 // Offline gets an explanation instead of a retry button that
                 // cannot succeed.
-                //
-                // NOTE: strings in this screen are inline English, matching the
-                // rest of the file; this module has no i69n bundle yet.
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
                   child: isOfflineError(e)
-                      ? const BalsmErrorBanner(message: 'Sign-in activity needs a connection.')
+                      ? BalsmErrorBanner(message: m.offline)
                       : BalsmErrorBanner(
-                          message: 'Could not load sessions.',
+                          message: m.loadError,
                           onRetry: () => ref.invalidate(sessionsProvider),
                         ),
                 ),
@@ -70,9 +70,9 @@ class SessionsScreen extends ConsumerWidget {
             ),
             sessionsAsync.maybeWhen(
               data: (sessions) => Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
                 child: BalsmButton(
-                  label: 'Sign out everywhere',
+                  label: m.signOutAll,
                   variant: BalsmButtonVariant.danger,
                   icon: Icons.logout,
                   onPressed: () => _confirmSignOutEverywhere(context, ref),
@@ -90,24 +90,23 @@ class SessionsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final m = ref.read(sessionsStringsProvider);
+    final common = coreMessagesOf(context).common;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sign out everywhere?'),
-        content: const Text(
-          'This revokes every session on all devices, including this one. '
-          'You will need to sign in again.',
-        ),
+        title: Text(m.signOutAllTitle),
+        content: Text(m.signOutAllBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(common.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Sign out everywhere',
-              style: TextStyle(color: BalsmColors.danger),
+            child: Text(
+              m.signOutAll,
+              style: const TextStyle(color: AppColors.danger),
             ),
           ),
         ],
@@ -121,7 +120,7 @@ class SessionsScreen extends ConsumerWidget {
       (count) {
         ref.invalidate(sessionsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Signed out of $count sessions.')),
+          SnackBar(content: Text(m.signedOutCount(count))),
         );
       },
       (failure) => ScaffoldMessenger.of(context).showSnackBar(
@@ -138,16 +137,17 @@ class _SessionsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(sessionsStringsProvider);
     if (sessions.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No active sessions.',
-          style: TextStyle(color: BalsmColors.fg3),
+          m.empty,
+          style: const TextStyle(color: AppColors.textTertiary),
         ),
       );
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
       children: [
         BalsmListCard(
           children: [
@@ -155,18 +155,18 @@ class _SessionsList extends ConsumerWidget {
               (session) => BalsmListRow(
                 leading: Icon(_iconFor(session.deviceType)),
                 label: session.deviceLabel,
-                sublabel: _subtitleFor(session),
+                sublabel: _subtitleFor(m, session),
                 showChevron: false,
                 onTap: session.isCurrent ? null : () => _confirmRevoke(context, ref, session),
                 trailing: session.isCurrent
-                    ? const BalsmPill(
-                        label: 'This device',
+                    ? BalsmPill(
+                        label: m.thisDevice,
                         variant: BalsmPillVariant.success,
                       )
                     : const Icon(
                         Icons.logout,
                         size: 18,
-                        color: BalsmColors.fg4,
+                        color: AppColors.textHint,
                       ),
               ),
             ),
@@ -181,24 +181,23 @@ class _SessionsList extends ConsumerWidget {
     WidgetRef ref,
     ActiveSession session,
   ) async {
+    final m = ref.read(sessionsStringsProvider);
+    final common = coreMessagesOf(context).common;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Revoke session?'),
-        content: Text(
-          'Sign out "${session.deviceLabel}"? That device will need to sign '
-          'in again.',
-        ),
+        title: Text(m.revokeTitle),
+        content: Text(m.revokeBody(session.deviceLabel)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(common.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Revoke',
-              style: TextStyle(color: BalsmColors.danger),
+            child: Text(
+              m.revokeAction,
+              style: const TextStyle(color: AppColors.danger),
             ),
           ),
         ],
@@ -215,7 +214,7 @@ class _SessionsList extends ConsumerWidget {
       (_) {
         ref.invalidate(sessionsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Session revoked.')),
+          SnackBar(content: Text(m.revoked)),
         );
       },
       (failure) => ScaffoldMessenger.of(context).showSnackBar(
@@ -250,17 +249,18 @@ class _SessionsList extends ConsumerWidget {
   // was first seen and when it was last active — instead of a bare
   // "Active <time>". The approximate location is appended only when the API
   // supplies it (never fabricated on-device); it stays omitted until then.
-  static String _subtitleFor(ActiveSession session) {
+  static String _subtitleFor(Messages m, ActiveSession session) {
     final parts = <String>[
-      _deviceTypeLabel(session.deviceType),
-      'First seen ${_shortDate(session.firstSeenAt)}',
-      'Active ${_relativeTime(session.lastActivityAt)}',
-      if (session.approxLocation != null && session.approxLocation!.trim().isNotEmpty) session.approxLocation!.trim(),
+      _deviceTypeLabel(m, session.deviceType),
+      m.firstSeen(_shortDate(session.firstSeenAt)),
+      m.lastActive(_relativeTime(m, session.lastActivityAt)),
+      if (session.approxLocation case final approxLocation? when session.approxLocation!.trim().isNotEmpty)
+        approxLocation.trim(),
     ];
     return parts.join(' · ');
   }
 
-  static String _deviceTypeLabel(String deviceType) {
+  static String _deviceTypeLabel(Messages m, String deviceType) {
     switch (deviceType.toLowerCase()) {
       case 'ios':
         return 'iOS';
@@ -270,47 +270,30 @@ class _SessionsList extends ConsumerWidget {
         return 'Android';
       case 'web':
       case 'browser':
-        return 'Web';
+        return m.deviceWeb;
       case 'desktop':
-        return 'Desktop';
+        return m.deviceDesktop;
       case 'macos':
       case 'mac':
         return 'macOS';
       case 'windows':
         return 'Windows';
       case '':
-        return 'Device';
+        return m.deviceGeneric;
       default:
         return deviceType[0].toUpperCase() + deviceType.substring(1);
     }
   }
 
-  static const _months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  static String _shortDate(DateTime when) =>
+      DateFormat.yMMMd(LocalizationUtil.currentLocale.languageCode).format(when.toLocal());
 
-  static String _shortDate(DateTime when) {
-    final d = when.toLocal();
-    return '${d.day} ${_months[d.month - 1]} ${d.year}';
-  }
-
-  static String _relativeTime(DateTime when) {
+  static String _relativeTime(Messages m, DateTime when) {
     final diff = DateTime.now().toUtc().difference(when.toUtc());
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${(diff.inDays / 7).floor()}w ago';
+    if (diff.inMinutes < 1) return m.justNow;
+    if (diff.inMinutes < 60) return m.minutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return m.hoursAgo(diff.inHours);
+    if (diff.inDays < 7) return m.daysAgo(diff.inDays);
+    return m.weeksAgo((diff.inDays / 7).floor());
   }
 }

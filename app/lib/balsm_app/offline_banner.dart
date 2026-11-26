@@ -1,9 +1,7 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-import 'tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A slim strip shown while no network interface is up.
 ///
@@ -19,17 +17,17 @@ import 'tokens.dart';
 /// the user and never a precondition for a request: the app always tries, and a
 /// failed attempt is what actually decides whether cached data gets served.
 class OfflineBanner extends ConsumerWidget {
-  const OfflineBanner({super.key, required this.message});
+  const OfflineBanner({required this.message, super.key});
 
   final String message;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final online = ref.watch(onlineProvider).valueOrNull;
+    final online = ref.watch(onlineProvider).value;
     if (online != false) return const SizedBox.shrink();
 
     return Material(
-      color: T.warningBg,
+      color: AppColors.warningBackground,
       child: SafeArea(
         bottom: false,
         child: Semantics(
@@ -39,12 +37,12 @@ class OfflineBanner extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(LucideIcons.cloudOff, size: 15, color: T.ink700),
+                const Icon(LucideIcons.cloudOff, size: 15, color: AppColors.ink700),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     message,
-                    style: const TextStyle(fontSize: 13, height: 1.3, color: T.ink700),
+                    style: const TextStyle(fontSize: FontSizes.bodySm, height: 1.3, color: AppColors.ink700),
                   ),
                 ),
               ],

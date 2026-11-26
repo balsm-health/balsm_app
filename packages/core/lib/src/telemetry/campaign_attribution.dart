@@ -81,7 +81,7 @@ class CampaignAttribution {
       if (fresh.isEmpty) return const {};
       await prefs.setCampaign(fresh);
       return fresh;
-    } catch (_) {
+    } on Object catch (_) {
       // Attribution is never worth a failed launch.
       return const {};
     }

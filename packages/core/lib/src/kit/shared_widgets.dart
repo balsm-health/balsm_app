@@ -1,12 +1,15 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import '_tokens.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../domain/western_digits.dart';
+import '../localization/core_messages.dart';
+import 'tokens.dart';
 
 class BalsmButton extends StatelessWidget {
   const BalsmButton({
-    super.key,
     required this.label,
     required this.onPressed,
+    super.key,
     this.variant = BalsmButtonVariant.primary,
     this.loading = false,
     this.icon,
@@ -24,11 +27,11 @@ class BalsmButton extends StatelessWidget {
     final isDanger = variant == BalsmButtonVariant.danger;
 
     final bg = isPrimary
-        ? BalsmColors.hueBlue
+        ? AppColors.hueBlue
         : isDanger
-            ? BalsmColors.danger
+            ? AppColors.danger
             : Colors.transparent;
-    final fg = (isPrimary || isDanger) ? Colors.white : BalsmColors.hueBlue;
+    final fg = (isPrimary || isDanger) ? AppColors.white : AppColors.hueBlue;
 
     return SizedBox(
       width: double.infinity,
@@ -39,20 +42,20 @@ class BalsmButton extends StatelessWidget {
           backgroundColor: bg,
           foregroundColor: fg,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: isPrimary || isDanger ? BorderSide.none : const BorderSide(color: BalsmColors.hueBlue),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.lg)),
+          side: isPrimary || isDanger ? BorderSide.none : const BorderSide(color: AppColors.hueBlue),
         ),
         child: loading
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
               )
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-                  Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(label, style: const TextStyle(fontSize: FontSizes.body, fontWeight: FontWeight.w600)),
                 ],
               ),
       ),
@@ -64,8 +67,8 @@ enum BalsmButtonVariant { primary, secondary, danger }
 
 class BalsmTextField extends StatelessWidget {
   const BalsmTextField({
-    super.key,
     required this.label,
+    super.key,
     this.controller,
     this.hint,
     this.errorText,
@@ -91,13 +94,13 @@ class BalsmTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.ink700),
+          style: const TextStyle(fontSize: FontSizes.bodySm, fontWeight: FontWeight.w600, color: AppColors.ink700),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          onChanged: onChanged != null ? (v) => onChanged!(_normalizeArabicNumerals(v)) : null,
+          onChanged: switch (onChanged) { final onChanged? => (v) => onChanged(toWesternDigits(v)), _ => null },
           obscureText: obscureText,
           inputFormatters: inputFormatters,
           decoration: InputDecoration(
@@ -108,24 +111,14 @@ class BalsmTextField extends StatelessWidget {
       ],
     );
   }
-
-  // FR-213: normalize Arabic-Indic digits to Western Arabic.
-  static String _normalizeArabicNumerals(String input) {
-    const arabicIndicDigits = '٠١٢٣٤٥٦٧٨٩';
-    var result = input;
-    for (var i = 0; i < arabicIndicDigits.length; i++) {
-      result = result.replaceAll(arabicIndicDigits[i], '$i');
-    }
-    return result;
-  }
 }
 
 class BalsmCountryPicker extends StatelessWidget {
   const BalsmCountryPicker({
-    super.key,
     required this.countries,
     required this.selected,
     required this.onSelected,
+    super.key,
     this.searchHint = 'Search countries',
   });
 
@@ -142,13 +135,13 @@ class BalsmCountryPicker extends StatelessWidget {
 
     return InkWell(
       onTap: () => _showPicker(context),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadii.control),
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          border: Border.all(color: BalsmColors.ink200),
-          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.ink200),
+          borderRadius: BorderRadius.circular(AppRadii.control),
         ),
         child: Row(
           children: [
@@ -156,12 +149,12 @@ class BalsmCountryPicker extends StatelessWidget {
               child: Text(
                 selectedCountry?.name ?? 'Select country',
                 style: TextStyle(
-                  color: selected == null ? BalsmColors.ink400 : BalsmColors.ink900,
-                  fontSize: 15,
+                  color: selected == null ? AppColors.ink400 : AppColors.ink900,
+                  fontSize: FontSizes.bodyLg,
                 ),
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down, color: BalsmColors.ink600),
+            const Icon(Icons.keyboard_arrow_down, color: AppColors.ink600),
           ],
         ),
       ),
@@ -169,11 +162,11 @@ class BalsmCountryPicker extends StatelessWidget {
   }
 
   void _showPicker(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
       builder: (ctx) => _CountryPickerSheet(
         countries: countries,
@@ -217,7 +210,7 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
       builder: (_, ctrl) => Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
             child: TextField(
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
@@ -253,14 +246,14 @@ class BalsmLoadingIndicator extends StatelessWidget {
           height: size,
           child: const CircularProgressIndicator(
             strokeWidth: 2,
-            color: BalsmColors.hueBlue,
+            color: AppColors.hueBlue,
           ),
         ),
       );
 }
 
 class BalsmErrorBanner extends StatelessWidget {
-  const BalsmErrorBanner({super.key, required this.message, this.onRetry});
+  const BalsmErrorBanner({required this.message, super.key, this.onRetry});
   final String message;
   final VoidCallback? onRetry;
 
@@ -268,21 +261,21 @@ class BalsmErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: BalsmColors.danger.withAlpha(20),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BalsmColors.danger.withAlpha(60)),
+          color: AppColors.danger.withAlpha(20),
+          borderRadius: BorderRadius.circular(AppRadii.control),
+          border: Border.all(color: AppColors.danger.withAlpha(60)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, color: BalsmColors.danger, size: 20),
+            const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(message, style: const TextStyle(color: BalsmColors.danger, fontSize: 14)),
+              child: Text(message, style: const TextStyle(color: AppColors.danger, fontSize: FontSizes.description)),
             ),
             if (onRetry != null)
               TextButton(
                 onPressed: onRetry,
-                child: const Text('Retry', style: TextStyle(color: BalsmColors.danger)),
+                child: Text(coreMessagesOf(context).common.retry, style: const TextStyle(color: AppColors.danger)),
               ),
           ],
         ),

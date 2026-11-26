@@ -1,14 +1,19 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/flags.dart';
+import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/storage_target.dart';
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+import 'package:riverpod/misc.dart' show ProviderException;
+
+import 'support/flag_overrides.dart';
 
 /// Records whether the screen actually reached the network.
 class _RecordingCareTeamApi implements CareTeamApi {
@@ -35,44 +40,63 @@ void main() {
   test('careTeamSyncServiceProvider throws until bootstrap overrides it', () {
     // Guards the bootstrap contract: a missing override must fail loudly at the
     // first read rather than silently never syncing.
-    final container = ProviderContainer();
+    final container = ProviderContainer(retry: noProviderRetry);
     addTearDown(container.dispose);
 
-    expect(() => container.read(careTeamSyncServiceProvider), throwsA(isA<UnimplementedError>()));
+    // Riverpod 3 wraps what a provider throws in a ProviderException.
+    expect(
+      () => container.read(careTeamSyncServiceProvider),
+      throwsA(isA<ProviderException>().having((e) => e.exception, 'exception', isA<UnimplementedError>())),
+    );
   });
 
   /// Pumps the screen over a recording API, pulls the list down, and returns
-  /// how many times the network was reached.
-  Future<int> pullsAfterFling(WidgetTester tester, {required bool syncOn}) async {
-    const profileId = HealthProfileId.value('hp-1');
+  /// how many times the network was reached. [familyMemberActive] makes a
+  /// family member, not the account holder, the active profile.
+  Future<int> pullsAfterFling(
+    WidgetTester tester, {
+    required bool syncOn,
+    bool familyMemberActive = false,
+  }) async {
+    const user = UserId.value('u-wiring-1');
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
+    final self = await db.ensureSelfHealthProfile(user);
+    const member = HealthProfileId.value('hp-member');
+    await db.customStatement(
+      "INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at) VALUES (?, ?, 0, 'dependent', 'active', 0)",
+      [member.value, user.value],
+    );
+    final profileId = familyMemberActive ? member : self;
     final api = _RecordingCareTeamApi();
     final service = CareTeamSyncService(
       api: api,
       outbox: SyncOutboxDao(db),
       db: db,
       status: SyncStatusNotifier(),
-      activeUser: () => const UserId.value('u-wiring-1'),
+      activeUser: () => user,
     );
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        careTeamProvider.overrideWith((ref) => Stream.value(const <CareProvider>[])),
-        currentProfileIdProvider.overrideWithValue(profileId),
-        careTeamSyncServiceProvider.overrideWithValue(service),
-      ],
-      child: AppScope(
-        state: PatientAppState()
-          ..attachFlags(FeatureFlags(flags: AppFlags.all, allowOverrides: true)
-            ..setOverride(AppFlags.sync, syncOn)
-            ..setOverride(AppFlags.syncFor(DataCategory.care), syncOn)),
-        // material_ui's MaterialApp, matching care_team_test.dart: this repo's
-        // Material layer is material_ui, so SubScreen's RefreshIndicator resolves
-        // to material_ui's and wants material_ui's MaterialLocalizations.
-        child: const MaterialApp(home: CareTeamScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          careTeamProvider.overrideWith((ref) => Stream.value(const <CareProvider>[])),
+          currentProfileIdProvider.overrideWithValue(profileId),
+          careTeamSyncServiceProvider.overrideWithValue(service),
+        ],
+        child: AppScope(
+          state: PatientAppState()
+            ..attachFlags(
+              flagsWith({AppFlags.sync: syncOn, AppFlags.syncFor(DataCategory.care): syncOn}),
+            ),
+          // material_ui's MaterialApp, matching care_team_test.dart: this repo's
+          // Material layer is material_ui, so SubScreen's RefreshIndicator resolves
+          // to material_ui's and wants material_ui's MaterialLocalizations.
+          child: const MaterialApp(home: CareTeamScreen()),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     await tester.fling(find.byType(ListView).first, const Offset(0, 400), 1000);
@@ -87,5 +111,9 @@ void main() {
 
   testWidgets('with the sync flags off, pulling the list down reaches no server', (tester) async {
     expect(await pullsAfterFling(tester, syncOn: false), 0);
+  });
+
+  testWidgets("with a family member active, the account's care team is not pulled into them", (tester) async {
+    expect(await pullsAfterFling(tester, syncOn: true, familyMemberActive: true), 0);
   });
 }

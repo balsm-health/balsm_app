@@ -1,0 +1,1 @@
+The iPhone prompt for saving your emergency QR code to Photos now says that is what it does, the privacy declaration lists the location used to find nearby places, and Android no longer asks for notification permissions the app doesn't use. ([#169](https://github.com/balsm-health/balsm_app/pull/169))

@@ -1,6 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/records_screen.dart';
-import 'package:core/core.dart' show UserId, currentUserIdProvider;
+import 'package:core/core.dart' show UserId, currentUserIdProvider, noProviderRetry;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -28,18 +28,21 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        recordListProvider.overrideWith((ref) => Stream.value(records)),
-        // Bulk delete is scoped to the signed-in user; without one it is a
-        // no-op by design.
-        currentUserIdProvider.overrideWithValue(const UserId.value('u-1')),
-      ],
-      child: AppScope(
-        state: state,
-        child: const MaterialApp(home: Scaffold(body: RecordsScreen())),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          recordListProvider.overrideWith((ref) => Stream.value(records)),
+          // Bulk delete is scoped to the signed-in user; without one it is a
+          // no-op by design.
+          currentUserIdProvider.overrideWithValue(const UserId.value('u-1')),
+        ],
+        child: AppScope(
+          state: state,
+          child: const MaterialApp(home: Scaffold(body: RecordsScreen())),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return state;
   }

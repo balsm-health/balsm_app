@@ -81,8 +81,11 @@ void main() {
     api.behaviour = () async => throw const ApiException(code: 'unauthorized', statusCode: 401);
 
     await expectLater(() => adapter.getAccount('self'), throwsA(isA<ApiException>()));
-    expect(await store.read('account', 'self'), isNull,
-        reason: 'a rejected session must not keep serving a cached identity');
+    expect(
+      await store.read('account', 'self'),
+      isNull,
+      reason: 'a rejected session must not keep serving a cached identity',
+    );
   });
 
   test('a 500 rethrows and does not serve the retained row', () async {
@@ -94,8 +97,11 @@ void main() {
     api.behaviour = () async => throw const ApiException(code: 'server_error', statusCode: 500);
 
     await expectLater(() => adapter.getAccount('self'), throwsA(isA<ApiException>()));
-    expect(await store.read('account', 'self'), isNotNull,
-        reason: 'a server error leaves the row alone — it just does not serve it');
+    expect(
+      await store.read('account', 'self'),
+      isNotNull,
+      reason: 'a server error leaves the row alone — it just does not serve it',
+    );
   });
 
   test('a fresh retained summary does not call the API', () async {

@@ -15,7 +15,7 @@ import '../tokens.dart';
 /// device alone, except for the care team while its Balsm Cloud mirror is on.
 /// See `storage_sheet.dart` for the gate.
 class DataLocPill extends StatelessWidget {
-  const DataLocPill({super.key, required this.category});
+  const DataLocPill({required this.category, super.key});
   final DataCategory category;
 
   @override
@@ -44,15 +44,21 @@ class DataLocPill extends StatelessWidget {
             height: 34,
             padding: const EdgeInsetsDirectional.only(start: 5, end: 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(T.rPill),
-              border: Border.all(color: T.border),
-              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              border: Border.all(color: AppColors.border),
+              color: AppColors.white,
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              LocIcons(targets: targets, size: 24),
-              const SizedBox(width: 6),
-              Text(label, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-            ]),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LocIcons(targets: targets, size: 24),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -69,40 +75,48 @@ class _WhereSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const SizedBox(height: 10),
-            const SheetGrab(),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-              child: Row(children: [
-                const Icon(LucideIcons.hardDrive, size: 19, color: T.fg3),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(s.strings.storage.store_where,
-                      style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              const SheetGrab(),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 12),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.hardDrive, size: 19, color: AppColors.textTertiary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        s.strings.storage.store_where,
+                        style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    RoundBtn(
+                      icon: LucideIcons.x,
+                      semanticLabel: s.strings.common.a11y_close,
+                      ghost: true,
+                      iconSize: 17,
+                      onTap: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-                RoundBtn(
-                    icon: LucideIcons.x,
-                    semanticLabel: s.strings.common.a11y_close,
-                    ghost: true,
-                    iconSize: 17,
-                    onTap: () => Navigator.pop(context)),
-              ]),
-            ),
-            const Divider(height: 1, color: T.ink100),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 32)),
-                child: CategorySyncBody(s: s, category: category),
               ),
-            ),
-          ]),
+              const Divider(height: 1, color: AppColors.ink100),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, sheetBottomInset(context, base: 32)),
+                  child: CategorySyncBody(s: s, category: category),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }

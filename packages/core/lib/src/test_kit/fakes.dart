@@ -1,18 +1,20 @@
 import 'dart:async';
 import 'dart:typed_data';
+
 import 'package:balsm_api/balsm_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../backup/backup_adapter.dart';
 import '../config/active_server.dart';
 import '../config/server_preset.dart';
 import '../domain/events/app_event.dart';
 import '../event_bus/event_bus.dart';
+import '../localization/country_registry.dart';
+import '../localization/translation_catalog.dart';
 import '../network/balsm_api_controller.dart';
 import '../secure_storage/secure_storage_wrapper.dart';
-import '../localization/translation_catalog.dart';
-import '../localization/country_registry.dart';
-import '../backup/backup_adapter.dart';
 
 // All fakes gated behind DEV build flag — not exported in staging/prod.
 
@@ -27,17 +29,16 @@ class FakeEventBus extends EventBus {
 }
 
 class FakeBalsmApiController extends BalsmApiController {
-  final initiated = <String>[];
-  final reconfigured = <ServerPreset>[];
-
   FakeBalsmApiController()
       : super(
           client: BalsmApiClient(
             dio: Dio(BaseOptions(baseUrl: 'http://localhost:5000')),
           ),
-          store: ActiveServerStore(const FlutterSecureStorage()),
+          store: const ActiveServerStore(FlutterSecureStorage()),
           bus: EventBus(),
         );
+  final initiated = <String>[];
+  final reconfigured = <ServerPreset>[];
 
   @override
   Future<void> init() async => initiated.add('init');

@@ -54,19 +54,19 @@ class DevLogBuffer extends ChangeNotifier {
     _installed = true;
 
     final originalDebugPrint = debugPrint;
-    debugPrint = (String? message, {int? wrapWidth}) {
+    debugPrint = (message, {wrapWidth}) {
       if (message != null) add('log', message);
       originalDebugPrint(message, wrapWidth: wrapWidth);
     };
 
     final priorFlutterError = FlutterError.onError;
-    FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.onError = (details) {
       add('error', details.exceptionAsString());
       priorFlutterError?.call(details);
     };
 
     final priorPlatformError = PlatformDispatcher.instance.onError;
-    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    PlatformDispatcher.instance.onError = (error, stack) {
       add('error', 'Uncaught: $error');
       return priorPlatformError?.call(error, stack) ?? false;
     };

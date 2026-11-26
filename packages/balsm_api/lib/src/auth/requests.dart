@@ -1,5 +1,6 @@
 /// PHI constraint (all auth DTOs): never log or stringify these — they
 /// carry emails, device identifiers, and tokens.
+library;
 
 /// Why an OTP email is requested.
 ///

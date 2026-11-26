@@ -12,7 +12,7 @@ import 'package:latlong2/latlong.dart';
 CareEntity _entity(String id, CareEntityType type, {String en = 'Place', String ar = 'مكان'}) => CareEntity(
       id: id,
       type: type,
-      position: const LatLng(30.0, 31.2),
+      position: const LatLng(30, 31.2),
       name: (en: en, ar: ar),
       addr: (en: '$en street', ar: 'شارع'),
       hours: '9–5',

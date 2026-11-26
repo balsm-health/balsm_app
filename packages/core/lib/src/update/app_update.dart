@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../config/flavor.dart';
-import '../data_source/key_value_data_source.dart';
 import '../data_source/module_preferences.dart';
 
 /// Overrides the manifest URL for a build (`--dart-define=APP_VERSION_URL=…`),
@@ -128,7 +127,8 @@ List<int>? parseVersion(String v) {
 
 /// Negative when [a] is older than [b]; null when either is unreadable.
 int? compareVersions(String a, String b) {
-  final x = parseVersion(a), y = parseVersion(b);
+  final x = parseVersion(a);
+  final y = parseVersion(b);
   if (x == null || y == null) return null;
   for (var i = 0; i < x.length || i < y.length; i++) {
     final d = (i < x.length ? x[i] : 0) - (i < y.length ? y[i] : 0);
@@ -236,15 +236,17 @@ AppUpdateInfo evaluateUpdate({
         for (final r in newer)
           if (!r.note.isEmpty) r.note,
       ],
-      notesUrl: Uri.parse(notesBase).replace(queryParameters: {
-        ...Uri.parse(notesBase).queryParameters,
-        'brand': brand.name,
-        'from': shown,
-        'platform': platform,
-        'lang': lang,
-      }).toString(),
+      notesUrl: Uri.parse(notesBase).replace(
+        queryParameters: {
+          ...Uri.parse(notesBase).queryParameters,
+          'brand': brand.name,
+          'from': shown,
+          'platform': platform,
+          'lang': lang,
+        },
+      ).toString(),
     );
-  } catch (_) {
+  } on Object catch (_) {
     return AppUpdateInfo.none;
   }
 }
@@ -333,7 +335,7 @@ String? updatePlatformKey() {
 /// What the update check keeps on the device (`update.*`). Each brand is its
 /// own installed app with its own storage, so the keys need no brand in them.
 class AppUpdatePrefs extends ModulePreferences {
-  const AppUpdatePrefs(KeyValueDataSource kv) : super(kv, namespace: 'update');
+  const AppUpdatePrefs(super.kv) : super(namespace: 'update');
 
   /// Last manifest fetched (raw JSON). Kept so a forced update still holds
   /// with no connection.
@@ -355,11 +357,13 @@ class AppUpdateChecker {
         _brand = brand,
         _url = url ?? appVersionUrl(brand),
         _dio = dio ??
-            Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 5),
-              receiveTimeout: const Duration(seconds: 5),
-              responseType: ResponseType.plain,
-            ));
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 5),
+                receiveTimeout: const Duration(seconds: 5),
+                responseType: ResponseType.plain,
+              ),
+            );
 
   final AppUpdatePrefs _prefs;
   final AppBrand _brand;
@@ -371,7 +375,12 @@ class AppUpdateChecker {
     final ctx = await _context();
     if (ctx == null) return AppUpdateInfo.none;
     return evaluateUpdate(
-        installed: ctx.installed, manifest: await _prefs.manifest(), platform: ctx.platform, lang: lang, brand: _brand);
+      installed: ctx.installed,
+      manifest: await _prefs.manifest(),
+      platform: ctx.platform,
+      lang: lang,
+      brand: _brand,
+    );
   }
 
   /// Fetches the manifest; on any failure answers from the cache.
@@ -388,12 +397,17 @@ class AppUpdateChecker {
         manifest = body;
         await _prefs.setManifest(body);
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Offline or unreachable — fall through to the cache.
     }
     manifest ??= await _prefs.manifest();
     return evaluateUpdate(
-        installed: ctx.installed, manifest: manifest, platform: ctx.platform, lang: lang, brand: _brand);
+      installed: ctx.installed,
+      manifest: manifest,
+      platform: ctx.platform,
+      lang: lang,
+      brand: _brand,
+    );
   }
 
   Future<({String installed, String platform})?> _context() async {
@@ -402,7 +416,7 @@ class AppUpdateChecker {
     try {
       final info = await PackageInfo.fromPlatform();
       return (installed: info.version, platform: platform);
-    } catch (_) {
+    } on Object catch (_) {
       // No platform channel (tests) — nothing to compare against.
       return null;
     }

@@ -1,13 +1,16 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:records/records.dart';
+
 import '../app_state.dart';
+import '../flags.dart';
 import '../kit.dart';
 import '../responsive.dart';
-import '../tokens.dart';
 import '../widgets/badges.dart';
+import '../widgets/entry_attribution.dart';
+import 'family/profile_bar.dart';
 import 'records_detail.dart';
 
 /// Rows written by `persistPhotoRecord` before the `check-in` source existed:
@@ -17,26 +20,27 @@ import 'records_detail.dart';
 bool _isLegacyCheckInPhoto(RecordDocument r) =>
     r.source.isSelf && r.type == RecordType.scan && (r.title == 'Add a photo' || r.title == 'إضافة صورة');
 
-/// Live vault contents for the signed-in user, newest first. Empty when signed
+/// Live vault contents for the active profile, newest first. Empty when signed
 /// out rather than throwing — the screen is reachable before a profile exists.
+/// Re-subscribes when the active profile changes.
 ///
 /// Check-in photos live in the same vault but belong to their check-in, not
 /// the document library — they are filtered out here (and from the home-screen
 /// count, which watches this provider).
-final recordListProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref) {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return Stream.value(const []);
+final StreamProvider<List<RecordDocument>> recordListProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref) {
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return Stream.value(const []);
   return ref
       .watch(recordsDataSourceProvider)
-      .watchAll()
+      .watchAll(scope: profileId)
       .map((rows) => rows.where((r) => !r.source.isCheckIn && !_isLegacyCheckInPhoto(r)).toList());
 });
 
 /// Per-type chrome — `RECORD_TYPES` in the design.
 ({IconData icon, Color fg, Color bg}) recordTypeStyle(RecordType type) => switch (type) {
-      RecordType.lab => (icon: LucideIcons.flaskConical, fg: T.hueMint600, bg: T.hueMint50),
-      RecordType.scan => (icon: LucideIcons.scanLine, fg: T.hueBlue, bg: T.hueBlue50),
-      RecordType.report => (icon: LucideIcons.fileText, fg: T.hueViolet, bg: T.hueViolet50),
+      RecordType.lab => (icon: LucideIcons.flaskConical, fg: AppColors.hueMint600, bg: AppColors.hueMint50),
+      RecordType.scan => (icon: LucideIcons.scanLine, fg: AppColors.hueBlue, bg: AppColors.hueBlue50),
+      RecordType.report => (icon: LucideIcons.fileText, fg: AppColors.hueViolet, bg: AppColors.hueViolet50),
     };
 
 String recordTypeLabel(PatientAppState s, RecordType type) => switch (type) {
@@ -122,7 +126,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: Text(r.rec_delete_confirm, style: const TextStyle(color: T.danger)),
+                child: Text(r.rec_delete_confirm, style: const TextStyle(color: AppColors.danger)),
               ),
             ],
           ),
@@ -149,106 +153,123 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
     final s = AppScope.of(context);
     final async = ref.watch(recordListProvider);
     final q = _query.text.trim().toLowerCase();
-    final all = async.valueOrNull ?? const <RecordDocument>[];
+    final all = async.value ?? const <RecordDocument>[];
     final shown = all.where((r) => (_filter == null || r.type == _filter) && _matches(r, q)).toList();
     final filtering = q.isNotEmpty || _filter != null;
 
-    return Stack(children: [
-      ContentColumn(
-        maxWidth: 720,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const PadTop(),
-          if (_selecting)
-            // The design tints the whole bar and swaps the title for a count.
-            Container(
-              color: s.accent.bg,
-              child: AppBarRow(children: [
-                RoundBtn(
-                    icon: LucideIcons.x,
-                    semanticLabel: s.strings.common.a11y_close,
-                    ghost: true,
-                    onTap: _exitSelection),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    s.strings.records.rec_n_selected('${_selected!.length}'),
-                    style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg, color: s.accent.d),
-                  ),
-                ),
-                Opacity(
-                  opacity: _selected!.isEmpty ? 0.4 : 1,
-                  child: RoundBtn(
-                    icon: LucideIcons.trash2,
-                    semanticLabel: s.strings.common.a11y_delete,
-                    ghost: true,
-                    fg: T.danger,
-                    onTap: _selected!.isEmpty ? null : () => _deleteSelected(shown),
-                  ),
-                ),
-              ]),
-            )
-          else
-            AppBarRow(children: [
-              if (widget.onBack != null) ...[
-                RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: widget.onBack),
-                const SizedBox(width: 12),
-              ],
-              Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
-            ]),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: _SearchField(controller: _query, onChanged: () => setState(() {})),
-          ),
-          _FilterChips(selected: _filter, onSelect: (f) => setState(() => _filter = f)),
-          // The chip rail is a fixed 36 with no vertical padding of its own, so
-          // without this the first record sits flush against it. Matches the
-          // 12 under the search field above.
-          const SizedBox(height: 12),
-          Expanded(
-            child: async.isLoading
-                ? const _LoadingList()
-                : shown.isEmpty
-                    ? _EmptyState(
-                        filtering: filtering,
-                        query: _query.text,
-                        onClear: () => setState(() {
-                          _query.clear();
-                          _filter = null;
-                        }),
-                        onAdd: () => _openAdd(context),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        itemCount: shown.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _RecordCard(
-                          record: shown[i],
-                          selected: _selecting ? _selected!.contains(shown[i].id.value) : null,
-                          // Long-press is how selection starts, the way every
-                          // list on the platform does it; a tap then toggles.
-                          onTap: () => _selecting ? _toggle(shown[i]) : _openDetail(context, shown[i]),
-                          onLongPress: _selecting ? null : () => _enterSelection(shown[i]),
+    return Stack(
+      children: [
+        ContentColumn(
+          maxWidth: 720,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PadTop(),
+              if (_selecting)
+                // The design tints the whole bar and swaps the title for a count.
+                ColoredBox(
+                  color: s.accent.bg,
+                  child: AppBarRow(
+                    children: [
+                      RoundBtn(
+                        icon: LucideIcons.x,
+                        semanticLabel: s.strings.common.a11y_close,
+                        ghost: true,
+                        onTap: _exitSelection,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          s.strings.records.rec_n_selected('${_selected!.length}'),
+                          style: Typo.heading(ar: s.rtl).copyWith(fontSize: FontSizes.subhead, color: s.accent.d),
                         ),
                       ),
+                      Opacity(
+                        opacity: _selected!.isEmpty ? 0.4 : 1,
+                        child: RoundBtn(
+                          icon: LucideIcons.trash2,
+                          semanticLabel: s.strings.common.a11y_delete,
+                          ghost: true,
+                          fg: AppColors.danger,
+                          onTap: _selected!.isEmpty ? null : () => _deleteSelected(shown),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                AppBarRow(
+                  children: [
+                    if (widget.onBack != null) ...[
+                      RoundBtn(
+                        icon: backArrow(context),
+                        semanticLabel: s.strings.common.a11y_back,
+                        onTap: widget.onBack,
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
+                  ],
+                ),
+              // Mother & Child: whose records these are (records-mc.jsx).
+              if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(family: true),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+                child: _SearchField(controller: _query, onChanged: () => setState(() {})),
+              ),
+              _FilterChips(selected: _filter, onSelect: (f) => setState(() => _filter = f)),
+              // The chip rail is a fixed 36 with no vertical padding of its own, so
+              // without this the first record sits flush against it. Matches the
+              // 12 under the search field above.
+              const SizedBox(height: 12),
+              Expanded(
+                child: async.isLoading
+                    ? const _LoadingList()
+                    : shown.isEmpty
+                        ? _EmptyState(
+                            filtering: filtering,
+                            query: _query.text,
+                            onClear: () => setState(() {
+                              _query.clear();
+                              _filter = null;
+                            }),
+                            onAdd: () => _openAdd(context),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
+                            itemCount: shown.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            itemBuilder: (_, i) => _RecordCard(
+                              record: shown[i],
+                              selected: _selecting ? _selected!.contains(shown[i].id.value) : null,
+                              // Long-press is how selection starts, the way every
+                              // list on the platform does it; a tap then toggles.
+                              onTap: () => _selecting ? _toggle(shown[i]) : _openDetail(context, shown[i]),
+                              onLongPress: _selecting ? null : () => _enterSelection(shown[i]),
+                            ),
+                          ),
+              ),
+            ],
           ),
-        ]),
-      ),
-      // `.rec-fab` — only once the vault has something in it; the empty state
-      // carries its own primary call to action.
-      if (!async.isLoading && all.isNotEmpty)
-        PositionedDirectional(
-          end: 20,
-          // `bottom: calc(env(safe-area-inset-bottom) + 24px)`, and a flat 24
-          // from the medium class up, where the design drops the phone chrome
-          // allowance (`.rec-fab { bottom: 24px }`).
-          bottom: (windowClassOf(context) == BalsmWindowClass.compact ? MediaQuery.paddingOf(context).bottom : 0) + 24,
-          child: _RecordFab(onTap: () => _openAdd(context)),
         ),
-    ]);
+        // `.rec-fab` — only once the vault has something in it; the empty state
+        // carries its own primary call to action.
+        if (!async.isLoading && all.isNotEmpty)
+          PositionedDirectional(
+            end: 20,
+            // `bottom: calc(env(safe-area-inset-bottom) + 24px)`, and a flat 24
+            // from the medium class up, where the design drops the phone chrome
+            // allowance (`.rec-fab { bottom: 24px }`).
+            bottom:
+                (windowClassOf(context) == BalsmWindowClass.compact ? MediaQuery.paddingOf(context).bottom : 0) + 24,
+            child: _RecordFab(onTap: () => _openAdd(context)),
+          ),
+      ],
+    );
   }
 
   void _openDetail(BuildContext context, RecordDocument record) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => RecordDetailScreen(record: record)));
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => RecordDetailScreen(record: record)));
   }
 
   void _openAdd(BuildContext context) => showAddRecord(context);
@@ -266,20 +287,20 @@ class _SearchField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: (_) => onChanged(),
-      style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
+      style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
       decoration: InputDecoration(
         hintText: s.strings.records.rec_search_ph,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.subhead),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(vertical: 15),
-        prefixIcon: const Icon(LucideIcons.search, size: 17, color: T.fg4),
+        prefixIcon: const Icon(LucideIcons.search, size: 17, color: AppColors.textHint),
         prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         suffixIcon: controller.text.isEmpty
             ? null
             : Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsetsDirectional.only(end: 8),
                 child: GestureDetector(
                   onTap: () {
                     controller.clear();
@@ -289,21 +310,21 @@ class _SearchField extends StatelessWidget {
                     width: 28,
                     height: 28,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.x, size: 15, color: T.fg2),
+                    decoration: const BoxDecoration(color: AppColors.ink100, shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.x, size: 15, color: AppColors.textSecondary),
                   ),
                 ),
               ),
         suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-        border: _border(T.border),
-        enabledBorder: _border(T.border),
+        border: _border(AppColors.border),
+        enabledBorder: _border(AppColors.border),
         focusedBorder: _border(s.accent.main),
       ),
     );
   }
 
   OutlineInputBorder _border(Color c) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(T.rMd),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         borderSide: BorderSide(color: c, width: 1.5),
       );
 }
@@ -325,7 +346,7 @@ class _FilterChips extends StatelessWidget {
       height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+        padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 0),
         itemCount: entries.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
@@ -338,12 +359,15 @@ class _FilterChips extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: on ? s.accent.bg : Colors.white,
-                borderRadius: BorderRadius.circular(T.rPill),
-                border: Border.all(color: on ? s.accent.main : T.border, width: 1.5),
+                color: on ? s.accent.bg : AppColors.white,
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                border: Border.all(color: on ? s.accent.main : AppColors.border, width: 1.5),
               ),
-              child: Text(label,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: on ? s.accent.d : T.fg2)),
+              child: Text(
+                label,
+                style: Typo.bodySm(ar: s.rtl)
+                    .copyWith(fontWeight: FontWeight.w600, color: on ? s.accent.d : AppColors.textSecondary),
+              ),
             ),
           );
         },
@@ -365,54 +389,90 @@ class _RecordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final style = recordTypeStyle(record.type);
-    final source = record.source.isSelf ? s.strings.records.rec_self : record.source.value;
+    // Someone else's entry is named by its chip, never "You uploaded".
+    final attributed = record.history.isAttributed;
+    final source = record.source.isSelf ? (attributed ? null : s.strings.records.rec_self) : record.source.value;
     final isSelected = selected ?? false;
     return PCard(
       padding: const EdgeInsets.all(14),
       onTap: onTap,
       onLongPress: onLongPress,
       border: isSelected ? s.accent.main : null,
-      child: Row(children: [
-        if (selected != null) ...[
-          Container(
-            width: 22,
-            height: 22,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isSelected ? s.accent.main : Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: isSelected ? s.accent.main : T.ink300, width: 2),
+      child: Row(
+        children: [
+          if (selected != null) ...[
+            Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? s.accent.main : AppColors.white,
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+                border: Border.all(color: isSelected ? s.accent.main : AppColors.ink300, width: 2),
+              ),
+              child: isSelected ? const Icon(LucideIcons.check, size: 12, color: AppColors.white) : null,
             ),
-            child: isSelected ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
+            const SizedBox(width: 12),
+          ],
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: style.bg, borderRadius: BorderRadius.circular(AppRadii.md)),
+            child: Icon(style.icon, size: 22, color: style.fg),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+                // records-mc.jsx: the date has its own line, under a calendar,
+                // above who the record came from.
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    const Icon(LucideIcons.calendar, size: 12, color: AppColors.textTertiary),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        formatRecordDate(record.takenAt, s),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.meta),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                if (source != null)
+                  Text(
+                    source,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                  ),
+                if (attributed)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(top: 4),
+                    child: EntryAttributionChip(history: record.history),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          StorageBadge(storage: s.storageProvider),
+          if (selected == null) ...[
+            const SizedBox(width: 6),
+            Chevron(rtl: s.rtl),
+          ],
         ],
-        Container(
-          width: 46,
-          height: 46,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: style.bg, borderRadius: BorderRadius.circular(T.rMd)),
-          child: Icon(style.icon, size: 22, color: style.fg),
-        ),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(record.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            const SizedBox(height: 2),
-            Text('${formatRecordDate(record.takenAt, s)} · $source',
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ]),
-        ),
-        const SizedBox(width: 8),
-        StorageBadge(storage: s.storageProvider),
-        if (selected == null) ...[
-          const SizedBox(width: 6),
-          Chevron(rtl: s.rtl),
-        ],
-      ]),
+      ),
     );
   }
 }
@@ -423,22 +483,27 @@ class _LoadingList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
         itemCount: 5,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) => PCard(
           padding: const EdgeInsets.all(14),
-          child: Row(children: [
-            const Shimmer(width: 46, height: 46, radius: T.rMd),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Shimmer(height: 13, width: 180.0 - i * 16),
-                const SizedBox(height: 6),
-                const Shimmer(height: 11, width: 110),
-              ]),
-            ),
-          ]),
+          child: Row(
+            children: [
+              const Shimmer(width: 46, height: 46, radius: AppRadii.md),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Shimmer(height: 13, width: 180.0 - i * 16),
+                    const SizedBox(height: 6),
+                    const Shimmer(height: 11, width: 110),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
@@ -465,32 +530,38 @@ class _EmptyState extends StatelessWidget {
       child: PCard(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 36),
-        child: Column(children: [
-          Icon(filtering ? LucideIcons.searchX : LucideIcons.folderOpen, size: 36, color: T.fg4),
-          const SizedBox(height: 14),
-          Text(filtering ? r.rec_no_results : r.rec_empty,
+        child: Column(
+          children: [
+            Icon(filtering ? LucideIcons.searchX : LucideIcons.folderOpen, size: 36, color: AppColors.textHint),
+            const SizedBox(height: 14),
+            Text(
+              filtering ? r.rec_no_results : r.rec_empty,
               textAlign: TextAlign.center,
-              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-          const SizedBox(height: 8),
-          Text(
-            filtering
-                ? (query.isNotEmpty ? '${r.rec_no_results_h} "$query"' : r.rec_no_results_h2)
-                : r.rec_empty_h(s.gender),
-            textAlign: TextAlign.center,
-            style: Typo.meta(ar: s.rtl),
-          ),
-          const SizedBox(height: 16),
-          if (filtering)
-            PButton(r.rec_clear_filters,
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              filtering
+                  ? (query.isNotEmpty ? '${r.rec_no_results_h} "$query"' : r.rec_no_results_h2)
+                  : r.rec_empty_h(s.gender),
+              textAlign: TextAlign.center,
+              style: Typo.meta(ar: s.rtl),
+            ),
+            const SizedBox(height: 16),
+            if (filtering)
+              PButton(
+                r.rec_clear_filters,
                 icon: LucideIcons.rotateCcw,
                 variant: BtnVariant.soft,
                 size: BtnSize.sm,
                 accent: s.accent,
                 ar: s.rtl,
-                onTap: onClear)
-          else
-            PButton(s.strings.settings.add_record, icon: LucideIcons.plus, accent: s.accent, ar: s.rtl, onTap: onAdd),
-        ]),
+                onTap: onClear,
+              )
+            else
+              PButton(s.strings.settings.add_record, icon: LucideIcons.plus, accent: s.accent, ar: s.rtl, onTap: onAdd),
+          ],
+        ),
       ),
     );
   }
@@ -512,7 +583,7 @@ class _RecordFab extends StatelessWidget {
         height: 56,
         alignment: Alignment.center,
         decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle, boxShadow: s.accent.boxShadow),
-        child: const Icon(LucideIcons.plus, size: 24, color: Colors.white),
+        child: const Icon(LucideIcons.plus, size: 24, color: AppColors.white),
       ),
     );
   }
@@ -521,22 +592,8 @@ class _RecordFab extends StatelessWidget {
 /// Localized record date. Falls back to the ISO day so the list never shows a
 /// blank where a date belongs.
 String formatRecordDate(DateTime d, PatientAppState s) {
-  final months = s.rtl
-      ? const [
-          'يناير',
-          'فبراير',
-          'مارس',
-          'أبريل',
-          'مايو',
-          'يونيو',
-          'يوليو',
-          'أغسطس',
-          'سبتمبر',
-          'أكتوبر',
-          'نوفمبر',
-          'ديسمبر'
-        ]
-      : const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  // Title-case abbreviations in English; Arabic has no customary short month, so it carries the full name.
+  final months = s.strings.settings.cal_months_abbr.split('|');
   final day = d.day.toString().padLeft(2, '0');
   return '$day ${months[d.month - 1]} ${d.year}';
 }

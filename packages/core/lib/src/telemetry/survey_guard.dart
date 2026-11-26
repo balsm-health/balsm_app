@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:posthog_flutter/posthog_flutter.dart' show PosthogObserver;
@@ -6,6 +8,7 @@ import 'package:posthog_flutter/posthog_flutter.dart' show PosthogObserver;
 // posthog_flutter upgrade moves it, the build or that test breaks first.
 // ignore: implementation_imports
 import 'package:posthog_flutter/src/posthog_flutter_io.dart';
+// The platform interface the subclass above registers itself as; same reason.
 // ignore: implementation_imports
 import 'package:posthog_flutter/src/posthog_flutter_platform_interface.dart';
 
@@ -66,13 +69,15 @@ class ChoiceOnlySurveyPlatform extends PosthogFlutterIO implements AnalyticsCons
     try {
       await _channel.invokeMethod('surveyAction', {'type': 'closed', 'presentationId': id});
     } on PlatformException catch (e) {
-      debugPrint('[survey_guard] close refused survey: ${e.code}');
+      developer.log('close refused survey: ${e.code}', name: 'survey_guard');
     }
   }
 
   /// Puts the guard between the native SDK and the survey UI. Call before
   /// `Posthog().setup`; Android and iOS only (other platforms render no
   /// native-triggered surveys).
+  // Registers the guard as the PostHog platform singleton, a side effect a constructor must not have.
+  // ignore: prefer_constructors_over_static_methods
   static ChoiceOnlySurveyPlatform install({void Function(String reason)? onRefused}) {
     final guard = ChoiceOnlySurveyPlatform(onRefused: onRefused);
     PosthogFlutterPlatformInterface.instance = guard;

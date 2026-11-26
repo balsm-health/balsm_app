@@ -1,8 +1,8 @@
 import 'package:app/balsm_app/app_state.dart';
-import 'package:core/core.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/widgets/attachment_thumb.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -32,18 +32,21 @@ void main() {
         phone: phone,
         email: email,
         clinic: clinic,
-        createdAt: DateTime.utc(2026, 1, 1),
+        createdAt: DateTime.utc(2026),
       );
 
   Future<PatientAppState> pump(WidgetTester tester, List<CareProvider> team) async {
     final state = PatientAppState();
-    await tester.pumpWidget(ProviderScope(
-      overrides: [careTeamProvider.overrideWith((ref) => Stream.value(team))],
-      child: AppScope(
-        state: state,
-        child: const MaterialApp(home: CareTeamScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [careTeamProvider.overrideWith((ref) => Stream.value(team))],
+        child: AppScope(
+          state: state,
+          child: const MaterialApp(home: CareTeamScreen()),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return state;
   }
@@ -135,12 +138,15 @@ void main() {
   group('add-provider sheet', () {
     Future<PatientAppState> pumpSheet(WidgetTester tester) async {
       final state = PatientAppState();
-      await tester.pumpWidget(ProviderScope(
-        child: AppScope(
-          state: state,
-          child: const MaterialApp(home: Scaffold(body: AddCareProviderSheet())),
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          child: AppScope(
+            state: state,
+            child: const MaterialApp(home: Scaffold(body: AddCareProviderSheet())),
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       return state;
     }
@@ -195,23 +201,29 @@ void main() {
       List<CareProviderFile> files = const [],
     }) async {
       final state = PatientAppState();
-      await tester.pumpWidget(ProviderScope(
-        overrides: [
-          careTeamProvider.overrideWith((ref) => Stream.value(team)),
-          careProviderFilesProvider.overrideWith((ref, id) => Stream.value(files)),
-        ],
-        child: AppScope(
-          state: state,
-          child: const MaterialApp(home: CareTeamScreen()),
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          overrides: [
+            careTeamProvider.overrideWith((ref) => Stream.value(team)),
+            careProviderFilesProvider.overrideWith((ref, id) => Stream.value(files)),
+          ],
+          child: AppScope(
+            state: state,
+            child: const MaterialApp(home: CareTeamScreen()),
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       return state;
     }
 
     testWidgets('previews what is attached', (tester) async {
-      await pumpWithFiles(tester, [provider('Dr. Ahmed')],
-          files: const [CareProviderFile.file('v/a.pdf'), CareProviderFile.file('v/b.pdf')]);
+      await pumpWithFiles(
+        tester,
+        [provider('Dr. Ahmed')],
+        files: const [CareProviderFile.file('v/a.pdf'), CareProviderFile.file('v/b.pdf')],
+      );
       // Unconditional now: `home.jsx` dropped the drawer the strip used to give
       // way to, so the card always shows what is there.
       expect(find.byType(VaultAttachmentThumb), findsNWidgets(2));

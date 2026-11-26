@@ -1,7 +1,7 @@
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/home_widgets.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The app.css window-class layer, for the rules that are not the shell:
 /// `.pad-top` / `.appbar` chrome allowances and the `.metric-grid` track
@@ -15,12 +15,14 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(MaterialApp(
-      home: MediaQuery(
-        data: MediaQueryData(size: window, padding: padding ?? EdgeInsets.zero),
-        child: Directionality(textDirection: TextDirection.ltr, child: child),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(size: window, padding: padding ?? EdgeInsets.zero),
+          child: Directionality(textDirection: TextDirection.ltr, child: child),
+        ),
       ),
-    ));
+    );
     return tester.getSize(find.byKey(key));
   }
 
@@ -65,7 +67,7 @@ void main() {
           const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppBarRow(key: bar, children: [SizedBox(height: 20, width: 20)])
+              AppBarRow(key: bar, children: [SizedBox(height: 20, width: 20)]),
             ],
           ),
           bar,
@@ -90,13 +92,15 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-      await tester.pumpWidget(MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          // 20px page gutters, as every screen sets.
-          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: grid()),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.ltr,
+            // 20px page gutters, as every screen sets.
+            child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: grid()),
+          ),
         ),
-      ));
+      );
       final top = tester.getRect(find.byKey(const Key('t0'))).top;
       return [for (var i = 0; i < 4; i++) tester.getRect(find.byKey(Key('t$i')))].where((r) => r.top == top).length;
     }

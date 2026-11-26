@@ -41,8 +41,8 @@ void main() {
     });
 
     test('draws one ribbon and one head, five times each', () {
-      expect(RegExp(r'<use href="#ribbon"').allMatches(svg), hasLength(5));
-      expect(RegExp(r'<use href="#head"').allMatches(svg), hasLength(5));
+      expect(RegExp('<use href="#ribbon"').allMatches(svg), hasLength(5));
+      expect(RegExp('<use href="#head"').allMatches(svg), hasLength(5));
     });
   });
 
@@ -58,8 +58,10 @@ void main() {
           isEmpty,
           reason: 'run tool/sync_brand_svg.py rather than copying Core by hand',
         );
-        expect(RegExp(r'<linearGradient[^>]*gradientUnits="userSpaceOnUse"').allMatches(svg).length,
-            greaterThanOrEqualTo(10));
+        expect(
+          RegExp('<linearGradient[^>]*gradientUnits="userSpaceOnUse"').allMatches(svg).length,
+          greaterThanOrEqualTo(10),
+        );
       });
 
       test('drops the SVG-2 paint fallback', () {
@@ -96,9 +98,12 @@ void main() {
     test('paints white and nothing else', () {
       // A watermark on an accent fill. Any other ink here would mean Core
       // shipped the wrong variant, which is invisible until it renders.
-      final fills = RegExp(r'fill="(?!none")([^"]+)"').allMatches(svg).map((m) => m.group(1)!).toSet();
-      expect(fills.difference({'#fff', '#FFF', '#ffffff', '#FFFFFF', 'white'}), isEmpty,
-          reason: 'unexpected ink in the mono-white mark: $fills');
+      final fills = RegExp('fill="(?!none")([^"]+)"').allMatches(svg).map((m) => m.group(1)!).toSet();
+      expect(
+        fills.difference({'#fff', '#FFF', '#ffffff', '#FFFFFF', 'white'}),
+        isEmpty,
+        reason: 'unexpected ink in the mono-white mark: $fills',
+      );
     });
 
     testWidgets('resolves its <use href> through flutter_svg', (tester) async {

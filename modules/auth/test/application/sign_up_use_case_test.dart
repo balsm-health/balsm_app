@@ -1,7 +1,7 @@
 import 'package:auth/auth.dart';
-import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:auth/src/infrastructure/api/auth_exception.dart';
 import 'package:auth/src/infrastructure/api/balsm_auth_adapter.dart';
+import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

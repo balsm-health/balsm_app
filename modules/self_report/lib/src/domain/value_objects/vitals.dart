@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// A self-reported vitals snapshot taken during a check-in. Every field is
 /// nullable — the patient fills only what they measured. PHI; on-device only.
 ///
@@ -5,6 +7,7 @@
 /// SpO₂ in %, glucose in mg/dL. Glucose is split by context
 /// (fasting / post-meal / random) because those are not interchangeable
 /// readings.
+@immutable
 class Vitals {
   const Vitals({
     this.systolic,
@@ -17,6 +20,18 @@ class Vitals {
     this.glucosePostMeal,
     this.glucoseRandom,
   });
+
+  factory Vitals.fromRow(Map<String, dynamic> row) => Vitals(
+        systolic: row['systolic'] as int?,
+        diastolic: row['diastolic'] as int?,
+        heartRate: row['heart_rate'] as int?,
+        temperature: (row['temperature'] as num?)?.toDouble(),
+        weightKg: (row['weight_kg'] as num?)?.toDouble(),
+        spo2: row['spo2'] as int?,
+        glucoseFasting: row['glucose_fasting'] as int?,
+        glucosePostMeal: row['glucose_post_meal'] as int?,
+        glucoseRandom: row['glucose_random'] as int?,
+      );
 
   static const empty = Vitals();
 
@@ -103,16 +118,4 @@ class Vitals {
         'glucose_post_meal': glucosePostMeal,
         'glucose_random': glucoseRandom,
       };
-
-  factory Vitals.fromRow(Map<String, dynamic> row) => Vitals(
-        systolic: row['systolic'] as int?,
-        diastolic: row['diastolic'] as int?,
-        heartRate: row['heart_rate'] as int?,
-        temperature: (row['temperature'] as num?)?.toDouble(),
-        weightKg: (row['weight_kg'] as num?)?.toDouble(),
-        spo2: row['spo2'] as int?,
-        glucoseFasting: row['glucose_fasting'] as int?,
-        glucosePostMeal: row['glucose_post_meal'] as int?,
-        glucoseRandom: row['glucose_random'] as int?,
-      );
 }

@@ -21,26 +21,30 @@ void main() {
     final state = PatientAppState()
       ..route = AppRoutes.app
       ..setAccountMode(AccountMode.deviceOnly);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [deviceAccountRemoverProvider.overrideWithValue(remover)],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Consumer(
-            builder: (context, ref, _) => Scaffold(
-              body: Center(
-                child: TextButton(
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [deviceAccountRemoverProvider.overrideWithValue(remover)],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Consumer(
+              builder: (context, ref, _) => Scaffold(
+                body: Center(
+                  child: TextButton(
                     onPressed: () async {
                       if (!await confirmRemoveDeviceAccount(context, state)) return onDone(false);
                       onDone(await removeDeviceAccount(ref, state));
                     },
-                    child: const Text('remove')),
+                    child: const Text('remove'),
+                  ),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     return state;
   }
 

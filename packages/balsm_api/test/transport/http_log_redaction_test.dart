@@ -22,13 +22,13 @@ void main() {
 
   group('body', () {
     test('keeps the fields that identify a request', () {
-      final out = HttpLogInterceptor.redactBody({'email': 'patient@example.test', 'device_label': 'iPhone'}) as Map;
+      final out = HttpLogInterceptor.redactBody({'email': 'patient@example.test', 'device_label': 'iPhone'})! as Map;
 
       expect(out, {'email': 'patient@example.test', 'device_label': 'iPhone'});
     });
 
     test('hides a password', () {
-      final out = HttpLogInterceptor.redactBody({'email': 'patient@example.test', 'password': 'hunter2'}) as Map;
+      final out = HttpLogInterceptor.redactBody({'email': 'patient@example.test', 'password': 'hunter2'})! as Map;
 
       expect(out['password'], isNot(contains('hunter2')));
       expect(out['email'], 'patient@example.test', reason: 'still useful for debugging');
@@ -40,7 +40,7 @@ void main() {
         'new_password': 'hunter2',
         'refresh_token': 'rt_abcdef',
         'id_token': 'eyJhbGciOi',
-      }) as Map;
+      })! as Map;
 
       expect(out.values.join(), isNot(contains('123456')));
       expect(out.values.join(), isNot(contains('hunter2')));
@@ -53,27 +53,27 @@ void main() {
       // AccountLocked. Hiding those leaves a log that says a request failed
       // and refuses to say how.
       final out = HttpLogInterceptor.redactBody({
-        'error': {'code': 'InvalidCredentials', 'message': 'Invalid email or password.'}
-      }) as Map;
+        'error': {'code': 'InvalidCredentials', 'message': 'Invalid email or password.'},
+      })! as Map;
 
       expect((out['error'] as Map)['code'], 'InvalidCredentials');
       expect((out['error'] as Map)['message'], 'Invalid email or password.');
     });
 
     test('keeps a country code', () {
-      final out = HttpLogInterceptor.redactBody({'country_code': 'EG'}) as Map;
+      final out = HttpLogInterceptor.redactBody({'country_code': 'EG'})! as Map;
 
       expect(out['country_code'], 'EG');
     });
 
     test('keeps a numeric status code', () {
-      final out = HttpLogInterceptor.redactBody({'status_code': 429}) as Map;
+      final out = HttpLogInterceptor.redactBody({'status_code': 429})! as Map;
 
       expect(out['status_code'], 429);
     });
 
     test('still hides a six-digit one-time code', () {
-      final out = HttpLogInterceptor.redactBody({'code': '123456'}) as Map;
+      final out = HttpLogInterceptor.redactBody({'code': '123456'})! as Map;
 
       expect(out['code'], isNot('123456'));
     });
@@ -83,10 +83,10 @@ void main() {
         'data': {
           'session': {'access_token': 'at_secret'},
           'devices': [
-            {'password': 'hunter2'}
+            {'password': 'hunter2'},
           ],
         },
-      }) as Map;
+      })! as Map;
 
       expect(out.toString(), isNot(contains('at_secret')));
       expect(out.toString(), isNot(contains('hunter2')));

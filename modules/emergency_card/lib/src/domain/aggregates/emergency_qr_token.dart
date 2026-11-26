@@ -11,6 +11,13 @@ class EmergencyQrToken {
     this.revokedAt,
   });
 
+  factory EmergencyQrToken.fromJson(Map<String, dynamic> json) => EmergencyQrToken(
+        jti: QrTokenId.value(json['jti'] as String),
+        expiresAt: json['expiresAt'] == null ? null : DateTime.parse(json['expiresAt'] as String),
+        revokedAt: json['revokedAt'] == null ? null : DateTime.parse(json['revokedAt'] as String),
+        ttlSeconds: json['ttlSeconds'] as int,
+      );
+
   /// Token ID returned by the server's mint endpoint.
   final QrTokenId jti;
 
@@ -48,11 +55,4 @@ class EmergencyQrToken {
         'revokedAt': revokedAt?.toUtc().toIso8601String(),
         'ttlSeconds': ttlSeconds,
       };
-
-  factory EmergencyQrToken.fromJson(Map<String, dynamic> json) => EmergencyQrToken(
-        jti: QrTokenId.value(json['jti'] as String),
-        expiresAt: json['expiresAt'] == null ? null : DateTime.parse(json['expiresAt'] as String),
-        revokedAt: json['revokedAt'] == null ? null : DateTime.parse(json['revokedAt'] as String),
-        ttlSeconds: json['ttlSeconds'] as int,
-      );
 }

@@ -3,6 +3,16 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+/// An IndexedDB request failed.
+class IdbException implements Exception {
+  const IdbException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'IdbException: $message';
+}
+
 /// One IndexedDB database with a fixed set of object stores, each request in
 /// its own transaction. Web only.
 class Idb {
@@ -15,7 +25,10 @@ class Idb {
   Future<web.IDBDatabase> _open() => _db ??= () {
         final request = web.window.indexedDB.open(name, 1);
         request.onupgradeneeded = ((web.Event _) {
-          final db = request.result as web.IDBDatabase;
+          final db = request.result! as web.IDBDatabase;
+          // A loop, not `stores.forEach(db.createObjectStore)`: dart2js and
+          // dart2wasm refuse a tear-off of a JS interop member.
+          // ignore: prefer_foreach
           for (final store in stores) {
             db.createObjectStore(store);
           }
@@ -26,7 +39,7 @@ class Idb {
   Future<T> _await<T extends JSAny?>(web.IDBRequest request) {
     final done = Completer<T>();
     request.onsuccess = ((web.Event _) => done.complete(request.result as T)).toJS;
-    request.onerror = ((web.Event _) => done.completeError(StateError('$name: ${request.error?.message}'))).toJS;
+    request.onerror = ((web.Event _) => done.completeError(IdbException('$name: ${request.error?.message}'))).toJS;
     return done.future;
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderFamily;
 
 import 'dev_config_store.dart';
 
@@ -17,7 +18,7 @@ final devConfigStoreProvider = Provider<DevConfigStore>((ref) => DevConfigStore.
 /// Always false in a release build: dev flags are a debugging affordance, and a
 /// flag that could change production behaviour would be a way to ship one by
 /// accident.
-final devFlagProvider = Provider.family<bool, String>((ref, id) {
+final ProviderFamily<bool, String> devFlagProvider = Provider.family<bool, String>((ref, id) {
   const releaseMode = bool.fromEnvironment('dart.vm.product');
   if (releaseMode) return false;
 

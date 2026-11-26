@@ -50,7 +50,7 @@ void main() {
 
   group('Android', () {
     final manifest = read('android/app/src/main/AndroidManifest.xml');
-    final prefixes = RegExp(r'android:pathPrefix="([^"]+)"').allMatches(manifest).map((m) => m.group(1)!).toList();
+    final prefixes = RegExp('android:pathPrefix="([^"]+)"').allMatches(manifest).map((m) => m.group(1)!).toList();
 
     test('the App Links filter is verified and bound to the app host', () {
       expect(manifest, contains('android:autoVerify="true"'));
@@ -72,8 +72,9 @@ void main() {
       expect(target['package_name'], bundleId);
     });
 
-    final fingerprints = ((jsonDecode(read('web/.well-known/assetlinks.json')) as List).single as Map)['target']
-        ['sha256_cert_fingerprints'] as List;
+    final signingTarget =
+        ((jsonDecode(read('web/.well-known/assetlinks.json')) as List).single as Map)['target'] as Map;
+    final fingerprints = signingTarget['sha256_cert_fingerprints'] as List;
     final placeholder = fingerprints.any((f) => '$f'.contains('PLACEHOLDER'));
     test(
       'assetlinks.json carries a real signing-key fingerprint',
@@ -125,7 +126,7 @@ void main() {
     test('every Runner build configuration signs with the entitlements file', () {
       // Without CODE_SIGN_ENTITLEMENTS the file above is dead text: no build
       // ever carried applinks:, so https links always opened Safari.
-      final configs = RegExp(r'isa = XCBuildConfiguration;.*?name = ([^;]+);', dotAll: true)
+      final configs = RegExp('isa = XCBuildConfiguration;.*?name = ([^;]+);', dotAll: true)
           .allMatches(read('ios/Runner.xcodeproj/project.pbxproj'))
           .map((m) => m.group(0)!)
           .where((b) => b.contains('PRODUCT_BUNDLE_IDENTIFIER = app.balsm.health;'))

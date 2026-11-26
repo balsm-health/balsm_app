@@ -97,7 +97,7 @@ class DriftCareDirectoryDataSource extends LocalCareDirectoryDataSource {
     if (row == null || !row.isFresh(_ttl)) return null;
     try {
       return CareEntity.fromJson(jsonDecode(row.payload) as Map<String, dynamic>);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }
@@ -118,7 +118,7 @@ class DriftCareDirectoryDataSource extends LocalCareDirectoryDataSource {
   List<T>? _decodeList<T>(String payload, T Function(Map<String, dynamic>) fromJson) {
     try {
       return (jsonDecode(payload) as List).map((e) => fromJson(e as Map<String, dynamic>)).toList(growable: false);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

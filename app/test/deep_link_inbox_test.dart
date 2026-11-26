@@ -37,9 +37,10 @@ void main() {
     final inbox = DeepLinkInbox.forTest(platform.stream);
     final oldHandler = <Uri>[];
     final newHandler = <Uri>[];
-    inbox.attach(oldHandler.add);
-    inbox.attach(newHandler.add);
-    inbox.detach(oldHandler.add);
+    inbox
+      ..attach(oldHandler.add)
+      ..attach(newHandler.add)
+      ..detach(oldHandler.add);
 
     platform.add(Uri.parse('balsm://meds'));
     await settle();

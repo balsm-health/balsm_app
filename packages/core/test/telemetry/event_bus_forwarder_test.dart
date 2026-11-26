@@ -20,8 +20,13 @@ class FakeAnalyticsLogger implements AnalyticsLogger {
   @override
   void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {}
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {}
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {}
   @override
   void setUser(String? id) {}
   @override
@@ -59,8 +64,9 @@ void main() {
     final logger = FakeAnalyticsLogger();
     EventBusAnalyticsForwarder(bus: bus, analytics: logger).start();
 
-    bus.publish(const _TestEvent('emergency_qr_token_minted', {}));
-    bus.publish(const _TestEvent('dose.taken', {}));
+    bus
+      ..publish(const _TestEvent('emergency_qr_token_minted', {}))
+      ..publish(const _TestEvent('dose.taken', {}));
     await Future<void>.delayed(Duration.zero);
 
     final byName = {for (final e in logger.events) e.name: e.key};

@@ -88,27 +88,27 @@ void main() {
 
     test('country name + demonym per locale', () {
       final eg = CountryCode.fromCode('EG');
-      expect(eg.name(catalog, locale: 'en'), 'Egypt');
+      expect(eg.name(catalog), 'Egypt');
       expect(eg.name(catalog, locale: 'ar'), 'مصر');
-      expect(eg.demonym(catalog, locale: 'en'), 'Egyptian');
+      expect(eg.demonym(catalog), 'Egyptian');
       expect(eg.demonym(catalog, locale: 'ar'), 'مصري');
     });
 
     test('language name in the UI locale (distinct from endonym)', () {
-      expect(LanguageCode.ar.name(catalog, locale: 'en'), 'Arabic');
+      expect(LanguageCode.ar.name(catalog), 'Arabic');
       expect(LanguageCode.ar.name(catalog, locale: 'ar'), 'العربية');
     });
 
     test('nationality demonym', () {
       final n = Nationality.ofCode('EG');
-      expect(n.demonym(catalog, locale: 'en'), 'Egyptian');
+      expect(n.demonym(catalog), 'Egyptian');
       expect(n, Nationality.ofCode('eg'));
     });
 
     test('relationship label per locale + code round-trip', () {
-      expect(Relationship.spouse.label(catalog, locale: 'en'), 'Spouse');
+      expect(Relationship.spouse.label(catalog), 'Spouse');
       expect(Relationship.spouse.label(catalog, locale: 'ar'), 'الزوج/الزوجة');
-      expect(Relationship.caregiver.label(catalog, locale: 'en'), 'Caregiver');
+      expect(Relationship.caregiver.label(catalog), 'Caregiver');
       expect(Relationship.spouse.wire, 'spouse');
       expect(Relationship.tryFromCode('Caregiver'), Relationship.caregiver); // case-insensitive
       expect(Relationship.tryFromCode('bestie'), isNull); // unknown → null
@@ -117,7 +117,7 @@ void main() {
 
     test('unlisted country falls back to the ISO code, not a bare key', () {
       final zz = CountryCode.fromCode('ZZ');
-      expect(zz.name(catalog, locale: 'en'), 'ZZ');
+      expect(zz.name(catalog), 'ZZ');
     });
   });
 

@@ -2,12 +2,12 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../ports/health_profiles_data_source.dart';
-import '../ports/profile_child_data_sources.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
 
 /// Adds an [Allergy] to the user's [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -35,6 +35,11 @@ class AddAllergyUseCase {
     required UserId userId,
     required String name,
     required String severity,
+
+    /// The person to change: a member profile of `userId`, or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
     bool isControlledSubstance = false,
   }) async {
     final trimmedName = name.trim();
@@ -55,8 +60,11 @@ class AddAllergyUseCase {
     }
 
     try {
-      var profile = await _dao.getProfile(userId);
+      var profile = await _dao.resolveProfile(userId, profileId: profileId);
 
+      if (profile == null && profileId != null) {
+        return AppResult.failure(const NotFoundFailure('Health profile not found'));
+      }
       if (profile == null) {
         // First save — create the profile aggregate before adding children.
         profile = HealthProfile(
@@ -97,7 +105,7 @@ class AddAllergyUseCase {
         HealthProfileUpdated(userId: userId, fieldChanged: 'allergy_added'),
       );
 
-      final updated = await _dao.getProfile(userId);
+      final updated = await _dao.resolveProfile(userId, profileId: profileId);
       // Fall back to a locally-patched aggregate if the re-read fails.
       return AppResult.success(
         updated ??
@@ -115,7 +123,7 @@ class AddAllergyUseCase {
               ],
             ),
       );
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

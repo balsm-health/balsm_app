@@ -1,0 +1,7 @@
+name: balsm_lints
+description: Shared analyzer config for every Balsm package — very_good_analysis plus Balsm's overrides.
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  very_good_analysis: ^10.2.0

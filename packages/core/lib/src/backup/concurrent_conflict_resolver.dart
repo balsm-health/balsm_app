@@ -2,7 +2,7 @@
 // Per FR-009d, FR-009e.
 
 class ConflictResolver {
-  static T mergeAggregate<T extends _Updatable>(T existing, T incoming) {
+  static T mergeAggregate<T extends Updatable>(T existing, T incoming) {
     return existing.updatedAt.isAfter(incoming.updatedAt) ? existing : incoming;
   }
 
@@ -12,10 +12,12 @@ class ConflictResolver {
   ) {
     final merged = <DoseEventRecord>[...existing];
     for (final event in incoming) {
-      final isDuplicate = merged.any((e) =>
-          e.medicationId == event.medicationId &&
-          e.outcome == event.outcome &&
-          (e.scheduledAt.difference(event.scheduledAt).abs() <= const Duration(minutes: 5)));
+      final isDuplicate = merged.any(
+        (e) =>
+            e.medicationId == event.medicationId &&
+            e.outcome == event.outcome &&
+            (e.scheduledAt.difference(event.scheduledAt).abs() <= const Duration(minutes: 5)),
+      );
       if (!isDuplicate) merged.add(event);
     }
     merged.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
@@ -23,7 +25,7 @@ class ConflictResolver {
   }
 }
 
-abstract class _Updatable {
+abstract class Updatable {
   DateTime get updatedAt;
 }
 

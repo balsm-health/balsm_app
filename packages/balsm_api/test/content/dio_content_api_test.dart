@@ -1,0 +1,270 @@
+import 'dart:convert';
+
+import 'package:balsm_api/balsm_api.dart';
+import 'package:dio/dio.dart';
+import 'package:test/test.dart';
+
+import '../helpers/fake_http_adapter.dart';
+
+/// A two-week payload in the server's shape. Placeholder copy only.
+Map<String, dynamic> _payload({String version = 'v-test'}) => {
+      'language': 'ar',
+      'version': version,
+      'source': 'مصدر تجريبي',
+      'disclaimer': 'تنبيه تجريبي',
+      'multiples_note': 'توائم تجريبي',
+      'weeks': [
+        for (final w in [4, 5])
+          {
+            'week': w,
+            'title': 'عنوان $w',
+            'summary': 'نص $w',
+          },
+      ],
+    };
+
+/// [_payload] with the sources, sizes and labels the server added later.
+Map<String, dynamic> _full() => _payload()
+  ..['sources'] = [
+    {
+      'id': 'src-1',
+      'title': 'Test page',
+      'publisher': 'Test publisher',
+      'url': 'https://example.test/',
+      'accessed': '2026-11-24',
+    },
+  ]
+  ..['danger_sign_labels'] = {
+    'bleeding': 'نزيف',
+  }
+  ..['labels'] = {
+    'sources_more': 'المصادر ({n})',
+  }
+  ..['topic_labels'] = {
+    'visits': 'زيارات',
+  }
+  ..['illustration_credits'] = {
+    'art': {
+      'author': 'Test artist',
+      'license': 'CC BY-ND 4.0',
+      'license_url': 'https://example.test/licence',
+      'author_url': 'https://example.test/',
+      'text': 'رسم: فنان تجريبي',
+    },
+  }
+  ..['test_labels'] = {
+    'early_ultrasound': 'سونار مبكر',
+  }
+  ..['symptom_guide'] = {
+    'nausea': {
+      'label': 'غثيان',
+      'self_care': 'زنجبيل',
+      'call_doctor_if': 'قيء مستمر',
+      'sources': ['src-1'],
+    },
+  }
+  ..['weeks'] = [
+    for (final w in (_payload()['weeks'] as List).cast<Map<String, dynamic>>())
+      {
+        ...w,
+        'symptoms': ['nausea'],
+        'feelings': 'مشاعر ${w['week']}',
+        'tips': ['نصيحة ${w['week']}'],
+        'tests_due': ['early_ultrasound'],
+        'danger_signs': ['bleeding'],
+        'topics': ['visits'],
+        'sources': ['src-1'],
+        'baby': {
+          'fact': 'حقيقة ${w['week']}',
+          'fetal_size': {
+            'length_mm': null,
+            'weight_g': w['week'] == 5 ? 45 : null,
+            'comparison': w['week'] == 4 ? 'بذرة' : null,
+          },
+          'media': w['week'] == 5
+              ? {
+                  'kind': 'image',
+                  'alt': 'رسم الأسبوع 5',
+                  'credit': 'art',
+                  'source_url': 'https://example.test/art',
+                  'axes': [
+                    {'id': 'theme', 'source': 'app'},
+                    {
+                      'id': 'gender',
+                      'source': 'user',
+                      'label': 'الطفل',
+                      'options': [
+                        {'value': 'girl', 'label': 'بنت'},
+                        {'value': 'boy', 'label': 'ولد'},
+                      ],
+                      'default': 'girl',
+                    },
+                  ],
+                  'renditions': [
+                    {
+                      'when': {'theme': 'light'},
+                      'url': 'https://cdn.example.test/w5.jpg',
+                      'mime': 'image/jpeg',
+                      'width': 679,
+                      'height': 480,
+                      'bytes': 30795,
+                      'thumbnail': {
+                        'url': 'https://cdn.example.test/w5-thumb.jpg',
+                        'mime': 'image/jpeg',
+                        'width': 160,
+                        'height': 113,
+                        'bytes': 4100,
+                      },
+                    },
+                    {
+                      'when': {'theme': 'dark'},
+                      'url': 'https://cdn.example.test/w5-dark.jpg',
+                      'mime': 'image/jpeg',
+                      'width': 679,
+                      'height': 480,
+                      'bytes': 30100,
+                      'thumbnail': null,
+                    },
+                    {'when': <String, String>{}, 'mime': 'image/jpeg'},
+                  ],
+                }
+              : null,
+          'sources': ['src-1'],
+        },
+      },
+  ];
+
+void main() {
+  group('DioContentApi.pregnancyWeeks', () {
+    test('GETs the route, unwraps the envelope and keeps the ETag', () async {
+      final adapter = FakeHttpAdapter(
+        (_) => jsonResponse(
+          jsonEncode({'data': _payload()}),
+          headers: {
+            'etag': ['"pw-1"'],
+          },
+        ),
+      );
+
+      final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(lang: 'ar');
+
+      expect(adapter.requests.single.path, ApiRoutes.content_pregnancy_weeks);
+      expect(adapter.requests.single.queryParameters, {'lang': 'ar'});
+      expect(adapter.requests.single.headers.containsKey('If-None-Match'), isFalse);
+      final fresh = res as Modified<PregnancyWeeksResponse>;
+      expect(fresh.etag, '"pw-1"');
+      expect(fresh.value.version, 'v-test');
+      expect(fresh.value.multiplesNote, 'توائم تجريبي');
+      expect(fresh.value.language, 'ar');
+      expect(fresh.value.weeks.map((w) => w.week), [4, 5]);
+      expect(fresh.value.weeks.last.title, 'عنوان 5');
+    });
+
+    test('sends If-None-Match and maps an empty 304 to NotModified', () async {
+      final adapter = FakeHttpAdapter((_) => ResponseBody.fromString('', 304));
+
+      final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(lang: 'ar', etag: '"pw-1"');
+
+      expect(adapter.requests.single.headers['If-None-Match'], '"pw-1"');
+      expect(res, isA<NotModified<PregnancyWeeksResponse>>());
+    });
+
+    test('a 401 surfaces as ApiException', () async {
+      final adapter = FakeHttpAdapter((_) => jsonResponse('{}', status: 401));
+
+      expect(
+        () => DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(lang: 'en'),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401)),
+      );
+    });
+  });
+
+  group('PregnancyWeeksResponse', () {
+    test('toJson round-trips fromJson', () {
+      final parsed = PregnancyWeeksResponse.fromJson(_full());
+
+      final again = PregnancyWeeksResponse.fromJson(parsed.toJson());
+
+      expect(again.toJson(), parsed.toJson());
+    });
+
+    test('reads the sources, sizes and labels', () {
+      final parsed = PregnancyWeeksResponse.fromJson(_full());
+      final (four, five) = (parsed.weeks.first, parsed.weeks.last);
+
+      expect(parsed.sources.single.accessed, '2026-11-24');
+      expect(parsed.dangerSignLabels['bleeding'], 'نزيف');
+      expect(parsed.testLabels['early_ultrasound'], 'سونار مبكر');
+      final size4 = four.baby.fetalSize;
+      expect((size4.lengthMm, size4.weightG, size4.comparison), (null, null, 'بذرة'));
+      expect((five.baby.fetalSize.weightG, five.baby.fetalSize.comparison), (45, null));
+      expect(five.testsDue, ['early_ultrasound']);
+      expect(five.dangerSigns, ['bleeding']);
+      expect(five.topics, ['visits']);
+      expect(five.sources, ['src-1']);
+      expect(four.baby.media, isNull);
+      final art = five.baby.media!;
+      expect(
+        (art.kind, art.alt, art.credit, art.sourceUrl),
+        ('image', 'رسم الأسبوع 5', 'art', 'https://example.test/art'),
+      );
+      expect([for (final a in art.axes) (a.id, a.source)], [('theme', 'app'), ('gender', 'user')]);
+      final gender = art.axes.last;
+      expect((gender.label, gender.defaultValue), ('الطفل', 'girl'));
+      expect([for (final o in gender.options) (o.value, o.label)], [('girl', 'بنت'), ('boy', 'ولد')]);
+      // The rendition without a url is dropped, not a crash.
+      final renditions = [for (final r in art.renditions) (r.when.toString(), r.file.url)];
+      expect(renditions, [
+        ('{theme: light}', 'https://cdn.example.test/w5.jpg'),
+        ('{theme: dark}', 'https://cdn.example.test/w5-dark.jpg'),
+      ]);
+      final light = art.renditions.first;
+      expect((light.file.mime, light.file.width, light.file.height, light.file.bytes), ('image/jpeg', 679, 480, 30795));
+      expect((light.thumbnail!.url, light.thumbnail!.width), ('https://cdn.example.test/w5-thumb.jpg', 160));
+      expect(art.renditions.last.thumbnail, isNull);
+      expect(parsed.illustrationCredits['art']!.text, 'رسم: فنان تجريبي');
+      expect(five.symptoms, ['nausea']);
+      expect(five.tips, ['نصيحة 5']);
+      expect((five.feelings, five.baby.fact), ('مشاعر 5', 'حقيقة 5'));
+      expect(parsed.symptomGuide['nausea']!.callDoctorIf, 'قيء مستمر');
+      expect(parsed.labels['sources_more'], 'المصادر ({n})');
+      expect(parsed.topicLabels['visits'], 'زيارات');
+    });
+
+    test('a copy cached before those fields reads them as empty', () {
+      final parsed = PregnancyWeeksResponse.fromJson(_payload());
+      final week = parsed.weeks.first;
+
+      expect(parsed.sources, isEmpty);
+      expect(parsed.dangerSignLabels, isEmpty);
+      expect(parsed.testLabels, isEmpty);
+      expect(parsed.labels, isEmpty);
+      expect(parsed.topicLabels, isEmpty);
+      final baby = week.baby;
+      expect((baby.fetalSize.lengthMm, baby.fetalSize.comparison, baby.media), (null, null, null));
+      expect(week.testsDue, isEmpty);
+    });
+
+    test('a text that is not a string arrives as empty, not a crash', () {
+      final json = _payload()..['source'] = {'en': 'An old both-languages shape'};
+
+      final parsed = PregnancyWeeksResponse.fromJson(json);
+
+      expect(parsed.source, '');
+    });
+
+    test('a week without a number is skipped', () {
+      final json = _payload();
+      (json['weeks'] as List).add({
+        'title': 'x',
+      });
+
+      expect(PregnancyWeeksResponse.fromJson(json).weeks, hasLength(2));
+    });
+
+    test('no version or no weeks is a FormatException', () {
+      expect(() => PregnancyWeeksResponse.fromJson(_payload()..remove('version')), throwsFormatException);
+      expect(() => PregnancyWeeksResponse.fromJson(_payload()..['weeks'] = <dynamic>[]), throwsFormatException);
+    });
+  });
+}

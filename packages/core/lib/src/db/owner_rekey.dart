@@ -5,9 +5,9 @@ import 'package:drift/drift.dart';
 /// covered without touching the helpers below.
 Future<List<String>> tablesWithColumn(GeneratedDatabase db, String column) async {
   final rows = await db.customSelect(
-    "SELECT m.name AS t FROM sqlite_master m "
+    'SELECT m.name AS t FROM sqlite_master m '
     "WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%' "
-    "AND EXISTS (SELECT 1 FROM pragma_table_info(m.name) c WHERE c.name = ?)",
+    'AND EXISTS (SELECT 1 FROM pragma_table_info(m.name) c WHERE c.name = ?)',
     variables: [Variable.withString(column)],
   ).get();
   return [for (final r in rows) r.read<String>('t')];
@@ -35,8 +35,9 @@ Future<int> rekeyOwner(
 ///
 /// `health_profile` has no UNIQUE(user_id), so a plain re-key could leave the
 /// merged account with two self profiles. When [to] already owns one, every
-/// `health_profile_id` column pointing at [from]'s profile is re-pointed to
-/// [to]'s, and [from]'s now-empty profile row is deleted — after copying its
+/// `health_profile_id` column pointing at [from]'s self profile is re-pointed
+/// to [to]'s, and [from]'s now-empty self row is deleted (dependent profiles
+/// move across unchanged) — after copying its
 /// blood type, weight and height into any of those [to] has left NULL, and
 /// demoting [from]'s primary emergency contact if [to] already has one. Then every
 /// `user_id` row moves, dropping [from]'s outbox rows. All in one
@@ -47,18 +48,25 @@ Future<int> mergeOwner(GeneratedDatabase db, {required String from, required Str
     var changed = 0;
     final owned = await ownedTables(db);
     if (owned.contains('health_profile')) {
+      final headCols = await _columnsOf(db, 'health_profile');
+      // Only the two accounts' SELF profiles fold together. The offline
+      // account's dependent profiles (family members) are other people: they
+      // move across whole with the user_id re-key below, never merged into the
+      // target's self. A schema without `is_self` predates dependents, so
+      // every row there is a self row.
+      final hasSelfFlag = headCols.contains('is_self');
+      final selfOnly = hasSelfFlag ? ' AND is_self = 1' : '';
       final target = await db.customSelect(
-        'SELECT id FROM health_profile WHERE user_id = ? ORDER BY rowid LIMIT 1',
+        'SELECT id FROM health_profile WHERE user_id = ?$selfOnly ORDER BY rowid LIMIT 1',
         variables: [Variable.withString(to)],
       ).get();
       if (target.isNotEmpty) {
         final targetId = target.first.read<String>('id');
         final offline = await db.customSelect(
-          'SELECT id FROM health_profile WHERE user_id = ?',
+          'SELECT id FROM health_profile WHERE user_id = ?$selfOnly',
           variables: [Variable.withString(from)],
         ).get();
         final children = await tablesWithColumn(db, 'health_profile_id');
-        final headCols = await _columnsOf(db, 'health_profile');
         final hasPrimaryFlag = (await _columnsOf(db, 'emergency_contact')).contains('is_primary');
         for (final p in offline) {
           final pid = p.read<String>('id');
@@ -67,26 +75,34 @@ Future<int> mergeOwner(GeneratedDatabase db, {required String from, required Str
           for (final c in _profileHeadFields) {
             if (!headCols.contains(c)) continue;
             changed += await db.customUpdate(
-                'UPDATE health_profile SET "$c" = COALESCE("$c", (SELECT "$c" FROM health_profile WHERE id = ?)) '
-                'WHERE id = ?',
-                variables: [Variable.withString(pid), Variable.withString(targetId)],
-                updateKind: UpdateKind.update);
+              'UPDATE health_profile SET "$c" = COALESCE("$c", (SELECT "$c" FROM health_profile WHERE id = ?)) '
+              'WHERE id = ?',
+              variables: [Variable.withString(pid), Variable.withString(targetId)],
+              updateKind: UpdateKind.update,
+            );
           }
           // One primary emergency contact per profile: if the target already
           // has one, the offline contacts join as non-primary.
           if (hasPrimaryFlag) {
             changed += await db.customUpdate(
-                'UPDATE emergency_contact SET is_primary = 0 WHERE health_profile_id = ? AND is_primary <> 0 '
-                'AND EXISTS (SELECT 1 FROM emergency_contact WHERE health_profile_id = ? AND is_primary <> 0)',
-                variables: [Variable.withString(pid), Variable.withString(targetId)],
-                updateKind: UpdateKind.update);
+              'UPDATE emergency_contact SET is_primary = 0 WHERE health_profile_id = ? AND is_primary <> 0 '
+              'AND EXISTS (SELECT 1 FROM emergency_contact WHERE health_profile_id = ? AND is_primary <> 0)',
+              variables: [Variable.withString(pid), Variable.withString(targetId)],
+              updateKind: UpdateKind.update,
+            );
           }
           for (final t in children) {
-            changed += await db.customUpdate('UPDATE "$t" SET health_profile_id = ? WHERE health_profile_id = ?',
-                variables: [Variable.withString(targetId), Variable.withString(pid)], updateKind: UpdateKind.update);
+            changed += await db.customUpdate(
+              'UPDATE "$t" SET health_profile_id = ? WHERE health_profile_id = ?',
+              variables: [Variable.withString(targetId), Variable.withString(pid)],
+              updateKind: UpdateKind.update,
+            );
           }
-          changed += await db.customUpdate('DELETE FROM health_profile WHERE id = ?',
-              variables: [Variable.withString(pid)], updateKind: UpdateKind.delete);
+          changed += await db.customUpdate(
+            'DELETE FROM health_profile WHERE id = ?',
+            variables: [Variable.withString(pid)],
+            updateKind: UpdateKind.delete,
+          );
         }
       }
     }
@@ -117,7 +133,12 @@ Future<int> discardOwner(GeneratedDatabase db, {required String owner}) async {
     if (owned.contains('health_profile')) {
       for (final t in await tablesWithColumn(db, 'health_profile_id')) {
         changed += await _deleteWhere(
-            db, t, 'health_profile_id IN (SELECT id FROM health_profile WHERE user_id = ?)', vars, const []);
+          db,
+          t,
+          'health_profile_id IN (SELECT id FROM health_profile WHERE user_id = ?)',
+          vars,
+          const [],
+        );
       }
     }
     for (final t in owned) {
@@ -136,11 +157,17 @@ Future<int> _rekeyRows(
   var changed = 0;
   for (final t in await ownedTables(db)) {
     if (dropOutbox && t == 'sync_outbox') {
-      changed += await db.customUpdate('DELETE FROM "$t" WHERE user_id = ?',
-          variables: [Variable.withString(from)], updateKind: UpdateKind.delete);
+      changed += await db.customUpdate(
+        'DELETE FROM "$t" WHERE user_id = ?',
+        variables: [Variable.withString(from)],
+        updateKind: UpdateKind.delete,
+      );
     } else {
-      changed += await db.customUpdate('UPDATE "$t" SET user_id = ? WHERE user_id = ?',
-          variables: [Variable.withString(to), Variable.withString(from)], updateKind: UpdateKind.update);
+      changed += await db.customUpdate(
+        'UPDATE "$t" SET user_id = ? WHERE user_id = ?',
+        variables: [Variable.withString(to), Variable.withString(from)],
+        updateKind: UpdateKind.update,
+      );
     }
   }
   return changed;
@@ -158,8 +185,8 @@ Future<int> _deleteWhere(
 ) async {
   var changed = 0;
   final refs = await db.customSelect(
-    "SELECT m.name AS child, f.\"from\" AS col, f.\"to\" AS parent_col "
-    "FROM sqlite_master m, pragma_foreign_key_list(m.name) f "
+    'SELECT m.name AS child, f."from" AS col, f."to" AS parent_col '
+    'FROM sqlite_master m, pragma_foreign_key_list(m.name) f '
     "WHERE m.type = 'table' AND lower(f.\"table\") = lower(?)",
     variables: [Variable.withString(table)],
   ).get();

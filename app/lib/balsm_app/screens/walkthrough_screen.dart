@@ -1,16 +1,40 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
-import '../routes.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../responsive.dart';
+import '../routes.dart';
 import '../tokens.dart';
 import '../widgets/balsm_mark.dart';
+import '../widgets/language_pill.dart';
+
+// The 28pt icon tile in a walkthrough demo row.
+const _iconTileRadius = 8.0;
+// The demo tab bar, drawn at the scale of the mock phone.
+const _tabLabelFontSize = 11.5;
+// A demo row, drawn at the scale of the mock phone.
+const _demoRowFontSize = 12.5;
+// One cycle of the looping walkthrough demo.
+const _demoLoop = Duration(milliseconds: 2700);
+
+// Walkthrough-only shadows (`walkthrough.css`). Their alpha and blur differ from the shared
+// AppShadows scale, so they stay local to this screen rather than aliased to it.
+const List<BoxShadow> _tileShadow = [
+  BoxShadow(color: Color(0x1A14202B), blurRadius: 36, offset: Offset(0, 16)), // rgba(20,32,43,0.10)
+  BoxShadow(color: Color(0x0F14202B), blurRadius: 8, offset: Offset(0, 3)), // rgba(20,32,43,0.06)
+];
+const List<BoxShadow> _demoShadow = [
+  BoxShadow(color: Color(0x1F14202B), blurRadius: 36, offset: Offset(0, 16)), // rgba(20,32,43,0.12)
+  BoxShadow(color: Color(0x0F14202B), blurRadius: 8, offset: Offset(0, 3)), // rgba(20,32,43,0.06)
+];
+const List<BoxShadow> _tabOnShadow = [
+  BoxShadow(color: Color(0x1F14202B), blurRadius: 4, offset: Offset(0, 1)), // rgba(20,32,43,0.12)
+];
 
 /// First-run onboarding walkthrough — Treatment **A · Petal** from the live
 /// Claude Design (`wt-treatments.jsx`, skin `petal`), picked over the
@@ -122,8 +146,11 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     // the design's `useWtSwipe`).
     var forward = dx < 0;
     if (rtl) forward = !forward;
+    // A swipe only moves between slides. Past the last one it does nothing:
+    // leaving the walkthrough is a deliberate press of Get started (or Skip),
+    // never a stray gesture.
     if (forward) {
-      _next(total, s);
+      if (_index < total - 1) _next(total, s);
     } else {
       _prev();
     }
@@ -139,7 +166,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     final rtl = s.rtl;
 
     return DecoratedBox(
-      decoration: const BoxDecoration(color: T.cream50),
+      decoration: const BoxDecoration(color: AppColors.cream50),
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
@@ -148,53 +175,66 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
             onHorizontalDragUpdate: _onDragUpdate,
             onHorizontalDragEnd: (d) => _onDragEnd(d, rtl, total, s),
             behavior: HitTestBehavior.translucent,
-            child: Column(children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 5, 20, 0),
-                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  _SkipButton(label: wt.wt_skip, onTap: () => _finish(s)),
-                ]),
-              ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: Motion.base,
-                  switchInCurve: Motion.easeOut,
-                  switchOutCurve: Motion.easeOut,
-                  // `wtSlideIn`: the incoming slide enters from ±26px (data-dir),
-                  // fading in as it settles — no exit animation on the outgoing
-                  // one, matching the design's key-remount (not cross-fade).
-                  transitionBuilder: (child, anim) => FadeTransition(
-                    opacity: anim,
-                    child: SlideTransition(
-                      position: Tween(begin: Offset(_dir * 0.08, 0), end: Offset.zero).animate(anim),
-                      child: child,
-                    ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 5, 20, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // The same switch as the welcome screen, at the start edge
+                      // opposite Skip, so a reader can change language before
+                      // reading a word of the story.
+                      const LanguagePill(),
+                      _SkipButton(label: wt.wt_skip, onTap: () => _finish(s)),
+                    ],
                   ),
-                  layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
-                  child: Padding(
-                    key: ValueKey(_index),
-                    padding: const EdgeInsets.fromLTRB(30, 8, 30, 8),
-                    child: Transform.translate(
-                      offset: Offset(_dx * 0.05, 0),
-                      child: _MarkSlide(slide: slide, ar: rtl, strings: wt),
+                ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: Motion.base,
+                    switchInCurve: Motion.easeOut,
+                    switchOutCurve: Motion.easeOut,
+                    // `wtSlideIn`: the incoming slide enters from ±26px (data-dir),
+                    // fading in as it settles — no exit animation on the outgoing
+                    // one, matching the design's key-remount (not cross-fade).
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween(begin: Offset(_dir * 0.08, 0), end: Offset.zero).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    layoutBuilder: (current, previous) => current ?? const SizedBox.shrink(),
+                    child: Padding(
+                      key: ValueKey(_index),
+                      padding: const EdgeInsetsDirectional.fromSTEB(30, 8, 30, 8),
+                      child: Transform.translate(
+                        offset: Offset(_dx * 0.05, 0),
+                        child: _MarkSlide(slide: slide, ar: rtl, strings: wt),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 30),
-                child: Column(children: [
-                  _Dots(total: total, index: _index, accent: slide.accent, onGo: _goTo),
-                  const SizedBox(height: 18),
-                  _WtNextButton(
-                    label: _index == total - 1 ? wt.wt_start : wt.wt_next,
-                    accent: slide.accent,
-                    ar: rtl,
-                    onTap: () => _next(total, s),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 30),
+                  child: Column(
+                    children: [
+                      _Dots(total: total, index: _index, accent: slide.accent, onGo: _goTo),
+                      const SizedBox(height: 18),
+                      _WtActions(
+                        showBack: _index > 0,
+                        backLabel: s.strings.common.back,
+                        nextLabel: _index == total - 1 ? wt.wt_start : wt.wt_next,
+                        ar: rtl,
+                        onBack: _prev,
+                        onNext: () => _next(total, s),
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-            ]),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -210,30 +250,40 @@ class _MarkSlide extends StatelessWidget {
   final WalkthroughStrings strings;
   @override
   Widget build(BuildContext context) {
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      if (slide.demo) _WtDayDemo(accent: slide.accent, ar: ar, strings: strings) else _MarkStage(slide: slide),
-      const SizedBox(height: 34),
-      // `.wt-mark-copy { max-width: 332px }` constrains the whole copy
-      // block, not just the body line — eyebrow and title share the cap too.
-      ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 332),
-        child: Column(children: [
-          // `.eyebrow-l { text-transform: uppercase }` — a no-op on Arabic.
-          Text(slide.eyebrow.toUpperCase(),
-              textAlign: TextAlign.center, style: Typo.eyebrow(slide.accent.main, ar: ar)),
-          const SizedBox(height: 13),
-          Text(slide.title,
-              textAlign: TextAlign.center,
-              style: Typo.display(ar: ar).copyWith(fontSize: FS.xl2, height: 1.16, letterSpacing: -0.52)),
-          const SizedBox(height: 13),
-          Text(slide.body, textAlign: TextAlign.center, style: Typo.body(ar: ar)),
-          if (slide.note != null) ...[
-            const SizedBox(height: 12),
-            Text(slide.note!, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
-          ],
-        ]),
-      ),
-    ]);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (slide.demo) _WtDayDemo(accent: slide.accent, ar: ar, strings: strings) else _MarkStage(slide: slide),
+        const SizedBox(height: 34),
+        // `.wt-mark-copy { max-width: 332px }` constrains the whole copy
+        // block, not just the body line — eyebrow and title share the cap too.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 332),
+          child: Column(
+            children: [
+              // `.eyebrow-l { text-transform: uppercase }` — a no-op on Arabic.
+              Text(
+                slide.eyebrow.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: Typo.eyebrow(slide.accent.main, ar: ar),
+              ),
+              const SizedBox(height: 13),
+              Text(
+                slide.title,
+                textAlign: TextAlign.center,
+                style: Typo.display(ar: ar).copyWith(fontSize: FontSizes.title, height: 1.16, letterSpacing: -0.52),
+              ),
+              const SizedBox(height: 13),
+              Text(slide.body, textAlign: TextAlign.center, style: Typo.body(ar: ar)),
+              if (slide.note case final note?) ...[
+                const SizedBox(height: 12),
+                Text(note, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -245,22 +295,25 @@ class _MarkStage extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
         width: 208,
         height: 208,
-        child: Stack(alignment: Alignment.center, children: [
-          // `.wt-aura { position: absolute; inset: -16px; }` on the 208px
-          // stage — the aura box is 240px, overflowing the stage by design.
-          OverflowBox(
-            maxWidth: 240,
-            maxHeight: 240,
-            child: _MarkAura(color: slide.accent.main),
-          ),
-          Container(
-            width: 132,
-            height: 132,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(color: T.white, shape: BoxShape.circle, boxShadow: T.shadowWtTile),
-            child: _slideGlyph(slide),
-          ),
-        ]),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // `.wt-aura { position: absolute; inset: -16px; }` on the 208px
+            // stage — the aura box is 240px, overflowing the stage by design.
+            OverflowBox(
+              maxWidth: 240,
+              maxHeight: 240,
+              child: _MarkAura(color: slide.accent.main),
+            ),
+            Container(
+              width: 132,
+              height: 132,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: AppColors.white, shape: BoxShape.circle, boxShadow: _tileShadow),
+              child: _slideGlyph(slide),
+            ),
+          ],
+        ),
       );
 }
 
@@ -286,8 +339,7 @@ class _MarkAura extends StatefulWidget {
 }
 
 class _MarkAuraState extends State<_MarkAura> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2700))
-    ..repeat(reverse: true);
+  late final AnimationController _c = AnimationController(vsync: this, duration: _demoLoop)..repeat(reverse: true);
   late final Animation<double> _scale = Tween(begin: 0.96, end: 1.04).animate(
     CurvedAnimation(parent: _c, curve: Curves.easeInOut),
   );
@@ -298,7 +350,7 @@ class _MarkAuraState extends State<_MarkAura> with SingleTickerProviderStateMixi
     super.dispose();
   }
 
-  static const _blobs = [
+  static const List<({double alpha, double dx, double dy, double size})> _blobs = [
     (dx: 0.363, dy: 0.340, size: 0.62, alpha: 0.34), // 14% 8% / 62% 62%
     (dx: 0.644, dy: 0.380, size: 0.60, alpha: 0.26), // 86% 20% / 60% 60%
     (dx: 0.643, dy: 0.660, size: 0.58, alpha: 0.22), // 84% 88% / 58% 58%
@@ -313,29 +365,34 @@ class _MarkAuraState extends State<_MarkAura> with SingleTickerProviderStateMixi
       child: SizedBox(
         width: 240,
         height: 240,
-        child: Stack(children: [
-          for (final b in _blobs)
-            Positioned(
-              left: 240 * b.dx - 240 * b.size / 2,
-              top: 240 * b.dy - 240 * b.size / 2,
-              width: 240 * b.size,
-              height: 240 * b.size,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [widget.color.withValues(alpha: b.alpha), widget.color.withValues(alpha: 0)],
-                    stops: const [0, 0.72], // radial-gradient(closest-side, color, transparent 72%)
+        child: Stack(
+          children: [
+            for (final b in _blobs)
+              PositionedDirectional(
+                start: 240 * b.dx - 240 * b.size / 2,
+                top: 240 * b.dy - 240 * b.size / 2,
+                width: 240 * b.size,
+                height: 240 * b.size,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [widget.color.withValues(alpha: b.alpha), widget.color.withValues(alpha: 0)],
+                      stops: const [0, 0.72], // radial-gradient(closest-side, color, transparent 72%)
+                    ),
                   ),
                 ),
               ),
-            ),
-        ]),
+          ],
+        ),
       ),
     );
     if (reduce) return blur;
     return AnimatedBuilder(
-        animation: _scale, builder: (_, child) => Transform.scale(scale: _scale.value, child: child), child: blur);
+      animation: _scale,
+      builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+      child: blur,
+    );
   }
 }
 
@@ -393,60 +450,71 @@ class _WtDayDemoState extends State<_WtDayDemo> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: const BoxDecoration(
-              color: T.white, borderRadius: BorderRadius.all(Radius.circular(T.rXl)), boxShadow: T.shadowWtDemo),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rLg)),
-              child: Row(spacing: 4, children: [
-                for (final (i, tab) in tabs.indexed)
-                  Expanded(
-                    child: _DemoTab(
-                      icon: tab.$1,
-                      label: tab.$2,
-                      on: i == _tab,
-                      accent: widget.accent,
-                      ar: widget.ar,
-                      onTap: () => _pick(i),
-                    ),
-                  ),
-              ]),
-            ),
-            const SizedBox(height: 10),
-            // `.wt-demo-panel { min-height: 108px }` — a floor, not a fixed
-            // height: the Record tab's two rows render slightly taller than
-            // 108px with real font metrics, so a hard SizedBox clipped/
-            // overflowed here. ConstrainedBox lets it grow instead.
-            ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 108),
-              child: AnimatedSwitcher(
-                duration: Motion.base,
-                child: KeyedSubtree(
-                  key: ValueKey(_tab),
-                  child: switch (_tab) {
-                    0 => _DemoRecords(accent: widget.accent, ar: widget.ar, strings: wt),
-                    1 => _DemoCheckin(
-                        accent: widget.accent,
-                        mood: _mood,
-                        strings: wt,
-                        onMood: (i) => setState(() {
-                              _auto = false;
-                              _mood = i;
-                            })),
-                    _ => _DemoMap(
-                        accent: widget.accent,
-                        pin: _pin,
-                        ar: widget.ar,
-                        strings: wt,
-                        onPin: (i) => setState(() {
-                              _auto = false;
-                              _pin = i;
-                            })),
-                  },
+            color: AppColors.white,
+            borderRadius: BorderRadius.all(Radius.circular(AppRadii.xl)),
+            boxShadow: _demoShadow,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(color: AppColors.cream100, borderRadius: BorderRadius.circular(AppRadii.lg)),
+                child: Row(
+                  spacing: 4,
+                  children: [
+                    for (final (i, tab) in tabs.indexed)
+                      Expanded(
+                        child: _DemoTab(
+                          icon: tab.$1,
+                          label: tab.$2,
+                          on: i == _tab,
+                          accent: widget.accent,
+                          ar: widget.ar,
+                          onTap: () => _pick(i),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-          ]),
+              const SizedBox(height: 10),
+              // `.wt-demo-panel { min-height: 108px }` — a floor, not a fixed
+              // height: the Record tab's two rows render slightly taller than
+              // 108px with real font metrics, so a hard SizedBox clipped/
+              // overflowed here. ConstrainedBox lets it grow instead.
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 108),
+                child: AnimatedSwitcher(
+                  duration: Motion.base,
+                  child: KeyedSubtree(
+                    key: ValueKey(_tab),
+                    child: switch (_tab) {
+                      0 => _DemoRecords(accent: widget.accent, ar: widget.ar, strings: wt),
+                      1 => _DemoCheckin(
+                          accent: widget.accent,
+                          mood: _mood,
+                          strings: wt,
+                          onMood: (i) => setState(() {
+                            _auto = false;
+                            _mood = i;
+                          }),
+                        ),
+                      _ => _DemoMap(
+                          accent: widget.accent,
+                          pin: _pin,
+                          ar: widget.ar,
+                          strings: wt,
+                          onPin: (i) => setState(() {
+                            _auto = false;
+                            _pin = i;
+                          }),
+                        ),
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -454,13 +522,14 @@ class _WtDayDemoState extends State<_WtDayDemo> {
 }
 
 class _DemoTab extends StatelessWidget {
-  const _DemoTab(
-      {required this.icon,
-      required this.label,
-      required this.on,
-      required this.accent,
-      required this.ar,
-      required this.onTap});
+  const _DemoTab({
+    required this.icon,
+    required this.label,
+    required this.on,
+    required this.accent,
+    required this.ar,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final bool on;
@@ -475,17 +544,26 @@ class _DemoTab extends StatelessWidget {
           curve: Motion.easeOut,
           height: 32,
           decoration: BoxDecoration(
-            color: on ? T.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(T.rLg - 3),
-            boxShadow: on ? T.shadowWtTabOn : null,
+            color: on ? AppColors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.lg - 3),
+            boxShadow: on ? _tabOnShadow : null,
           ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 14, color: on ? accent.main : T.fg3),
-            const SizedBox(width: 5),
-            Text(label,
-                style: Typo.body(ar: ar)
-                    .copyWith(fontSize: 11.5, fontWeight: FontWeight.w600, color: on ? accent.main : T.fg3)),
-          ]),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: on ? accent.main : AppColors.textTertiary),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: Typo.body(ar: ar).copyWith(
+                  fontSize: _tabLabelFontSize,
+                  fontWeight: FontWeight.w600,
+                  color: on ? accent.main : AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
@@ -503,35 +581,52 @@ class _DemoRecords extends StatelessWidget {
       (LucideIcons.flaskConical, strings.wt_demo_rec1_t, strings.wt_demo_rec1_d),
       (LucideIcons.fileText, strings.wt_demo_rec2_t, strings.wt_demo_rec2_d),
     ];
-    return Column(children: [
-      for (final (i, r) in rows.indexed)
-        Padding(
-          padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rMd)),
-            child: Row(children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: accent.bg, borderRadius: BorderRadius.circular(8)),
-                child: Icon(r.$1, size: 15, color: accent.main),
+    return Column(
+      children: [
+        for (final (i, r) in rows.indexed)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+              decoration: BoxDecoration(color: AppColors.cream100, borderRadius: BorderRadius.circular(AppRadii.md)),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: accent.bg, borderRadius: BorderRadius.circular(_iconTileRadius)),
+                    child: Icon(r.$1, size: 15, color: accent.main),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.$2,
+                          style: Typo.body(ar: ar).copyWith(
+                            fontSize: _demoRowFontSize,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          r.$3,
+                          style: Typo.body(ar: ar)
+                              .copyWith(fontSize: FontSizes.eyebrow, color: AppColors.textHint, height: 1.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(r.$2,
-                      style: Typo.body(ar: ar)
-                          .copyWith(fontSize: 12.5, fontWeight: FontWeight.w600, color: T.fg1, height: 1.2)),
-                  const SizedBox(height: 1),
-                  Text(r.$3, style: Typo.body(ar: ar).copyWith(fontSize: 11, color: T.fg4, height: 1.2)),
-                ]),
-              ),
-            ]),
+            ),
           ),
-        ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -552,25 +647,38 @@ class _DemoCheckin extends StatelessWidget {
       (LucideIcons.laugh, strings.wt_demo_mood_great),
     ];
     return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           SizedBox(
             height: 52, // <svg className="wt-demo-chart" ... height="52">
             width: double.infinity,
             child: CustomPaint(painter: _SparklinePainter(color: accent.main)),
           ),
           const SizedBox(height: 12),
-          Row(mainAxisAlignment: MainAxisAlignment.center, spacing: 8, children: [
-            for (final (i, m) in moods.indexed)
-              _MoodButton(icon: m.$1, label: m.$2, on: i == mood, accent: accent, onTap: () => onMood(i)),
-          ]),
-        ]));
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 8,
+            children: [
+              for (final (i, m) in moods.indexed)
+                _MoodButton(icon: m.$1, label: m.$2, on: i == mood, accent: accent, onTap: () => onMood(i)),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
 class _MoodButton extends StatelessWidget {
-  const _MoodButton(
-      {required this.icon, required this.label, required this.on, required this.accent, required this.onTap});
+  const _MoodButton({
+    required this.icon,
+    required this.label,
+    required this.on,
+    required this.accent,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final bool on;
@@ -594,10 +702,10 @@ class _MoodButton extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: on ? accent.bg : T.white,
-              border: Border.all(color: on ? accent.main : T.ink100, width: 1.5),
+              color: on ? accent.bg : AppColors.white,
+              border: Border.all(color: on ? accent.main : AppColors.ink100, width: 1.5),
             ),
-            child: Icon(icon, size: 18, color: on ? accent.main : T.fg4, semanticLabel: label),
+            child: Icon(icon, size: 18, color: on ? accent.main : AppColors.textHint, semanticLabel: label),
           ),
         ),
       );
@@ -618,7 +726,8 @@ class _SparklinePainter extends CustomPainter {
       Offset(150, 26),
       Offset(194, 10),
     ];
-    final sx = size.width / 200, sy = size.height / 60;
+    final sx = size.width / 200;
+    final sy = size.height / 60;
     final path = Path()..moveTo(pts.first.dx * sx, pts.first.dy * sy);
     for (final p in pts.skip(1)) {
       path.lineTo(p.dx * sx, p.dy * sy);
@@ -641,8 +750,13 @@ class _SparklinePainter extends CustomPainter {
 /// Nearby tab — three tappable pins over a flat map-tint background
 /// (decorative positions, matches the design's mock `WT_DAY_PINS`).
 class _DemoMap extends StatelessWidget {
-  const _DemoMap(
-      {required this.accent, required this.pin, required this.ar, required this.strings, required this.onPin});
+  const _DemoMap({
+    required this.accent,
+    required this.pin,
+    required this.ar,
+    required this.strings,
+    required this.onPin,
+  });
   final Accent accent;
   final int pin;
   final bool ar;
@@ -661,36 +775,52 @@ class _DemoMap extends StatelessWidget {
     return SizedBox(
       height: 108,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(T.rMd),
-        child: Container(
-          color: T.cream100,
-          child: LayoutBuilder(builder: (context, c) {
-            return Stack(children: [
-              for (var i = 0; i < pins.length; i++)
-                Positioned(
-                  left: pins[i].$1 * c.maxWidth - 10,
-                  top: pins[i].$2 * c.maxHeight - 20,
-                  child: Pressable(
-                    onTap: () => onPin(i),
-                    scale: 0.9,
-                    child: Icon(LucideIcons.mapPin, size: i == pin ? 20 : 16, color: i == pin ? accent.main : T.fg4),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: ColoredBox(
+          color: AppColors.cream100,
+          child: LayoutBuilder(
+            builder: (context, c) {
+              return Stack(
+                children: [
+                  for (var i = 0; i < pins.length; i++)
+                    PositionedDirectional(
+                      start: pins[i].$1 * c.maxWidth - 10,
+                      top: pins[i].$2 * c.maxHeight - 20,
+                      child: Pressable(
+                        onTap: () => onPin(i),
+                        scale: 0.9,
+                        child: Icon(
+                          LucideIcons.mapPin,
+                          size: i == pin ? 20 : 16,
+                          color: i == pin ? accent.main : AppColors.textHint,
+                        ),
+                      ),
+                    ),
+                  PositionedDirectional(
+                    bottom: 8,
+                    start: 8,
+                    end: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
+                      child: Text(
+                        pins[pin].$3,
+                        textAlign: TextAlign.center,
+                        style: Typo.body(ar: ar).copyWith(
+                          fontSize: FontSizes.eyebrow,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              PositionedDirectional(
-                bottom: 8,
-                start: 8,
-                end: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: T.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(T.rPill)),
-                  child: Text(pins[pin].$3,
-                      textAlign: TextAlign.center,
-                      style: Typo.body(ar: ar).copyWith(fontSize: 11, fontWeight: FontWeight.w600, color: T.fg2)),
-                ),
-              ),
-            ]);
-          }),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -711,7 +841,7 @@ class _SkipButton extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 40),
           alignment: Alignment.center,
           padding: const EdgeInsets.all(8),
-          child: Text(label, style: Typo.bodySm().copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+          child: Text(label, style: Typo.bodySm().copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary)),
         ),
       );
 }
@@ -723,62 +853,131 @@ class _Dots extends StatelessWidget {
   final Accent accent;
   final ValueChanged<int> onGo;
   @override
-  Widget build(BuildContext context) => Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        for (var i = 0; i < total; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: GestureDetector(
-              onTap: () => onGo(i),
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                // `.wt-dot { transition: width 0.3s var(--ease-out), ... }`
-                // — an explicit 300ms, not the --dur-base (200ms) token.
-                duration: const Duration(milliseconds: 300),
-                curve: Motion.easeOut,
-                width: i == index ? 22 : 7,
-                height: 7,
-                decoration: BoxDecoration(
-                    color: i == index ? accent.main : T.ink200, borderRadius: BorderRadius.circular(T.rPill)),
+  Widget build(BuildContext context) => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var i = 0; i < total; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: GestureDetector(
+                onTap: () => onGo(i),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  // `.wt-dot { transition: width 0.3s var(--ease-out), ... }`
+                  // — an explicit 300ms, not the --dur-base (200ms) token.
+                  duration: Motion.transition,
+                  curve: Motion.easeOut,
+                  width: i == index ? 22 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: i == index ? accent.main : AppColors.ink200,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                  ),
+                ),
               ),
             ),
-          ),
-      ]);
+        ],
+      );
 }
 
-/// `.wt-next` — same visual weight as the shared `PButton` primary/large
-/// variant, kept as a small local widget only because this CTA needs a
-/// *trailing* arrow (`PButton`'s optional icon renders leading).
+/// Back and Next/Get started, side by side.
 ///
-/// Fill is the **app** accent, not the slide's hue: `.b-btn-primary` paints
-/// `--balsm-primary`, which app.jsx binds once at the root to the accent tweak.
-/// The walkthrough's per-slide `accentVars` rebind only `--app-accent*`, so the
-/// slide hue reaches the box-shadow (`.b-btn-primary { box-shadow:
-/// var(--app-accent-shadow) }`) and nothing else.
-class _WtNextButton extends StatelessWidget {
-  const _WtNextButton({required this.label, required this.accent, required this.ar, required this.onTap});
-  final String label;
+/// Back sits beside Next from the second slide on, the last included: a reader
+/// who skimmed past a slide can return to it. The first slide has nowhere to go
+/// back to, so Back is not there. It grows in (and shrinks away) as the slide
+/// changes, taking its width from Next rather than popping in and shoving the
+/// layout; the Next label cross-fades into "Get started" inside the same button. Both
+/// honour the system's reduce-motion setting.
+class _WtActions extends StatelessWidget {
+  const _WtActions({
+    required this.showBack,
+    required this.backLabel,
+    required this.nextLabel,
+    required this.ar,
+    required this.onBack,
+    required this.onNext,
+  });
 
-  /// The slide's hue — drives the glow only.
-  final Accent accent;
+  final bool showBack;
+  final String backLabel;
+  final String nextLabel;
   final bool ar;
-  final VoidCallback onTap;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+
+  static const double _gap = 12;
+
+  /// A large [PButton]'s height: the clipped slot needs a bounded one.
+  static const double _buttonHeight = 56;
+
+  /// Back's share of the row once shown: 2 parts to Next's 3.
+  static const double _backShare = 2 / 5;
+
   @override
-  Widget build(BuildContext context) => Pressable(
-        onTap: onTap,
-        child: Container(
-          height: 56,
-          width: double.infinity,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: AppScope.of(context).accent.main,
-              borderRadius: BorderRadius.circular(T.rLg),
-              boxShadow: accent.boxShadow),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(label,
-                style: Typo.body(ar: ar).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600, color: T.white)),
-            const SizedBox(width: 9),
-            Transform.flip(flipX: ar, child: const Icon(LucideIcons.arrowRight, size: 19, color: T.white)),
-          ]),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.base;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final backWidth = (c.maxWidth - _gap) * _backShare;
+        return TweenAnimationBuilder<double>(
+          tween: Tween(end: showBack ? 1 : 0),
+          duration: duration,
+          curve: Motion.easeOut,
+          builder: (context, t, _) => Row(
+            children: [
+              if (t > 0) ...[
+                // Laid out at its full width and clipped as the slot grows, so
+                // the label never wraps or ellipsizes mid-animation.
+                ExcludeSemantics(
+                  excluding: !showBack,
+                  child: IgnorePointer(
+                    ignoring: !showBack,
+                    child: Opacity(
+                      opacity: t,
+                      child: ClipRect(
+                        child: SizedBox(
+                          width: backWidth * t,
+                          height: _buttonHeight,
+                          child: OverflowBox(
+                            minWidth: backWidth,
+                            maxWidth: backWidth,
+                            minHeight: _buttonHeight,
+                            maxHeight: _buttonHeight,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: PButton(
+                              backLabel,
+                              icon: backArrow(context),
+                              variant: BtnVariant.secondary,
+                              large: true,
+                              block: true,
+                              ar: ar,
+                              onTap: onBack,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: _gap * t),
+              ],
+              Expanded(
+                // One button for the whole walkthrough: only its label cross-fades
+                // to "Get started"; the fill, glow and arrow never rebuild.
+                child: PButton(
+                  nextLabel,
+                  trailingIcon: forwardArrow(context),
+                  animateLabel: true,
+                  large: true,
+                  block: true,
+                  ar: ar,
+                  onTap: onNext,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

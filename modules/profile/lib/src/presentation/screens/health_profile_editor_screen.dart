@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/add_allergy_use_case.dart';
 import '../../application/use_cases/add_chronic_condition_use_case.dart';
@@ -9,22 +9,13 @@ import '../../application/use_cases/remove_allergy_use_case.dart';
 import '../../application/use_cases/remove_chronic_condition_use_case.dart';
 import '../../application/use_cases/update_health_profile_use_case.dart';
 import '../../domain/aggregates/health_profile.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/value_objects/allergy_severity.dart';
-import '../../i18n/strings.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
-
-/// FR-213: convert any Arabic-Indic digits (٠-٩) in [input] to Western Arabic.
-/// PHI-safe: pure local transform, never logged or transmitted.
-String normalizeArabicNumerals(String input) {
-  return input.replaceAllMapped(
-    RegExp(r'[٠-٩]'),
-    (m) => (m.group(0)!.codeUnitAt(0) - 0x0660).toString(),
-  );
-}
+import '../i18n/i18n.dart';
 
 /// Watches the current user's on-device [HealthProfile]. PHI stays on-device.
-final _currentProfileProvider = StreamProvider.autoDispose<HealthProfile?>((ref) {
+final StreamProvider<HealthProfile?> _currentProfileProvider = StreamProvider.autoDispose<HealthProfile?>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) {
     return Stream<HealthProfile?>.value(null);
@@ -147,22 +138,23 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(_currentProfileProvider);
+    final m = ref.watch(profileStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           children: [
             BalsmAppBar.withBack(
-              title: 'Health Profile',
+              title: m.title,
               onBack: () => Navigator.maybePop(context),
             ),
             Expanded(
               child: profileAsync.when(
                 loading: () => const BalsmLoadingIndicator(),
-                error: (e, _) => const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: BalsmErrorBanner(message: 'Could not load profile'),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: BalsmErrorBanner(message: m.loadError),
                 ),
                 data: (profile) => _buildBody(context, profile),
               ),
@@ -174,20 +166,21 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
   }
 
   Widget _buildBody(BuildContext context, HealthProfile? profile) {
+    final m = ref.watch(profileStringsProvider);
     final allergies = profile?.allergies ?? const <Allergy>[];
     final conditions = profile?.conditions ?? const <ChronicCondition>[];
     final contacts = profile?.emergencyContacts ?? const <EmergencyContact>[];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
       children: [
-        if (_errorMessage != null) ...[
-          BalsmErrorBanner(message: _errorMessage!),
+        if (_errorMessage case final errorMessage?) ...[
+          BalsmErrorBanner(message: errorMessage),
           const SizedBox(height: 16),
         ],
 
         // ---- Blood type ----
-        const _SectionHeader(title: 'Blood Type'),
+        _SectionHeader(title: m.bloodType),
         const SizedBox(height: 8),
         _BloodTypeDropdown(
           value: profile?.bloodType,
@@ -197,12 +190,12 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
 
         // ---- Allergies ----
         _SectionHeader(
-          title: 'Allergies',
+          title: m.allergies.label,
           trailing: _AddButton(onTap: _addAllergy),
         ),
         const SizedBox(height: 8),
         if (allergies.isEmpty)
-          const _EmptyHint(text: 'No allergies added')
+          _EmptyHint(text: m.noAllergies)
         else
           BalsmListCard(
             children: [
@@ -214,10 +207,10 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (a.isControlledSubstance)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 6),
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 6),
                           child: BalsmPill(
-                            label: 'Controlled',
+                            label: m.controlled,
                             variant: BalsmPillVariant.info,
                           ),
                         ),
@@ -226,9 +219,9 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                         variant: _severityVariant(a.severity),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, size: 18, color: BalsmColors.fg4),
+                        icon: const Icon(Icons.close, size: 18, color: AppColors.textHint),
                         onPressed: () => _removeAllergy(a.id),
-                        tooltip: 'Remove',
+                        tooltip: m.remove,
                       ),
                     ],
                   ),
@@ -240,12 +233,12 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
 
         // ---- Chronic conditions ----
         _SectionHeader(
-          title: 'Chronic Conditions',
+          title: m.chronicConditions,
           trailing: _AddButton(onTap: _addCondition),
         ),
         const SizedBox(height: 8),
         if (conditions.isEmpty)
-          const _EmptyHint(text: 'No conditions added')
+          _EmptyHint(text: m.noConditions)
         else
           BalsmListCard(
             children: [
@@ -254,9 +247,9 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                   label: c.name,
                   showChevron: false,
                   trailing: IconButton(
-                    icon: const Icon(Icons.close, size: 18, color: BalsmColors.fg4),
+                    icon: const Icon(Icons.close, size: 18, color: AppColors.textHint),
                     onPressed: () => _removeCondition(c.id),
-                    tooltip: 'Remove',
+                    tooltip: m.remove,
                   ),
                 ),
               ),
@@ -266,12 +259,12 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
 
         // ---- Emergency contacts (max 3) ----
         _SectionHeader(
-          title: 'Emergency Contacts',
+          title: m.contacts,
           trailing: contacts.length >= AddEmergencyContactUseCase.maxContacts ? null : _AddButton(onTap: _addContact),
         ),
         const SizedBox(height: 8),
         if (contacts.isEmpty)
-          const _EmptyHint(text: 'No emergency contacts added')
+          _EmptyHint(text: m.noContacts)
         else
           BalsmListCard(
             children: [
@@ -281,8 +274,8 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                   sublabel: c.relation == null ? c.phone : '${c.relation} · ${c.phone}',
                   showChevron: false,
                   trailing: c.isPrimary
-                      ? const BalsmPill(
-                          label: 'Primary',
+                      ? BalsmPill(
+                          label: m.primary,
                           variant: BalsmPillVariant.info,
                         )
                       : null,
@@ -324,31 +317,32 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: FontSizes.body,
               fontWeight: FontWeight.w700,
-              color: BalsmColors.fg1,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
-        if (trailing != null) trailing!,
+        if (trailing case final trailing?) trailing,
       ],
     );
   }
 }
 
-class _AddButton extends StatelessWidget {
+class _AddButton extends ConsumerWidget {
   const _AddButton({required this.onTap});
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(profileStringsProvider);
     return TextButton.icon(
       onPressed: onTap,
-      icon: const Icon(Icons.add, size: 18, color: BalsmColors.appAccent),
-      label: const Text(
-        'Add',
-        style: TextStyle(
-          color: BalsmColors.appAccent,
+      icon: const Icon(Icons.add, size: 18, color: AppColors.hueBlue),
+      label: Text(
+        m.addShort,
+        style: const TextStyle(
+          color: AppColors.hueBlue,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -364,39 +358,39 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 14, color: BalsmColors.fg4),
+      style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textHint),
     );
   }
 }
 
-class _BloodTypeDropdown extends StatelessWidget {
+class _BloodTypeDropdown extends ConsumerWidget {
   const _BloodTypeDropdown({required this.value, required this.onChanged});
   final BloodType? value;
   final ValueChanged<BloodType?> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(profileStringsProvider);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: BalsmColors.surface,
-        borderRadius: BorderRadius.circular(BalsmRadius.md),
-        border: Border.all(color: BalsmColors.border, width: 1.5),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border, width: 1.5),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<BloodType?>(
           isExpanded: true,
           value: value,
-          hint: const Text(
-            'Select blood type',
-            style: TextStyle(color: BalsmColors.fg4, fontSize: 18),
+          hint: Text(
+            m.selectBloodType,
+            style: const TextStyle(color: AppColors.textHint, fontSize: FontSizes.subhead),
           ),
-          icon: const Icon(Icons.keyboard_arrow_down, color: BalsmColors.fg3),
-          style: const TextStyle(fontSize: 18, color: BalsmColors.fg1),
+          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textTertiary),
+          style: const TextStyle(fontSize: FontSizes.subhead, color: AppColors.textPrimary),
           items: [
-            const DropdownMenuItem<BloodType?>(
-              value: null,
-              child: Text('Unknown', style: TextStyle(color: BalsmColors.fg3)),
+            DropdownMenuItem<BloodType?>(
+              child: Text(m.unknown, style: const TextStyle(color: AppColors.textTertiary)),
             ),
             ...BloodType.values.map(
               (bt) => DropdownMenuItem<BloodType?>(value: bt, child: Text(bt.label)),
@@ -420,14 +414,14 @@ class _AllergyInput {
   final bool isControlled;
 }
 
-class _AddAllergySheet extends StatefulWidget {
+class _AddAllergySheet extends ConsumerStatefulWidget {
   const _AddAllergySheet();
 
   @override
-  State<_AddAllergySheet> createState() => _AddAllergySheetState();
+  ConsumerState<_AddAllergySheet> createState() => _AddAllergySheetState();
 }
 
-class _AddAllergySheetState extends State<_AddAllergySheet> {
+class _AddAllergySheetState extends ConsumerState<_AddAllergySheet> {
   final _controller = TextEditingController();
   String _severity = 'mild';
   bool _controlled = false;
@@ -440,22 +434,23 @@ class _AddAllergySheetState extends State<_AddAllergySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(profileStringsProvider);
     return _SheetScaffold(
-      title: 'Add Allergy',
+      title: m.allergies.add,
       onSave: () {
         final name = _controller.text.trim();
         if (name.isEmpty) return;
         Navigator.pop(context, _AllergyInput(name, _severity, _controlled));
       },
       children: [
-        BalsmField(label: 'Allergen', controller: _controller, autofocus: true),
+        BalsmField(label: m.allergen, controller: _controller, autofocus: true),
         const SizedBox(height: 16),
-        const Text(
-          'Severity',
-          style: TextStyle(
-            fontSize: 13,
+        Text(
+          m.severityLabel,
+          style: const TextStyle(
+            fontSize: FontSizes.bodySm,
             fontWeight: FontWeight.w600,
-            color: BalsmColors.fg2,
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
@@ -464,7 +459,7 @@ class _AddAllergySheetState extends State<_AddAllergySheet> {
           children: [
             ...kAllergySeverities.map(
               (s) => ChoiceChip(
-                label: Text(s[0].toUpperCase() + s.substring(1)),
+                label: Text(AllergySeverity.fromWire(s)?.label(m) ?? s),
                 selected: _severity == s,
                 onSelected: (_) => setState(() => _severity = s),
               ),
@@ -474,7 +469,7 @@ class _AddAllergySheetState extends State<_AddAllergySheet> {
         const SizedBox(height: 8),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Controlled substance'),
+          title: Text(m.controlledSubstance),
           value: _controlled,
           onChanged: (v) => setState(() => _controlled = v),
         ),
@@ -483,14 +478,14 @@ class _AddAllergySheetState extends State<_AddAllergySheet> {
   }
 }
 
-class _AddConditionSheet extends StatefulWidget {
+class _AddConditionSheet extends ConsumerStatefulWidget {
   const _AddConditionSheet();
 
   @override
-  State<_AddConditionSheet> createState() => _AddConditionSheetState();
+  ConsumerState<_AddConditionSheet> createState() => _AddConditionSheetState();
 }
 
-class _AddConditionSheetState extends State<_AddConditionSheet> {
+class _AddConditionSheetState extends ConsumerState<_AddConditionSheet> {
   final _controller = TextEditingController();
 
   @override
@@ -501,8 +496,9 @@ class _AddConditionSheetState extends State<_AddConditionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(profileStringsProvider);
     return _SheetScaffold(
-      title: 'Add Condition',
+      title: m.addCondition,
       onSave: () {
         final name = _controller.text.trim();
         if (name.isEmpty) return;
@@ -510,7 +506,7 @@ class _AddConditionSheetState extends State<_AddConditionSheet> {
       },
       children: [
         BalsmField(
-          label: 'Condition',
+          label: m.condition,
           controller: _controller,
           autofocus: true,
         ),
@@ -526,14 +522,14 @@ class _ContactInput {
   final String? relation;
 }
 
-class _AddContactSheet extends StatefulWidget {
+class _AddContactSheet extends ConsumerStatefulWidget {
   const _AddContactSheet();
 
   @override
-  State<_AddContactSheet> createState() => _AddContactSheetState();
+  ConsumerState<_AddContactSheet> createState() => _AddContactSheetState();
 }
 
-class _AddContactSheetState extends State<_AddContactSheet> {
+class _AddContactSheetState extends ConsumerState<_AddContactSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _relationController = TextEditingController();
@@ -548,12 +544,13 @@ class _AddContactSheetState extends State<_AddContactSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(profileStringsProvider);
     return _SheetScaffold(
-      title: 'Add Emergency Contact',
+      title: m.addContact,
       onSave: () {
         final name = _nameController.text.trim();
         // FR-213: normalize Arabic-Indic digits before persisting.
-        final phone = normalizeArabicNumerals(_phoneController.text).trim();
+        final phone = toWesternDigits(_phoneController.text).trim();
         if (name.isEmpty || phone.isEmpty) return;
         final relation = _relationController.text.trim();
         Navigator.pop(
@@ -562,11 +559,11 @@ class _AddContactSheetState extends State<_AddContactSheet> {
         );
       },
       children: [
-        BalsmField(label: 'Name', controller: _nameController, autofocus: true),
+        BalsmField(label: m.name, controller: _nameController, autofocus: true),
         const SizedBox(height: 16),
-        BalsmField.numeric(label: 'Phone', controller: _phoneController),
+        BalsmField.numeric(label: m.phone, controller: _phoneController),
         const SizedBox(height: 16),
-        BalsmField(label: 'Relation (optional)', controller: _relationController),
+        BalsmField(label: m.relationOptional, controller: _relationController),
       ],
     );
   }
@@ -588,9 +585,9 @@ class _SheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
+      padding: EdgeInsetsDirectional.only(
+        start: 20,
+        end: 20,
         top: 20,
         bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
       ),
@@ -601,15 +598,15 @@ class _SheetScaffold extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: FontSizes.subhead,
               fontWeight: FontWeight.w700,
-              color: BalsmColors.fg1,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
           ...children,
           const SizedBox(height: 20),
-          BalsmButton(label: 'Save', onPressed: onSave),
+          BalsmButton(label: coreMessagesOf(context).common.save, onPressed: onSave),
         ],
       ),
     );

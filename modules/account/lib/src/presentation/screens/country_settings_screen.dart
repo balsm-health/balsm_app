@@ -1,9 +1,10 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../failure_text.dart';
 import '../../application/use_cases/change_country_use_case.dart';
+import '../failure_text.dart';
+import '../i18n/i18n.dart';
 
 // Account countries come from core's CountryRegistry (the first-class
 // jurisdictions with a supervisory authority) — NOT CountryCode.known,
@@ -54,22 +55,21 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
   /// Re-auth gate. The real flow re-runs the identity-confirmation route;
   /// here we surface a blocking confirmation that must be acknowledged.
   Future<bool> _confirmIdentity() async {
+    final m = ref.read(accountStringsProvider);
+    final common = coreMessagesOf(context).common;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm your identity'),
-        content: const Text(
-          'Changing your country requires confirming your identity. '
-          'You will be asked to re-authenticate.',
-        ),
+        title: Text(m.confirmIdentityTitle),
+        content: Text(m.confirmIdentityBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(common.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Continue'),
+            child: Text(common.continue_),
           ),
         ],
       ),
@@ -80,19 +80,17 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
   /// Re-disclosure after a successful country change (new supervisory authority).
   Future<void> _showDisclosure(String code) async {
     final authority = ref.read(countryRegistryProvider).supervisoryAuthority(code);
+    final m = ref.read(accountStringsProvider);
     if (!mounted) return;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Privacy disclosure'),
-        content: Text(
-          'Your data is now governed under $authority. '
-          'Please review the updated privacy terms.',
-        ),
+        title: Text(m.privacyDisclosureTitle),
+        content: Text(m.privacyDisclosureBody(authority)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('I understand'),
+            child: Text(m.iUnderstand),
           ),
         ],
       ),
@@ -102,15 +100,16 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(accountSummaryProvider);
+    final m = ref.watch(accountStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             BalsmAppBar.withBack(
-              title: 'Country',
+              title: m.account.country,
               onBack: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
@@ -119,24 +118,22 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
                   child: BalsmErrorBanner(
-                    message: 'Could not load account.',
+                    message: m.loadError,
                     onRetry: () => refreshAccountSummary(ref),
                   ),
                 ),
                 data: (summary) {
                   if (summary == null) {
-                    return const Center(child: Text('No account.'));
+                    return Center(child: Text(m.noAccount));
                   }
                   return ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     children: [
                       const SizedBox(height: 8),
-                      const _Warning(
-                        'Changing country requires confirming identity.',
-                      ),
-                      if (_error != null) ...[
+                      _Warning(m.countryWarning),
+                      if (_error case final error?) ...[
                         const SizedBox(height: 12),
-                        BalsmErrorBanner(message: _error!),
+                        BalsmErrorBanner(message: error),
                       ],
                       const SizedBox(height: 16),
                       BalsmListCard(
@@ -153,7 +150,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                                 trailing: c.isoCode == summary.countryCode
                                     ? const Icon(
                                         Icons.check_circle,
-                                        color: BalsmColors.appAccent,
+                                        color: AppColors.hueBlue,
                                         size: 22,
                                       )
                                     : (_busy ? const SizedBox.shrink() : null),
@@ -186,18 +183,18 @@ class _Warning extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: BalsmColors.warningBg,
-          borderRadius: BorderRadius.circular(BalsmRadius.md),
-          border: Border.all(color: BalsmColors.warning.withValues(alpha: 0.4)),
+          color: AppColors.warningBackground,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: BalsmColors.warning, size: 20),
+            const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(fontSize: 13, color: BalsmColors.fg2),
+                style: const TextStyle(fontSize: FontSizes.bodySm, color: AppColors.textSecondary),
               ),
             ),
           ],

@@ -1,4 +1,6 @@
+import '../../../profile.dart' show Allergy;
 import '../../i18n/strings.dart';
+import '../aggregates/health_profile.dart' show Allergy;
 
 /// How severe an allergic reaction is — a fixed, clinically meaningful scale.
 ///

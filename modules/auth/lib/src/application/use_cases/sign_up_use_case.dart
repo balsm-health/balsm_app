@@ -2,8 +2,8 @@ import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:core/core.dart';
 
 import '../../domain/events/user_signed_up.dart';
-import '../../infrastructure/api/balsm_auth_adapter.dart';
 import '../../infrastructure/api/auth_exception.dart';
+import '../../infrastructure/api/balsm_auth_adapter.dart';
 
 const _kAccessToken = 'balsm.access_token';
 const _kRefreshToken = 'balsm.refresh_token';
@@ -51,7 +51,7 @@ class SignUpUseCase {
     } on AuthException catch (e) {
       if (e.code == 'EmailRegistered') return AppResult.failure(ConflictFailure(e.message));
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (e) {
+    } on Object {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -75,17 +75,19 @@ class SignUpUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedUp(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'email',
-        countryCode: countryCode,
-      ));
+      _bus.publish(
+        UserSignedUp(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'email',
+          countryCode: countryCode,
+        ),
+      );
 
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (e) {
+    } on Object {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -111,17 +113,19 @@ class SignUpUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedUp(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'google',
-        countryCode: countryCode,
-      ));
+      _bus.publish(
+        UserSignedUp(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'google',
+          countryCode: countryCode,
+        ),
+      );
 
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (e) {
+    } on Object {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -148,17 +152,19 @@ class SignUpUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedUp(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'apple',
-        countryCode: countryCode,
-      ));
+      _bus.publish(
+        UserSignedUp(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'apple',
+          countryCode: countryCode,
+        ),
+      );
 
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (e) {
+    } on Object {
       return AppResult.failure(const NetworkFailure());
     }
   }

@@ -1,3 +1,4 @@
+import 'money.dart' show Money;
 import 'value_object.dart';
 
 /// ISO 4217 currency.
@@ -6,13 +7,6 @@ import 'value_object.dart';
 /// KWD/BHD/JOD/OMR use **3**, JPY uses **0**. Use [minorUnitsPerMajor] to
 /// convert between major units and the integer minor units [Money] stores.
 class CurrencyCode extends ValueObject {
-  const CurrencyCode._(
-    this.value,
-    this.minorUnitDigits,
-    this.symbol,
-    this.englishName,
-  );
-
   /// Look up a known currency, or accept any well-formed 3-letter code
   /// (defaulting to 2 minor-unit digits). Throws [ArgumentError] on malformed
   /// input.
@@ -25,6 +19,12 @@ class CurrencyCode extends ValueObject {
     }
     return CurrencyCode._(upper, 2, upper, upper);
   }
+  const CurrencyCode._(
+    this.value,
+    this.minorUnitDigits,
+    this.symbol,
+    this.englishName,
+  );
 
   /// The 3-letter ISO 4217 code, e.g. `EGP`.
   final String value;
@@ -60,7 +60,7 @@ class CurrencyCode extends ValueObject {
   static const eur = CurrencyCode._('EUR', 2, '€', 'Euro');
   static const gbp = CurrencyCode._('GBP', 2, '£', 'Pound Sterling');
 
-  static const _all = [
+  static const List<CurrencyCode> _all = [
     egp,
     sar,
     aed,

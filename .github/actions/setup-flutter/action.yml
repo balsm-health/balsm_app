@@ -1,0 +1,20 @@
+name: Set up Flutter
+description: >-
+  Installs the Flutter version pinned in .fvmrc, so CI and release builds use
+  the same SDK as `fvm flutter` on a developer's machine. Change the version in
+  .fvmrc only; no workflow holds a copy. Needs the repo checked out first.
+
+runs:
+  using: composite
+  steps:
+    - id: fvm
+      shell: bash
+      run: |
+        version=$(jq -er '.flutter' .fvmrc)
+        echo "Flutter $version (from .fvmrc)"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ steps.fvm.outputs.version }}
+        channel: stable
+        cache: true

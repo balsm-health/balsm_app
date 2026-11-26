@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:app/balsm_app/care/map_packs/drift_map_pack_download_store.dart';
@@ -36,7 +37,7 @@ MapPackResponse _pack({
 class _FakeCareDirectoryApi implements CareDirectoryApi {
   _FakeCareDirectoryApi(this.packsResult, {this.throws});
   List<MapPackResponse> packsResult;
-  Object? throws;
+  Exception? throws;
 
   @override
   Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken}) async {
@@ -60,12 +61,16 @@ class _FakeFileDownloader implements FileDownloader {
   final downloadedUrls = <String>[];
 
   @override
-  Future<void> download(String url, String savePath,
-      {void Function(double progress)? onProgress, CancelToken? cancelToken}) async {
+  Future<void> download(
+    String url,
+    String savePath, {
+    void Function(double progress)? onProgress,
+    CancelToken? cancelToken,
+  }) async {
     downloadedUrls.add(url);
     onProgress?.call(0.5);
     File(savePath).writeAsStringSync(url); // content is just the url — irrelevant, only its hash matters
-    onProgress?.call(1.0);
+    onProgress?.call(1);
   }
 
   @override
@@ -83,7 +88,7 @@ void main() {
     tmp = Directory.systemTemp.createTempSync('map_pack_controller_test');
   });
   tearDown(() {
-    db.close();
+    unawaited(db.close());
     tmp.deleteSync(recursive: true);
   });
 
@@ -106,24 +111,28 @@ void main() {
   });
 
   test('load() falls back to offline mode when the catalogue fetch fails', () async {
-    await store.upsert(MapPackDownloadRow(
-      governorateId: 'cairo',
-      kind: MapPackKind.basemap,
-      version: '20260913',
-      sha256: '0' * 64,
-      sizeBytes: 100,
-      localPath: '${tmp.path}/cairo-basemap',
-      downloadedAt: DateTime.utc(2026, 9, 13),
-    ));
-    await store.upsert(MapPackDownloadRow(
-      governorateId: 'cairo',
-      kind: MapPackKind.places,
-      version: '20260914',
-      sha256: '0' * 64,
-      sizeBytes: 100,
-      localPath: '${tmp.path}/cairo-places',
-      downloadedAt: DateTime.utc(2026, 9, 13),
-    ));
+    await store.upsert(
+      MapPackDownloadRow(
+        governorateId: 'cairo',
+        kind: MapPackKind.basemap,
+        version: '20260913',
+        sha256: '0' * 64,
+        sizeBytes: 100,
+        localPath: '${tmp.path}/cairo-basemap',
+        downloadedAt: DateTime.utc(2026, 9, 13),
+      ),
+    );
+    await store.upsert(
+      MapPackDownloadRow(
+        governorateId: 'cairo',
+        kind: MapPackKind.places,
+        version: '20260914',
+        sha256: '0' * 64,
+        sizeBytes: 100,
+        localPath: '${tmp.path}/cairo-places',
+        downloadedAt: DateTime.utc(2026, 9, 13),
+      ),
+    );
     final c = controller(_FakeCareDirectoryApi([], throws: Exception('offline')), _FakeFileDownloader());
 
     await c.load('en');
@@ -150,7 +159,7 @@ void main() {
   });
 
   test('a SHA-256 mismatch fails the download and leaves no row', () async {
-    final pack = _pack(basemap: _artifact(url: 'https://cdn.test/x', sha: 'does-not-match'));
+    final pack = _pack(basemap: _artifact(sha: 'does-not-match'));
     final c = controller(_FakeCareDirectoryApi([pack]), _FakeFileDownloader());
     await c.load('en');
 

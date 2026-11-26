@@ -1,7 +1,7 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/checkin_shared.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
-import 'package:core/core.dart' show LanguageCode;
+import 'package:core/core.dart' show LanguageCode, noProviderRetry;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -17,22 +17,25 @@ void main() {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: MediaQuery(
-            data: MediaQueryData(size: const Size(360, 800), textScaler: TextScaler.linear(textScale)),
-            child: Scaffold(
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: MetricLog(metric: CheckInMetric.mood, s: s, host: MetricLogHost.embedded),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(size: const Size(360, 800), textScaler: TextScaler.linear(textScale)),
+              child: Scaffold(
+                body: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: MetricLog(metric: CheckInMetric.mood, s: s, host: MetricLogHost.embedded),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 

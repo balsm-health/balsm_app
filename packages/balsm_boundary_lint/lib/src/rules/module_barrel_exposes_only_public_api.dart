@@ -9,7 +9,7 @@ class ModuleBarrelExposesOnlyPublicApi extends DartLintRule {
           'Module barrel may only export application/, infrastructure/ (DI providers), presentation/routes.dart, domain/repositories/read_*.dart, domain/events/, domain/value_objects/. Do not export screens.');
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     final path = resolver.path;
     // Only check a feature-module barrel (modules/<mod>/lib/<mod>.dart).
     // Scoped to modules/ so it never fires on core/libs under packages/.

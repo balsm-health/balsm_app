@@ -25,11 +25,12 @@ void main() {
 
     test('true for a SocketException wrapped by dio', () {
       expect(
-        isOfflineError(DioException(
-          requestOptions: RequestOptions(path: '/x'),
-          type: DioExceptionType.unknown,
-          error: const SocketException('failed host lookup'),
-        )),
+        isOfflineError(
+          DioException(
+            requestOptions: RequestOptions(path: '/x'),
+            error: const SocketException('failed host lookup'),
+          ),
+        ),
         isTrue,
       );
     });
@@ -40,14 +41,20 @@ void main() {
     });
 
     test('false for a cancellation', () {
-      expect(isOfflineError(_dio(DioExceptionType.cancel)), isFalse,
-          reason: 'a superseded map pan is not the user being offline');
+      expect(
+        isOfflineError(_dio(DioExceptionType.cancel)),
+        isFalse,
+        reason: 'a superseded map pan is not the user being offline',
+      );
     });
 
     test('false for a parse error', () {
-      expect(isOfflineError(const FormatException('bad json')), isFalse,
-          reason: 'a malformed body means the server answered — serving stale '
-              'data for it would hide a real bug');
+      expect(
+        isOfflineError(const FormatException('bad json')),
+        isFalse,
+        reason: 'a malformed body means the server answered — serving stale '
+            'data for it would hide a real bug',
+      );
     });
   });
 

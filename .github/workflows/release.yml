@@ -46,9 +46,6 @@ concurrency:
 # Builds go through the balsm CLI (bin/balsm → tool/build.dart), the single
 # source of truth for flavor/entrypoint/dart-define wiring. Only channel
 # naming, signing, and artifact zipping live here.
-env:
-  FLUTTER_VERSION: '3.47.4'
-
 jobs:
   setup:
     name: Derive channel
@@ -152,11 +149,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       # app/env/shared.json is git-ignored (per-developer server list); the CLI
@@ -233,11 +226,7 @@ jobs:
       HAS_FIREBASE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && secrets.FIREBASE_APP_ID_IOS != '' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       # app/env/shared.json is git-ignored (per-developer server list); the CLI
@@ -318,11 +307,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       # app/env/shared.json is git-ignored (per-developer server list); the CLI
@@ -363,11 +348,7 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         shell: bash
         run: (cd packages/core && flutter pub get && dart run build_runner build)
@@ -411,11 +392,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build libgtk-3-dev clang cmake pkg-config liblzma-dev libsecret-1-dev libcurl4-openssl-dev
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       # app/env/shared.json is git-ignored (per-developer server list); the CLI
@@ -453,11 +430,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       # app/env/shared.json is git-ignored (per-developer server list); the CLI
@@ -556,12 +529,8 @@ jobs:
       - name: Test the Worker
         if: env.HAS_CLOUDFLARE == 'true'
         run: node --test deploy/web/worker.test.mjs
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         if: env.HAS_CLOUDFLARE == 'true'
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
       - name: Generate drift code (core)
         if: env.HAS_CLOUDFLARE == 'true'
         run: (cd packages/core && flutter pub get && dart run build_runner build)

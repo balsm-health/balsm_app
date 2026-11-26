@@ -15,6 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///   ),
 /// );
 /// ```
+// Port interface: the app shell binds an implementation (backed by the geofence_block module) and tests swap in fakes.
+// ignore: one_member_abstracts
 abstract interface class DeniedCountriesPort {
   /// True if onboarding / residency to [countryCode] is geofence-blocked.
   Future<bool> isDenied(String countryCode);

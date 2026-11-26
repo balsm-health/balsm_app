@@ -18,7 +18,7 @@ or `melos run run:patient`, or the **"Balsm Patient App (design)"** VS Code laun
 
 | File | Role |
 |------|------|
-| `tokens.dart` | brand colors, radii, shadows, accent hues |
+| `tokens.dart` | re-exports the design tokens from core (`packages/core/lib/src/kit/tokens.dart`): `AppColors`, `AppRadii`, `AppShadows`, `FontSizes`, `Typo`, `Motion`, `Accent`, `ColorContrast`, `BalsmWindow`. Feature-only palettes sit beside their feature, e.g. `maintenance/maintenance_tokens.dart` |
 | `strings.dart` | en/ar i18n dictionary + `tr()` |
 | `data.dart` | models + sample data (patient, meds, doctors, records, entities…) |
 | `kit.dart` | typography + shared widgets (buttons, cards, pills, avatar, rings…) |

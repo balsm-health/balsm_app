@@ -4,9 +4,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core.dart' show BackupDebouncer;
 import '../event_bus/event_bus.dart';
 import '../secure_storage/secure_storage_wrapper.dart';
 import 'backup_adapter.dart';
+import 'backup_debouncer.dart' show BackupDebouncer;
 import 'blob_codec.dart';
 import 'recovery_code.dart';
 import 'snapshot_service.dart';
@@ -32,7 +34,7 @@ class BackupService {
         _status = status {
     _flushSub = _bus.events.where((e) => e.eventName == 'backup_flush_requested').listen((_) => flush());
     _onlineSub = onlineStream?.listen((online) {
-      if (online) _retryIfDirty();
+      if (online) unawaited(_retryIfDirty());
     });
   }
 
@@ -48,8 +50,8 @@ class BackupService {
   final SyncStatusNotifier _status;
   final String userId;
 
-  StreamSubscription? _flushSub;
-  StreamSubscription? _onlineSub;
+  StreamSubscription<void>? _flushSub;
+  StreamSubscription<void>? _onlineSub;
   bool _inFlight = false;
 
   String get blobKey => 'balsm-backup-$userId.aes';
@@ -105,7 +107,7 @@ class BackupService {
       await _storage.writeToken(_kLast, now.toIso8601String());
       await _storage.deleteToken(_kDirty);
       _status.set(SyncState.synced, lastSyncedAt: now);
-    } catch (e) {
+    } on Object catch (e) {
       await _storage.writeToken(_kDirty, '1');
       // Treat any upload failure as "will retry"; surface message for error UI.
       _status.set(SyncState.offline, message: e.toString());
@@ -127,8 +129,8 @@ class BackupService {
   }
 
   void dispose() {
-    _flushSub?.cancel();
-    _onlineSub?.cancel();
+    unawaited(_flushSub?.cancel());
+    unawaited(_onlineSub?.cancel());
   }
 }
 

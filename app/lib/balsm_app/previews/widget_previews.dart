@@ -14,8 +14,8 @@
 /// [3, 7, 5] are shapes, not a person's health record.
 library;
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/widget_previews.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../storage_target.dart';
 import '../tokens.dart';
@@ -34,8 +34,8 @@ Widget balsmFlower() => const Row(
       spacing: 16,
       children: [
         BalsmFlower(size: 44),
-        BalsmFlower(size: 92),
-        BalsmFlower(size: 92, opacity: 0.35),
+        BalsmFlower(),
+        BalsmFlower(opacity: 0.35),
       ],
     );
 
@@ -67,11 +67,11 @@ Widget moodFaces() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 10,
       children: [
-        MoodFace(level: 1, color: T.danger),
-        MoodFace(level: 2, color: T.expiring),
-        MoodFace(level: 3, color: T.warning),
-        MoodFace(level: 4, color: T.hueMint600),
-        MoodFace(level: 5, color: T.success),
+        MoodFace(level: 1, color: AppColors.danger),
+        MoodFace(level: 2, color: AppColors.expiring),
+        MoodFace(level: 3, color: AppColors.warning),
+        MoodFace(level: 4, color: AppColors.hueMint600),
+        MoodFace(level: 5, color: AppColors.success),
       ],
     );
 
@@ -80,9 +80,9 @@ Widget moodFaceButtons() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 10,
       children: [
-        MoodFaceButton(level: 1, color: T.danger, size: 44),
-        MoodFaceButton(level: 3, color: T.warning, size: 44),
-        MoodFaceButton(level: 5, color: T.success, size: 44),
+        MoodFaceButton(level: 1, color: AppColors.danger, size: 44),
+        MoodFaceButton(level: 3, color: AppColors.warning, size: 44),
+        MoodFaceButton(level: 5, color: AppColors.success, size: 44),
       ],
     );
 
@@ -97,22 +97,28 @@ Widget lineChart() => const Column(
       children: [
         SizedBox(
           width: 320,
-          child: LineChartView(series: [
-            ChartSeries([5, 5, 5, 5, 5, 5], T.hueBlue),
-          ]),
+          child: LineChartView(
+            series: [
+              ChartSeries([5, 5, 5, 5, 5, 5], AppColors.hueBlue),
+            ],
+          ),
         ),
         SizedBox(
           width: 320,
-          child: LineChartView(series: [
-            ChartSeries([1, 3, 2, 6, 5, 9], T.hueViolet),
-          ]),
+          child: LineChartView(
+            series: [
+              ChartSeries([1, 3, 2, 6, 5, 9], AppColors.hueViolet),
+            ],
+          ),
         ),
         SizedBox(
           width: 320,
-          child: LineChartView(series: [
-            ChartSeries([1, 3, 2, 6, 5, 9], T.hueViolet),
-            ChartSeries([8, 6, 7, 3, 4, 2], T.hueMint600),
-          ]),
+          child: LineChartView(
+            series: [
+              ChartSeries([1, 3, 2, 6, 5, 9], AppColors.hueViolet),
+              ChartSeries([8, 6, 7, 3, 4, 2], AppColors.hueMint600),
+            ],
+          ),
         ),
       ],
     );
@@ -126,7 +132,7 @@ Widget lineChartRtl() => const Padding(
         child: LineChartView(
           rtl: true,
           series: [
-            ChartSeries([1, 3, 2, 6, 5, 9], T.hueViolet),
+            ChartSeries([1, 3, 2, 6, 5, 9], AppColors.hueViolet),
           ],
         ),
       ),

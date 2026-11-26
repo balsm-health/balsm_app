@@ -1,25 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../_tokens.dart';
+import '../../localization/core_messages.dart';
+import '../tokens.dart';
 import 'balsm_round_button.dart';
-
-const List<String> _defaultMonths = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-/// Sunday-first, matching the day-grid layout below.
-const List<String> _defaultWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -29,8 +12,8 @@ DateTime _clamp(DateTime d, DateTime lo, DateTime hi) => d.isBefore(lo) ? lo : (
 /// month/year navigation and a year grid. Use this everywhere a date is chosen
 /// (DOB, medication dates, …) instead of Material `showDatePicker`.
 ///
-/// [months] (12) and [weekdays] (7, Sunday-first) default to English; app
-/// screens pass their localized `cal_months` / `cal_weekdays`. [rtl] defaults to
+/// [months] (12) and [weekdays] (7, Sunday-first) default to core's `calendar_months` / `calendar_weekdays` in
+/// the screen's language. [rtl] defaults to
 /// the ambient [Directionality]; [accent] defaults to the app accent.
 Future<DateTime?> showBalsmDatePicker(
   BuildContext context, {
@@ -39,17 +22,18 @@ Future<DateTime?> showBalsmDatePicker(
   required String title,
   required String confirmLabel,
   DateTime? initial,
-  Color accent = BalsmColors.appAccent,
+  Color accent = AppColors.hueBlue,
   List<String>? months,
   List<String>? weekdays,
   bool? rtl,
 }) {
   assert(!firstDate.isAfter(lastDate), 'firstDate must be on or before lastDate');
   final isRtl = rtl ?? (Directionality.maybeOf(context) == TextDirection.rtl);
+  final core = coreMessagesOf(context);
   return showModalBottomSheet<DateTime>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C14202B),
+    barrierColor: AppColors.scrim,
     isScrollControlled: true,
     builder: (_) => _BalsmDatePickerSheet(
       firstDate: _dateOnly(firstDate),
@@ -58,8 +42,8 @@ Future<DateTime?> showBalsmDatePicker(
       title: title,
       confirmLabel: confirmLabel,
       accent: accent,
-      months: months ?? _defaultMonths,
-      weekdays: weekdays ?? _defaultWeekdays,
+      months: months ?? core.calendar_months.split('|'),
+      weekdays: weekdays ?? core.calendar_weekdays.split('|'),
       rtl: isRtl,
     ),
   );
@@ -107,7 +91,7 @@ class _BalsmDatePickerSheetState extends State<_BalsmDatePickerSheet> {
     _sel = widget.initial;
   }
 
-  bool get _canPrev => DateTime(_y, _m + 1, 1).isAfter(widget.firstDate);
+  bool get _canPrev => DateTime(_y, _m + 1).isAfter(widget.firstDate);
   bool get _canNext => DateTime(_y, _m + 2, 0).isBefore(widget.lastDate);
 
   void _prev() => setState(() {
@@ -131,7 +115,7 @@ class _BalsmDatePickerSheetState extends State<_BalsmDatePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final rtl = widget.rtl;
-    final firstWeekday = DateTime(_y, _m + 1, 1).weekday % 7; // Sun = 0
+    final firstWeekday = DateTime(_y, _m + 1).weekday % 7; // Sun = 0
     final daysIn = DateTime(_y, _m + 2, 0).day;
     final years = [for (var y = widget.lastDate.year; y >= widget.firstDate.year; y--) y];
 
@@ -140,162 +124,211 @@ class _BalsmDatePickerSheetState extends State<_BalsmDatePickerSheet> {
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.82),
         decoration: const BoxDecoration(
-          color: BalsmColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(BalsmRadius.xl)),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 38,
-            height: 4,
-            decoration: BoxDecoration(color: BalsmColors.ink200, borderRadius: BorderRadius.circular(BalsmRadius.pill)),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(children: [
-              Expanded(
-                child: Text(widget.title,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: BalsmColors.fg1)),
-              ),
-              BalsmRoundButton(
-                icon: const Icon(Icons.close, size: 18, color: BalsmColors.fg2),
-                size: 36,
-                onTap: () => Navigator.pop(context),
-                semanticLabel: 'Close',
-              ),
-            ]),
-          ),
-          const SizedBox(height: 8),
-          Flexible(
-            child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(color: AppColors.ink200, borderRadius: BorderRadius.circular(AppRadii.pill)),
+            ),
+            const SizedBox(height: 12),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  BalsmRoundButton.ghost(
-                    icon: Icon(rtl ? Icons.chevron_right : Icons.chevron_left, size: 22, color: BalsmColors.fg2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: FontSizes.subheadSm,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  BalsmRoundButton(
+                    icon: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
                     size: 36,
-                    onTap: _canPrev ? _prev : () {},
-                  ),
-                  GestureDetector(
-                    onTap: () => setState(() => _yearMode = !_yearMode),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('${widget.months[_m]} $_y',
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: BalsmColors.fg1)),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.keyboard_arrow_down, size: 18, color: BalsmColors.fg3),
-                    ]),
-                  ),
-                  BalsmRoundButton.ghost(
-                    icon: Icon(rtl ? Icons.chevron_left : Icons.chevron_right, size: 22, color: BalsmColors.fg2),
-                    size: 36,
-                    onTap: _canNext ? _next : () {},
-                  ),
-                ]),
-                const SizedBox(height: 12),
-                if (_yearMode)
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1.9,
-                    children: years
-                        .map((y) => GestureDetector(
-                              onTap: () => setState(() {
-                                _y = y;
-                                _yearMode = false;
-                              }),
-                              child: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: y == _y ? widget.accent : BalsmColors.border, width: 1.5),
-                                  color: y == _y ? widget.accent : BalsmColors.surface,
-                                ),
-                                child: Text('$y',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: y == _y ? Colors.white : BalsmColors.fg1)),
-                              ),
-                            ))
-                        .toList(),
-                  )
-                else ...[
-                  Row(
-                    children: widget.weekdays
-                        .map((w) => Expanded(
-                              child: Center(
-                                child: Text(w,
-                                    style: const TextStyle(
-                                        fontSize: 12, fontWeight: FontWeight.w700, color: BalsmColors.fg3)),
-                              ),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 6),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 7,
-                    mainAxisSpacing: 2,
-                    crossAxisSpacing: 2,
-                    children: [
-                      for (var i = 0; i < firstWeekday; i++) const SizedBox(),
-                      for (var d = 1; d <= daysIn; d++)
-                        Builder(builder: (_) {
-                          final date = DateTime(_y, _m + 1, d);
-                          final disabled = date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate);
-                          final active = _sel != null && _sel!.year == _y && _sel!.month == _m + 1 && _sel!.day == d;
-                          return GestureDetector(
-                            onTap: disabled ? null : () => setState(() => _sel = date),
-                            child: Container(
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: active ? widget.accent : Colors.transparent,
-                              ),
-                              child: Text('$d',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                                      color: disabled
-                                          ? BalsmColors.ink200
-                                          : active
-                                              ? Colors.white
-                                              : BalsmColors.fg1)),
-                            ),
-                          );
-                        }),
-                    ],
+                    onTap: () => Navigator.pop(context),
+                    semanticLabel: coreMessagesOf(context).common.close,
                   ),
                 ],
-                const SizedBox(height: 16),
-              ]),
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
-            child: Opacity(
-              opacity: _sel != null ? 1 : 0.4,
-              child: GestureDetector(
-                onTap: _sel != null ? () => Navigator.pop(context, _sel) : null,
-                child: Container(
-                  height: 52,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: widget.accent,
-                    borderRadius: BorderRadius.circular(BalsmRadius.lg),
-                  ),
-                  child: Text(widget.confirmLabel,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+            const SizedBox(height: 8),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        BalsmRoundButton.ghost(
+                          icon: const Icon(Icons.chevron_left, size: 22, color: AppColors.textSecondary),
+                          size: 36,
+                          onTap: _canPrev ? _prev : () {},
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _yearMode = !_yearMode),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${widget.months[_m]} $_y',
+                                style: const TextStyle(
+                                  fontSize: FontSizes.subheadSm,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textTertiary),
+                            ],
+                          ),
+                        ),
+                        BalsmRoundButton.ghost(
+                          icon: const Icon(Icons.chevron_right, size: 22, color: AppColors.textSecondary),
+                          size: 36,
+                          onTap: _canNext ? _next : () {},
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_yearMode)
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1.9,
+                        children: years
+                            .map(
+                              (y) => GestureDetector(
+                                onTap: () => setState(() {
+                                  _y = y;
+                                  _yearMode = false;
+                                }),
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(AppRadii.control),
+                                    border: Border.all(color: y == _y ? widget.accent : AppColors.border, width: 1.5),
+                                    color: y == _y ? widget.accent : AppColors.surface,
+                                  ),
+                                  child: Text(
+                                    '$y',
+                                    style: TextStyle(
+                                      fontSize: FontSizes.bodySm,
+                                      fontWeight: FontWeight.w600,
+                                      color: y == _y ? AppColors.white : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      )
+                    else ...[
+                      Row(
+                        children: widget.weekdays
+                            .map(
+                              (w) => Expanded(
+                                child: Center(
+                                  child: Text(
+                                    w,
+                                    style: const TextStyle(
+                                      fontSize: FontSizes.meta,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textTertiary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 6),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 7,
+                        mainAxisSpacing: 2,
+                        crossAxisSpacing: 2,
+                        children: [
+                          for (var i = 0; i < firstWeekday; i++) const SizedBox(),
+                          for (var d = 1; d <= daysIn; d++)
+                            Builder(
+                              builder: (_) {
+                                final date = DateTime(_y, _m + 1, d);
+                                final disabled = date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate);
+                                final active =
+                                    _sel != null && _sel!.year == _y && _sel!.month == _m + 1 && _sel!.day == d;
+                                return GestureDetector(
+                                  onTap: disabled ? null : () => setState(() => _sel = date),
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: active ? widget.accent : Colors.transparent,
+                                    ),
+                                    child: Text(
+                                      '$d',
+                                      style: TextStyle(
+                                        fontSize: FontSizes.bodySm,
+                                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                                        color: disabled
+                                            ? AppColors.ink200
+                                            : active
+                                                ? AppColors.white
+                                                : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
             ),
-          ),
-        ]),
+            Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
+              child: Opacity(
+                opacity: _sel != null ? 1 : 0.4,
+                child: GestureDetector(
+                  onTap: _sel != null ? () => Navigator.pop(context, _sel) : null,
+                  child: Container(
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: widget.accent,
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
+                    ),
+                    child: Text(
+                      widget.confirmLabel,
+                      style: const TextStyle(
+                        fontSize: FontSizes.body,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

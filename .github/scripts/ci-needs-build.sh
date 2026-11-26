@@ -46,7 +46,7 @@ not_build=(
 changed=$(git diff --name-only "$green" HEAD -- . "${not_build[@]}")
 # Excluded above but still build-relevant: ci.yml and this script decide what
 # runs, and anything under app/assets/ ships in the bundle, .md files included.
-changed+=$'\n'$(git diff --name-only "$green" HEAD -- .github/workflows/ci.yml .github/scripts/ci-needs-build.sh app/assets)
+changed+=$'\n'$(git diff --name-only "$green" HEAD -- .github/workflows/ci.yml .github/scripts/ci-needs-build.sh .github/actions app/assets)
 
 # A Flutter platform folder directly under a package root.
 native='^(app|modules/[^/]+|packages/[^/]+)/(android|ios|macos|linux|windows|web)/'

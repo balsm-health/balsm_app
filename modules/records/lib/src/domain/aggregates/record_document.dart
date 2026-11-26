@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show immutable, listEquals;
 
 import '../value_objects/ids.dart';
 
@@ -8,6 +9,7 @@ enum RecordType { lab, scan, report }
 /// Where a record came from. `self` marks user uploads; anything else is an
 /// opaque provider reference (care-team member id) until the directory
 /// context lands.
+@immutable
 class RecordSource {
   const RecordSource(this.value);
   static const self = RecordSource('self');
@@ -32,20 +34,22 @@ class RecordSource {
 /// The document bytes are NOT here: [filePath] points into the app documents
 /// directory. Metadata and bytes live and die together via the records
 /// data source + file store.
+@immutable
 class RecordDocument {
   const RecordDocument({
     required this.id,
     required this.userId,
     required this.type,
     required this.title,
+    required this.takenAt,
+    required this.createdAt,
     this.tags = const [],
     this.source = RecordSource.self,
     this.fileType,
     this.filePath,
     this.pages,
     this.resultNote,
-    required this.takenAt,
-    required this.createdAt,
+    this.history = EntryHistory.none,
   });
 
   final RecordDocumentId id;
@@ -77,6 +81,10 @@ class RecordDocument {
   /// When the vault entry was created on this device.
   final DateTime createdAt;
 
+  /// Who other than the patient added, edited or shared this record, and the
+  /// patient's own edits since. Append-only; empty for the patient's own.
+  final EntryHistory history;
+
   RecordDocument copyWith({
     RecordType? type,
     String? title,
@@ -87,6 +95,7 @@ class RecordDocument {
     int? pages,
     String? resultNote,
     DateTime? takenAt,
+    EntryHistory? history,
   }) =>
       RecordDocument(
         id: id,
@@ -101,11 +110,43 @@ class RecordDocument {
         resultNote: resultNote ?? this.resultNote,
         takenAt: takenAt ?? this.takenAt,
         createdAt: createdAt,
+        history: history ?? this.history,
       );
 
+  /// Value equality, not "same id": the record is UI state (a stream provider
+  /// follows it), and Riverpod 3 drops an update that compares equal to what it
+  /// already holds — so an edit of one record would never reach its detail.
   @override
-  bool operator ==(Object other) => other is RecordDocument && other.id == id;
+  bool operator ==(Object other) =>
+      other is RecordDocument &&
+      other.id == id &&
+      other.userId == userId &&
+      other.type == type &&
+      other.title == title &&
+      listEquals(other.tags, tags) &&
+      other.source == source &&
+      other.fileType == fileType &&
+      other.filePath == filePath &&
+      other.pages == pages &&
+      other.resultNote == resultNote &&
+      other.takenAt == takenAt &&
+      other.createdAt == createdAt &&
+      other.history == history;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        userId,
+        type,
+        title,
+        Object.hashAll(tags),
+        source,
+        fileType,
+        filePath,
+        pages,
+        resultNote,
+        takenAt,
+        createdAt,
+        history,
+      );
 }

@@ -1,11 +1,11 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../kit.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../tokens.dart';
 
 /// Tap keypad (.keypad) used by the vitals quick-log flows.
 class NumPad extends StatelessWidget {
-  const NumPad({super.key, required this.onKey, required this.onBack, this.decimal = false, this.onDot});
+  const NumPad({required this.onKey, required this.onBack, super.key, this.decimal = false, this.onDot});
   final ValueChanged<String> onKey;
   final VoidCallback onBack;
   final bool decimal;
@@ -31,7 +31,7 @@ class NumPad extends StatelessWidget {
         childAspectRatio: _keyRatio(context),
         children: [
           for (var d = 1; d <= 9; d++) _Key(label: '$d', onTap: () => onKey('$d')),
-          decimal ? _Key(label: '.', onTap: onDot ?? () {}) : const SizedBox.shrink(),
+          if (decimal) _Key(label: '.', onTap: onDot ?? () {}) else const SizedBox.shrink(),
           _Key(label: '0', onTap: () => onKey('0')),
           _Key(icon: LucideIcons.delete, del: true, onTap: onBack),
         ],
@@ -52,7 +52,7 @@ class NumPad extends StatelessWidget {
 /// `.numpad-key` — borderless `ink50` tile that darkens to `ink100` and
 /// scales to 0.97 while held, over `--dur-fast` ease-out. Honors reduced motion.
 class _Key extends StatefulWidget {
-  const _Key({this.label, this.icon, required this.onTap, this.del = false});
+  const _Key({required this.onTap, this.label, this.icon, this.del = false});
   final String? label;
   final IconData? icon;
   final VoidCallback onTap;
@@ -87,13 +87,19 @@ class _KeyState extends State<_Key> {
           curve: Motion.easeOut,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: _down ? T.ink100 : T.ink50,
-            borderRadius: BorderRadius.circular(T.rMd),
+            color: _down ? AppColors.ink100 : AppColors.ink50,
+            borderRadius: BorderRadius.circular(AppRadii.md),
           ),
           child: widget.icon != null
-              ? Icon(widget.icon, size: 22, color: widget.del ? T.fg3 : T.fg1)
-              : Text(widget.label!,
-                  style: Typo.num(size: 22, weight: FontWeight.w500, color: widget.del ? T.fg3 : T.fg1)),
+              ? Icon(widget.icon, size: 22, color: widget.del ? AppColors.textTertiary : AppColors.textPrimary)
+              : Text(
+                  widget.label!,
+                  style: Typo.num(
+                    size: 22,
+                    weight: FontWeight.w500,
+                    color: widget.del ? AppColors.textTertiary : AppColors.textPrimary,
+                  ),
+                ),
         ),
       ),
     );

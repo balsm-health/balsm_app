@@ -11,6 +11,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'support/flag_overrides.dart';
+
 /// Storage & sync, ported from `storage.jsx`'s per-category multi-cloud model.
 ///
 /// The design offers three connectable clouds. None of them can hold a byte in
@@ -24,8 +26,12 @@ void main() {
   /// State with care-team sync flagged on, as a build that ships it would be.
   PatientAppState synced() => PatientAppState()..attachFlags(_careSyncOn());
 
-  Future<PatientAppState> pumpSheet(WidgetTester tester,
-      {bool ar = false, bool deviceOnly = false, bool sync = false}) async {
+  Future<PatientAppState> pumpSheet(
+    WidgetTester tester, {
+    bool ar = false,
+    bool deviceOnly = false,
+    bool sync = false,
+  }) async {
     final state = sync ? synced() : PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
     if (deviceOnly) state.setAccountMode(AccountMode.deviceOnly);
@@ -35,20 +41,23 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: TextButton(onPressed: () => showStorageSync(context), child: const Text('open')),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: TextButton(onPressed: () => showStorageSync(context), child: const Text('open')),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     return state;
@@ -110,7 +119,9 @@ void main() {
       expect(careSyncsToCloud(s), isFalse);
       expect(syncTargetsFor(DataCategory.care, s), isEmpty);
       expect(
-          locSummary(s.strings.storage, syncTargetsFor(DataCategory.care, s)), s.strings.storage.store_device_only_sum);
+        locSummary(s.strings.storage, syncTargetsFor(DataCategory.care, s)),
+        s.strings.storage.store_device_only_sum,
+      );
     });
 
     testWidgets('the care editor offers no switch and makes no cloud claim', (tester) async {
@@ -172,14 +183,18 @@ void main() {
     });
 
     testWidgets('clouds are drawn as their own marks, the device as a glyph', (tester) async {
-      await tester.pumpWidget(const MaterialApp(
-        home: Row(children: [
-          StorageIcon(StorageTarget.local, size: 20),
-          StorageIcon(StorageTarget.icloud, size: 20),
-          StorageIcon(StorageTarget.gdrive, size: 20),
-          StorageIcon(StorageTarget.balsmCloud, size: 20, muted: true),
-        ]),
-      ));
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Row(
+            children: [
+              StorageIcon(StorageTarget.local, size: 20),
+              StorageIcon(StorageTarget.icloud, size: 20),
+              StorageIcon(StorageTarget.gdrive, size: 20),
+              StorageIcon(StorageTarget.balsmCloud, size: 20, muted: true),
+            ],
+          ),
+        ),
+      );
       // `base.jsx` BRAND_ICONS: three vendor marks, never Lucide stand-ins.
       expect(find.byType(SvgPicture), findsExactly(3));
       expect(find.byType(Icon), findsOne);
@@ -282,14 +297,17 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-      await tester.pumpWidget(ProviderScope(
-        child: AppScope(
-          state: state,
-          child: const MaterialApp(
-            home: Scaffold(body: Center(child: DataLocPill(category: DataCategory.vitals))),
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          child: AppScope(
+            state: state,
+            child: const MaterialApp(
+              home: Scaffold(body: Center(child: DataLocPill(category: DataCategory.vitals))),
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       final st = state.strings.storage;
@@ -310,6 +328,4 @@ void main() {
 
 /// Flags with care-team sync on: the master switch and the type's own.
 /// `setOverride` applies before its first await, so no pump is needed.
-FeatureFlags _careSyncOn() => FeatureFlags(flags: AppFlags.all, allowOverrides: true)
-  ..setOverride(AppFlags.sync, true)
-  ..setOverride(AppFlags.syncFor(DataCategory.care), true);
+FeatureFlags _careSyncOn() => flagsWith({AppFlags.sync: true, AppFlags.syncFor(DataCategory.care): true});

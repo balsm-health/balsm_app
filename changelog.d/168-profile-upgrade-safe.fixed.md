@@ -1,0 +1,1 @@
+Upgrading to family profiles can no longer leave your own health profile treated as a family member's if the app is closed in the middle of the upgrade, and switching to a family member now finishes before anything you save goes to the new person. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

@@ -1,27 +1,29 @@
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/tokens.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// `.b-check` — 18×18 box, radius 5 (circle for radio), 1.5px ink300 outline,
 /// filling with brand blue when checked.
 Future<void> _pump(WidgetTester tester, {required bool checked, required bool radio, VoidCallback? onTap}) =>
-    tester.pumpWidget(MaterialApp(
-      home: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Center(
-          child: BCheck(
-            label: 'Headache',
-            checked: checked,
-            radio: radio,
-            accent: Accent.blue,
-            icon: LucideIcons.brain,
-            onTap: onTap ?? () {},
+    tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(
+            child: BCheck(
+              label: 'Headache',
+              checked: checked,
+              radio: radio,
+              accent: Accent.blue,
+              icon: LucideIcons.brain,
+              onTap: onTap ?? () {},
+            ),
           ),
         ),
       ),
-    ));
+    );
 
 BoxDecoration _boxDecoration(WidgetTester tester) {
   final container = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
@@ -33,7 +35,7 @@ void main() {
     await _pump(tester, checked: false, radio: false);
     final d = _boxDecoration(tester);
     expect(d.color, Colors.white);
-    expect((d.border! as Border).top.color, T.ink300);
+    expect((d.border! as Border).top.color, AppColors.ink300);
     expect((d.border! as Border).top.width, 1.5);
   });
 

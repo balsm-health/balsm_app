@@ -1,10 +1,10 @@
 import 'package:core/core.dart';
 
 import '../value_objects/check_in_metric.dart';
-import '../value_objects/pain_site.dart';
 import '../value_objects/ids.dart';
 import '../value_objects/mood.dart';
 import '../value_objects/pain_level.dart';
+import '../value_objects/pain_site.dart';
 import '../value_objects/symptom.dart';
 import '../value_objects/symptom_detail.dart';
 import '../value_objects/vitals.dart';
@@ -22,14 +22,15 @@ class CheckIn {
     required this.id,
     required this.healthProfileId,
     required this.recordedAt,
-    this.mood,
     required this.painLevel,
     required this.painSites,
     required this.symptoms,
-    this.symptomDetails = const {},
     required this.vitals,
+    this.mood,
+    this.symptomDetails = const {},
     this.note,
     this.photoRecordId,
+    this.history = EntryHistory.none,
   });
 
   final CheckInId id;
@@ -61,10 +62,30 @@ class CheckIn {
   /// Back-reference to a photo in the records vault (never the bytes).
   final String? photoRecordId;
 
+  /// Who other than the patient added, edited or shared this check-in, and
+  /// the patient's own edits since. Append-only; empty for the patient's own.
+  final EntryHistory history;
+
   /// Nothing left worth keeping: no reading, no symptom, no note. A check-in
   /// the patient has emptied reading by reading is removed, not kept blank.
   bool get isEmpty =>
       mood == null && !reportsPain && symptoms.isEmpty && vitals.isEmpty && (note == null || note!.trim().isEmpty);
+
+  /// This check-in with [history] in place of its own.
+  CheckIn withHistory(EntryHistory history) => CheckIn(
+        id: id,
+        healthProfileId: healthProfileId,
+        recordedAt: recordedAt,
+        mood: mood,
+        painLevel: painLevel,
+        painSites: painSites,
+        symptoms: symptoms,
+        symptomDetails: symptomDetails,
+        vitals: vitals,
+        note: note,
+        photoRecordId: photoRecordId,
+        history: history,
+      );
 
   /// This check-in with one reading removed, as the patient deletes it from
   /// the day screen. Removing pain clears the marked sites with the score;
@@ -96,6 +117,75 @@ class CheckIn {
       vitals: vitalsWithout(),
       note: note,
       photoRecordId: photoRecordId,
+      history: history,
+    );
+  }
+
+  /// This check-in with one reading replaced by the patient's edit of it
+  /// ([edit] holds the new values, as the one-metric form captured them).
+  ///
+  /// Only [metric]'s values change; every other reading stays as it was. The
+  /// time, note and photo belong to the whole check-in, so they are taken
+  /// from [edit] — the form opened on them and saved them back. With
+  /// [symptom], only that one symptom is replaced; the marked body sites
+  /// follow it only when it is a located symptom.
+  CheckIn withReading(CheckInMetric metric, CheckIn edit, {SymptomId? symptom}) {
+    final f = edit.vitals;
+    final rest = without(metric).vitals;
+    final Vitals vitals;
+    if (metric == CheckInMetric.bloodPressure) {
+      vitals = rest.copyWith(systolic: f.systolic, diastolic: f.diastolic);
+    } else if (metric == CheckInMetric.glucose) {
+      vitals = rest.copyWith(
+        glucoseFasting: f.glucoseFasting,
+        glucosePostMeal: f.glucosePostMeal,
+        glucoseRandom: f.glucoseRandom,
+      );
+    } else if (metric == CheckInMetric.spo2) {
+      vitals = rest.copyWith(spo2: f.spo2);
+    } else if (metric == CheckInMetric.heartRate) {
+      vitals = rest.copyWith(heartRate: f.heartRate);
+    } else if (metric == CheckInMetric.weight) {
+      vitals = rest.copyWith(weightKg: f.weightKg);
+    } else if (metric == CheckInMetric.temperature) {
+      vitals = rest.copyWith(temperature: f.temperature);
+    } else {
+      vitals = this.vitals;
+    }
+
+    final pain = metric == CheckInMetric.pain;
+    final symptomsEdited = metric == CheckInMetric.symptoms;
+    var symptoms = this.symptoms;
+    var symptomDetails = this.symptomDetails;
+    var painSites = this.painSites;
+    if (symptomsEdited && symptom != null) {
+      symptoms = {...this.symptoms.where((x) => x != symptom), ...edit.symptoms};
+      symptomDetails = {
+        for (final e in this.symptomDetails.entries)
+          if (e.key != symptom) e.key: e.value,
+        ...edit.symptomDetails,
+      };
+      if (symptom.hasLocation || edit.symptoms.any((x) => x.hasLocation)) painSites = edit.painSites;
+    } else if (symptomsEdited) {
+      symptoms = edit.symptoms;
+      symptomDetails = edit.symptomDetails;
+      painSites = edit.painSites;
+    } else if (pain) {
+      painSites = edit.painSites;
+    }
+
+    return CheckIn(
+      id: id,
+      healthProfileId: healthProfileId,
+      recordedAt: edit.recordedAt,
+      mood: metric == CheckInMetric.mood ? edit.mood : mood,
+      painLevel: pain ? edit.painLevel : painLevel,
+      painSites: painSites,
+      symptoms: symptoms,
+      symptomDetails: symptomDetails,
+      vitals: vitals,
+      note: edit.note,
+      photoRecordId: edit.photoRecordId,
     );
   }
 }

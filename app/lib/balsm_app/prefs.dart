@@ -1,3 +1,5 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:core/core.dart';
 import 'storage_target.dart';
 
@@ -6,9 +8,21 @@ import 'storage_target.dart';
 /// [KeyValueDataSource]; nothing here (or in callers) touches
 /// `SharedPreferences` directly.
 class PatientAppPrefs extends ModulePreferences {
-  const PatientAppPrefs(super.kv) : super(namespace: 'pa');
+  const PatientAppPrefs(super.kv, {this.deviceLanguages = systemLanguages}) : super(namespace: 'pa');
 
-  Future<String> lang() async => await read<String>('lang') ?? 'en';
+  /// The phone's languages as BCP-47 tags, most preferred first. Injected so a
+  /// test can pretend to be an Arabic phone; the default asks the platform.
+  final Iterable<String> Function() deviceLanguages;
+
+  /// The platform's own answer. Reads `PlatformDispatcher.instance` directly
+  /// rather than a binding, so it works before any binding exists (the boot
+  /// tests build the state without one).
+  static Iterable<String> systemLanguages() => PlatformDispatcher.instance.locales.map((l) => l.toLanguageTag());
+
+  /// The UI language: the saved choice, else the device's, else Arabic (see
+  /// [LanguageCode.resolveUi]). Never null, and always one the app can render.
+  Future<String> lang() async =>
+      LanguageCode.resolveUi(saved: await read<String>('lang'), deviceTags: deviceLanguages()).value;
   Future<void> setLang(String v) => write('lang', v);
 
   Future<String?> accent() => read<String>('accent');

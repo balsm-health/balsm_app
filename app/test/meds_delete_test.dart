@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/meds_screen.dart';
 import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 import 'package:prescriptions/prescriptions.dart';
+
+import 'support/flag_overrides.dart';
 
 /// `home.jsx` MedsScreen — a medication is deleted from its dose row's ⋮
 /// menu, by swiping the row, or with Select; each asks first.
@@ -22,6 +28,16 @@ class _Recorder implements DeleteMedicationUseCase {
   Future<void> call(MedicationId id) async => deleted.add(id);
 }
 
+class _EditRecorder implements EditMedicationUseCase {
+  final edited = <Medication>[];
+
+  @override
+  MedicationsDataSource get dao => throw UnimplementedError();
+
+  @override
+  Future<void> call(Medication medication) async => edited.add(medication);
+}
+
 void main() {
   const user = UserId.value('usr-1');
   Medication med(String id, String name) => Medication(
@@ -30,7 +46,7 @@ void main() {
         name: name,
         scheduleType: ScheduleType.daily,
         scheduleConfig: const ScheduleConfig(times: ['08:00', '20:00']),
-        startDate: DateTime(2026, 1, 1),
+        startDate: DateTime(2026),
       );
   final alpha = med('med-a', 'Testamol');
   final beta = med('med-b', 'Placebex');
@@ -41,33 +57,55 @@ void main() {
     TodayDose(medication: alpha, scheduledAt: DateTime(today.year, today.month, today.day, 20)),
   ];
 
-  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester, {bool ar = false}) async {
+  late _EditRecorder editor;
+
+  Future<(_Recorder, PatientAppState)> pump(
+    WidgetTester tester, {
+    bool ar = false,
+    FamilyMember? member,
+    List<Medication>? meds,
+  }) async {
     final recorder = _Recorder();
+    editor = _EditRecorder();
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
+    if (member != null) {
+      state.attachFlags(
+        flagsWith({AppFlags.motherChild: true}),
+      );
+    }
+    final list = meds ?? [alpha, beta];
     tester.view.physicalSize = const Size(390, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        currentUserIdProvider.overrideWithValue(user),
-        todayDosesProvider.overrideWith((ref) async => doses),
-        medicationListProvider.overrideWith((ref) => Stream.value([alpha, beta])),
-        prescriptionListProvider.overrideWith((ref) => Stream.value(const <Prescription>[])),
-        weekAdherenceProvider.overrideWith((ref) async => const WeekAdherence(scheduled: 0, taken: 0)),
-        deleteMedicationUseCaseProvider(user).overrideWithValue(recorder),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: const Scaffold(body: MedsScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          currentUserIdProvider.overrideWithValue(user),
+          todayDosesProvider.overrideWith((ref) async => meds == null ? doses : const <TodayDose>[]),
+          medicationListProvider.overrideWith((ref) => Stream.value(list)),
+          if (member != null) ...[
+            familyMembersProvider.overrideWith((ref) => Stream.value([member])),
+            activeFamilyMemberProvider.overrideWithValue(member),
+          ],
+          prescriptionListProvider.overrideWith((ref) => Stream.value(const <Prescription>[])),
+          weekAdherenceProvider.overrideWith((ref) async => const WeekAdherence(scheduled: 0, taken: 0)),
+          deleteMedicationUseCaseProvider(user).overrideWithValue(recorder),
+          editMedicationUseCaseProvider(user).overrideWithValue(editor),
+        ],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: const Scaffold(body: MedsScreen()),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (recorder, state);
   }
@@ -80,7 +118,8 @@ void main() {
   testWidgets('the ⋮ menu asks, then ends the medication', (tester) async {
     final (recorder, s) = await pump(tester);
     await tester.tap(
-        find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options('Placebex')));
+      find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options('Placebex')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text(s.strings.common.del));
     await tester.pumpAndSettle();
@@ -127,5 +166,65 @@ void main() {
     await tester.pumpAndSettle();
     await confirm(tester, s);
     expect(recorder.deleted, [alpha.id]);
+  });
+
+  testWidgets('Edit medication: from the dose sheet, prefilled, saved under the same id', (tester) async {
+    final (_, s) = await pump(tester);
+    final m = s.strings.meds;
+    expect(find.text(m.med_edit_hint(s.gender)), findsOne);
+
+    await tester.tap(find.text('Placebex'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(m.med_edit_title));
+    await tester.pumpAndSettle();
+
+    expect(find.text(m.med_edit_title), findsOne, reason: 'the sheet title');
+    final name = find.byWidgetPredicate((w) => w is EditableText && w.controller.text == 'Placebex');
+    expect(name, findsOne);
+    await tester.enterText(name, 'Renamedol');
+    await tester.pump();
+    await tester.tap(find.text(m.med_save_changes));
+    await tester.pump();
+    expect(find.text(m.med_changes_saved), findsOne);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(editor.edited, hasLength(1));
+    expect(editor.edited.single.id, beta.id);
+    expect(editor.edited.single.name, 'Renamedol');
+    expect(editor.edited.single.scheduleConfig.times, beta.scheduleConfig.times, reason: 'schedule left alone');
+  });
+
+  group('a family member is the active profile (home-base-mc.jsx MedsScreen member)', () {
+    const kid = FamilyMember(
+      id: HealthProfileId.value('hp-kid'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Kid',
+    );
+
+    testWidgets('names them, hides the adherence and prescriptions cards, and offers to add', (tester) async {
+      final (_, s) = await pump(tester, member: kid, meds: const []);
+      final m = s.strings.meds;
+      expect(find.text(m.regimen_of('Test')), findsOne);
+      expect(find.text(m.regimen), findsNothing);
+      expect(find.text(m.adherence), findsNothing);
+      expect(find.text(s.strings.records.prescriptions), findsNothing);
+      expect(find.text(m.member_meds_empty('Test')), findsOne);
+      expect(find.text(m.member_meds_empty_h(s.gender, 'Test')), findsOne);
+      expect(find.text(m.med_add_title), findsOne);
+    });
+
+    testWidgets('in Arabic, the copy addresses the patient by gender', (tester) async {
+      final (_, s) = await pump(tester, ar: true, member: kid, meds: const []);
+      expect(find.text('لا أدوية لـTest بعد'), findsOne);
+      expect(s.strings.meds.member_meds_empty_h(Gender.female, 'Test'), startsWith('أضيفي'));
+      expect(s.strings.meds.member_meds_empty_h(Gender.male, 'Test'), startsWith('أضف '));
+    });
+
+    testWidgets('once they have medicines, the list shows instead of the empty state', (tester) async {
+      final (_, s) = await pump(tester, member: kid);
+      expect(find.text(s.strings.meds.member_meds_empty('Test')), findsNothing);
+      expect(find.text('Testamol'), findsWidgets);
+    });
   });
 }

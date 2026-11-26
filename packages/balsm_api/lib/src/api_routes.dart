@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 /// Single source of truth for every Balsm API path.
 ///
 /// Keep this 1:1 with the .NET controllers so the wire contract stays
@@ -48,7 +46,7 @@ class ApiRoutes {
 
   // ── Sessions ──────────────────────────────────────────────────────────────
   static const _sessions = '/sessions';
-  static const sessions = _sessions;
+  static const String sessions = _sessions;
   static const sessions_revoke_all = '$_sessions/revoke-all';
   static String session(String sessionId) => '$_sessions/$sessionId';
 
@@ -88,9 +86,31 @@ class ApiRoutes {
   /// propagates to the patient's other devices.
   static String careTeamProvider(String id) => '$care_team_providers/$id';
 
+  // ── Family links (Identity & Access) ──────────────────────────────────────
+  // Linking two Balsm accounts by profile QR, and the sealed emergency card
+  // each side may share with the other. The server stores ciphertext only.
+  static const _family_links = '/api/v1/family-links';
+  static const String family_links = _family_links;
+  static const family_links_incoming = '$_family_links/incoming';
+  static const family_links_outgoing = '$_family_links/outgoing';
+  static String familyLink(String id) => '$_family_links/$id';
+  static String familyLinkApprove(String id) => '$_family_links/$id/approve';
+  static String familyLinkDecline(String id) => '$_family_links/$id/decline';
+  static String familyLinkKeys(String id) => '$_family_links/$id/keys';
+  static String familyLinkCard(String id) => '$_family_links/$id/card';
+
+  // ── Content (platform reference copy) ─────────────────────────────────────
+  // General information served by the host, the same for every caller.
+  static const _content = '/api/v1/content';
+  static const content_pregnancy_weeks = '$_content/pregnancy-weeks';
+
   // ── Platform ──────────────────────────────────────────────────────────────
   /// Host readiness probe. Anonymous, and the only endpoint safe to call
   /// against a server the app is not signed in to — which is what the Dev
   /// Config connection check does.
   static const health = '/api/v1/health';
+
+  /// Maintenance flag (`off` / `readonly` / `block`). Anonymous, no PHI —
+  /// polled before sign-in and while sign-in itself is paused.
+  static const maintenance = '/api/v1/maintenance';
 }

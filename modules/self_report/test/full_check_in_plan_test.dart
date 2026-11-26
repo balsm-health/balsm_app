@@ -21,7 +21,7 @@ void main() {
   });
 
   group('fullCheckInSteps', () {
-    test('defaults match today\'s wizard without meds', () {
+    test("defaults match today's wizard without meds", () {
       expect(
         fullCheckInSteps(tracked: CheckInMetric.defaultFullCheckup, hasMeds: false),
         ['mood', 'bp', 'glucose'],

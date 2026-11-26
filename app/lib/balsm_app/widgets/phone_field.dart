@@ -4,29 +4,15 @@ import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
+
+// An emoji flag glyph, sized to its row rather than to the text scale.
+const _flagEmojiSize = 20.0;
+// An emoji flag glyph in the country list, sized to its row.
+const _flagEmojiSizeLarge = 24.0;
 
 /// Default national-number example (`PhoneInput`'s `placeholder` prop). Digits,
 /// so it reads the same in both languages.
 const String kPhoneHintExample = '10 1234 5678';
-
-/// Arabic-Indic and Eastern Arabic-Indic digits folded to ASCII (FR-213).
-///
-/// Local rather than the profile module's copy: a phone field is a digit field,
-/// and a generic widget should not pull a feature module in to type one.
-String foldPhoneDigits(String input) {
-  final out = StringBuffer();
-  for (final r in input.runes) {
-    if (r >= 0x0660 && r <= 0x0669) {
-      out.writeCharCode(0x30 + (r - 0x0660)); // ٠-٩
-    } else if (r >= 0x06F0 && r <= 0x06F9) {
-      out.writeCharCode(0x30 + (r - 0x06F0)); // ۰-۹
-    } else {
-      out.writeCharCode(r);
-    }
-  }
-  return out.toString();
-}
 
 /// The flag for an ISO 3166-1 alpha-2 code, as regional indicator symbols.
 String countryFlagEmoji(String code) {
@@ -37,8 +23,8 @@ String countryFlagEmoji(String code) {
 /// Dial codes longest-first, so `+1` never shadows `+1…` and `+97` never
 /// shadows `+971` when a stored number is parsed back apart.
 final List<CountryCode> _byDialLength = () {
-  final list = CountryCode.all.where((c) => c.dialCode.isNotEmpty).toList();
-  list.sort((a, b) => b.dialCode.length.compareTo(a.dialCode.length));
+  final list = CountryCode.all.where((c) => c.dialCode.isNotEmpty).toList()
+    ..sort((a, b) => b.dialCode.length.compareTo(a.dialCode.length));
   return list;
 }();
 
@@ -77,8 +63,8 @@ String joinPhone(CountryCode country, String national) {
 /// call sites keep reading one string; the split is this widget's business.
 class PhoneField extends StatefulWidget {
   const PhoneField({
-    super.key,
     required this.controller,
+    super.key,
     this.hint = kPhoneHintExample,
     this.onChanged,
     this.autofocus = false,
@@ -157,73 +143,84 @@ class _PhoneFieldState extends State<PhoneField> {
     // grows together under a large text scale, rather than the design's fixed
     // 54 clipping the text.
     return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Semantics(
-          button: true,
-          label: s.strings.common.ph_country_of(_country.dialCode),
-          excludeSemantics: true,
-          child: Pressable(
-            onTap: _pickCountry,
-            child: Container(
-              // `.dial-code { padding: 0 14px }`; the height comes from the row.
-              constraints: const BoxConstraints(minHeight: 54),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(T.rMd),
-                border: Border.all(color: T.border, width: 1.5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            button: true,
+            label: s.strings.common.ph_country_of(_country.dialCode),
+            excludeSemantics: true,
+            child: Pressable(
+              onTap: _pickCountry,
+              child: Container(
+                // `.dial-code { padding: 0 14px }`; the height comes from the row.
+                constraints: const BoxConstraints(minHeight: 54),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: AppColors.border, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(countryFlagEmoji(_country.value), style: const TextStyle(fontSize: _flagEmojiSize, height: 1)),
+                    const SizedBox(width: 8),
+                    // The dial code is digits: LTR in Arabic too.
+                    Text(
+                      _country.dialCode,
+                      textDirection: TextDirection.ltr,
+                      style: Typo.num(size: FontSizes.subhead),
+                    ),
+                    const SizedBox(width: 1),
+                    const Icon(LucideIcons.chevronDown, size: 15, color: AppColors.textTertiary),
+                  ],
+                ),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(countryFlagEmoji(_country.value), style: const TextStyle(fontSize: 20, height: 1)),
-                const SizedBox(width: 8),
-                // The dial code is digits: LTR in Arabic too.
-                Text(_country.dialCode,
-                    textDirection: TextDirection.ltr,
-                    style: Typo.num(size: FS.lg, weight: FontWeight.w600, color: T.fg1)),
-                const SizedBox(width: 1),
-                const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-              ]),
             ),
           ),
-        ),
-        // `.phone-field { gap: 10px }`.
-        const SizedBox(width: 10),
-        Expanded(
-          child: TextField(
-            controller: _national,
-            autofocus: widget.autofocus,
-            textDirection: TextDirection.ltr,
-            keyboardType: TextInputType.phone,
-            // FR-213: Arabic-Indic digits fold on the way in, everywhere a number
-            // is captured.
-            onChanged: (v) {
-              final folded = foldPhoneDigits(v);
-              if (folded != v) {
-                _national.value = TextEditingValue(
-                  text: folded,
-                  selection: TextSelection.collapsed(offset: folded.length),
-                );
-              }
-              _push();
-            },
-            style: Typo.num(size: FS.lg, color: T.fg1),
-            decoration: InputDecoration(
-              hintText: widget.hint,
-              hintStyle: Typo.num(size: FS.lg, color: T.fg4),
-              isDense: true,
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(T.rMd),
-                  borderSide: const BorderSide(color: T.border, width: 1.5)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          // `.phone-field { gap: 10px }`.
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _national,
+              autofocus: widget.autofocus,
+              textDirection: TextDirection.ltr,
+              keyboardType: TextInputType.phone,
+              // FR-213: Arabic-Indic digits fold on the way in, everywhere a number
+              // is captured.
+              onChanged: (v) {
+                final folded = toWesternDigits(v);
+                if (folded != v) {
+                  _national.value = TextEditingValue(
+                    text: folded,
+                    selection: TextSelection.collapsed(offset: folded.length),
+                  );
+                }
+                _push();
+              },
+              style: Typo.num(size: FontSizes.subhead),
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                hintStyle: Typo.num(size: FontSizes.subhead, color: AppColors.textHint),
+                isDense: true,
+                filled: true,
+                fillColor: AppColors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  borderSide: BorderSide(color: s.accent.main, width: 1.5),
+                ),
+              ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -278,110 +275,130 @@ class _DialCodeSheetState extends State<_DialCodeSheet> {
     }).toList();
 
     return Material(
-      color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      color: AppColors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         // `height: 82%`.
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.82),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          const SheetGrab(),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-            child: Row(children: [
-              Expanded(
-                child:
-                    Text(c.ph_country(s.gender), style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-              ),
-              RoundBtn(
-                  icon: LucideIcons.x,
-                  semanticLabel: c.a11y_close,
-                  ghost: true,
-                  iconSize: 17,
-                  onTap: () => Navigator.pop(context)),
-            ]),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-            child: TextField(
-              controller: _search,
-              onChanged: (_) => setState(() {}),
-              textDirection: s.dir,
-              style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1),
-              decoration: InputDecoration(
-                hintText: c.ph_country_search,
-                hintStyle: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg4),
-                isDense: true,
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                prefixIcon: const Icon(LucideIcons.search, size: 17, color: T.fg3),
-                prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: kMinTapTarget),
-                enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(T.rMd),
-                    borderSide: const BorderSide(color: T.border, width: 1.5)),
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(T.rMd),
-                    borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            const SheetGrab(),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      c.ph_country(s.gender),
+                      style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: c.a11y_close,
+                    ghost: true,
+                    iconSize: 17,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ],
               ),
             ),
-          ),
-          Flexible(
-            child: items.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Text(c.ph_no_match, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-                  )
-                : ListView.separated(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 34)),
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: T.ink50),
-                    itemBuilder: (_, i) {
-                      final country = items[i];
-                      final active = country == widget.current;
-                      return Semantics(
-                        button: true,
-                        selected: active,
-                        label: '${country.name(kCatalog, locale: locale)} ${country.dialCode}',
-                        excludeSemantics: true,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context, country),
-                          behavior: HitTestBehavior.opaque,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minHeight: kMinTapTarget),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
-                              child: Row(children: [
-                                Text(countryFlagEmoji(country.value), style: const TextStyle(fontSize: 24, height: 1)),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Text(
-                                    country.name(kCatalog, locale: locale),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
-                                  ),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 10),
+              child: TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                textDirection: s.dir,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: c.ph_country_search,
+                  hintStyle: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textHint),
+                  isDense: true,
+                  filled: true,
+                  fillColor: AppColors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                  prefixIcon: const Icon(LucideIcons.search, size: 17, color: AppColors.textTertiary),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: BalsmWindow.touchTarget),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: BorderSide(color: s.accent.main, width: 1.5),
+                  ),
+                ),
+              ),
+            ),
+            Flexible(
+              child: items.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Text(c.ph_no_match, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, sheetBottomInset(context, base: 34)),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.ink50),
+                      itemBuilder: (_, i) {
+                        final country = items[i];
+                        final active = country == widget.current;
+                        return Semantics(
+                          button: true,
+                          selected: active,
+                          label: '${country.name(kCatalog, locale: locale)} ${country.dialCode}',
+                          excludeSemantics: true,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context, country),
+                            behavior: HitTestBehavior.opaque,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: BalsmWindow.touchTarget),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      countryFlagEmoji(country.value),
+                                      style: const TextStyle(fontSize: _flagEmojiSizeLarge, height: 1),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Text(
+                                        country.name(kCatalog, locale: locale),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Typo.body(ar: s.rtl)
+                                            .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      country.dialCode,
+                                      textDirection: TextDirection.ltr,
+                                      style: Typo.num(
+                                        size: FontSizes.bodySm,
+                                        color: active ? s.accent.main : AppColors.textTertiary,
+                                      ),
+                                    ),
+                                    if (active) ...[
+                                      const SizedBox(width: 8),
+                                      Icon(LucideIcons.check, size: 18, color: s.accent.main),
+                                    ],
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(country.dialCode,
-                                    textDirection: TextDirection.ltr,
-                                    style: Typo.num(
-                                        size: FS.sm, weight: FontWeight.w600, color: active ? s.accent.main : T.fg3)),
-                                if (active) ...[
-                                  const SizedBox(width: 8),
-                                  Icon(LucideIcons.check, size: 18, color: s.accent.main),
-                                ],
-                              ]),
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ]),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

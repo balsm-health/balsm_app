@@ -141,7 +141,7 @@ class PhiCorpus {
           'handle': handles[i % handles.length],
           'display_name': displayNames[i % displayNames.length],
           'bio': bios[i % bios.length],
-          'email': 'synthetic${counter}@example.test',
+          'email': 'synthetic$counter@example.test',
           'emergency_contact': phones[(i + 1) % phones.length],
         });
         counter++;

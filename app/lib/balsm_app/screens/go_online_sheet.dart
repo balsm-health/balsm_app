@@ -10,12 +10,13 @@ import 'package:material_ui/material_ui.dart';
 import '../app_state.dart';
 import '../auth/go_online_controller.dart';
 import '../kit.dart';
+import '../maintenance/maintenance_guard.dart';
 import '../routes.dart';
-import '../tokens.dart';
 import '../widgets/auth_fields.dart';
 
 /// Opens the go-online sheet (design: `GoOnlineSheet`): email → code → done.
-Future<void> showGoOnlineSheet(BuildContext context) {
+Future<void> showGoOnlineSheet(BuildContext context) async {
+  if (maintenancePaused(context)) return;
   final s = AppScope.of(context);
   return showAppSheet<void>(
     context,
@@ -70,7 +71,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
       final creds = await ref.read(offlineAccountServiceProvider).pendingCredentials();
       if (!mounted || creds == null || _email.text.isNotEmpty) return;
       setState(() => _email.text = creds.email);
-    } catch (_) {
+    } on Object catch (_) {
       // Prefill is a convenience; the field stays editable.
     }
   }
@@ -85,7 +86,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     super.dispose();
   }
 
-  bool get _emailOk => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_email.text.trim());
+  bool get _emailOk => isPlausibleEmail(_email.text);
 
   void _startCountdown() {
     _timer?.cancel();
@@ -150,7 +151,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     final AppResult<GoOnlineOutcome> r;
     try {
       r = await controller.verify(email: _email.text.trim(), code: code);
-    } catch (_) {
+    } on Object catch (_) {
       // Unexpected (e.g. a keychain error part-way). The account may already
       // be online in storage — make the UI agree with it either way.
       await _syncModeFromStorage();
@@ -200,7 +201,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     try {
       final mode = await ref.read(offlineAccountServiceProvider).mode();
       if (mode == AccountMode.online) s.setAccountMode(AccountMode.online);
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 
   @override
@@ -212,54 +213,72 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Container(
           decoration: const BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Center(child: SheetGrab()),
-            const SizedBox(height: 16),
-            if (_step == _Step.done)
-              _done()
-            else ...[
-              Text(st.go_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              if (_step == _Step.email) ..._emailStep() else ..._codeStep(),
-            ],
-            if (_error != null)
-              Padding(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          ),
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(child: SheetGrab()),
+              const SizedBox(height: 16),
+              if (_step == _Step.done)
+                _done()
+              else ...[
+                Text(st.go_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                if (_step == _Step.email) ..._emailStep() else ..._codeStep(),
+              ],
+              if (_error case final error?)
+                Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Semantics(
-                      liveRegion: true,
-                      child: Text(_error!,
-                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)))),
-            const SizedBox(height: 20),
-            _primary(),
-          ]),
+                    liveRegion: true,
+                    child: Text(
+                      error,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              _primary(),
+            ],
+          ),
         ),
       ),
     );
   }
 
   List<Widget> _emailStep() => [
-        Text(s.strings.offline.go_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+        Text(s.strings.offline.go_help, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
         const SizedBox(height: 16),
         AuthInput(
-            controller: _email,
-            hint: s.strings.emergency.em_ph,
-            keyboard: TextInputType.emailAddress,
-            forceLtr: true,
-            accent: s.accent,
-            autofillHints: const [AutofillHints.email],
-            onChanged: (_) => setState(() {})),
+          controller: _email,
+          hint: s.strings.emergency.em_ph,
+          keyboard: TextInputType.emailAddress,
+          forceLtr: true,
+          accent: s.accent,
+          autofillHints: const [AutofillHints.email],
+          onChanged: (_) => setState(() {}),
+        ),
       ];
 
   List<Widget> _codeStep() {
     final code = _code.text;
     return [
       RichText(
-          text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-        TextSpan(text: '${s.strings.offline.go_code_help(s.gender)} '),
-        TextSpan(text: _email.text.trim(), style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
-      ])),
+        text: TextSpan(
+          style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+          children: [
+            TextSpan(text: '${s.strings.offline.go_code_help(s.gender)} '),
+            TextSpan(
+              text: _email.text.trim(),
+              style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
       const SizedBox(height: 20),
       // Same shape as the sign-in code screen: six painted boxes over one
       // hidden field; the group carries the label and the digit count.
@@ -275,72 +294,83 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
             behavior: HitTestBehavior.opaque,
             onTap: _showCodeKeyboard,
             onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
-            // A code reads left to right in every language: the first digit
-            // typed lands in the leftmost box, Arabic included.
-            child: Directionality(
-                textDirection: TextDirection.ltr,
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  for (var i = 0; i < 6; i++)
-                    Flexible(
-                      child: OtpBox(
-                        char: i < code.length ? code[i] : '',
-                        active: code.length == i,
-                        accent: s.accent,
-                      ),
-                    ),
-                ])),
+            child: OtpBoxRow(code: code, accent: s.accent),
           ),
         ),
       ),
       Opacity(
-          opacity: 0,
-          child: SizedBox(
-              height: 1,
-              width: 1,
-              child: TextField(
-                controller: _code,
-                focusNode: _codeFocus,
-                textDirection: TextDirection.ltr,
-                keyboardType: TextInputType.number,
-                autofillHints: const [AutofillHints.oneTimeCode],
-                maxLength: 6,
-                inputFormatters: const [CodeInputFormatter()],
-                onChanged: (v) {
-                  setState(() {});
-                  if (v.length == 6) unawaited(_verify());
-                },
-              ))),
+        opacity: 0,
+        child: SizedBox(
+          height: 1,
+          width: 1,
+          child: TextField(
+            controller: _code,
+            focusNode: _codeFocus,
+            textDirection: TextDirection.ltr,
+            keyboardType: TextInputType.number,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            maxLength: 6,
+            inputFormatters: const [CodeInputFormatter()],
+            onChanged: (v) {
+              setState(() {});
+              if (v.length == 6) unawaited(_verify());
+            },
+          ),
+        ),
+      ),
       const SizedBox(height: 12),
       Center(
-          child: _secs > 0
-              ? RichText(
-                  text: TextSpan(style: Typo.meta(ar: s.rtl), children: [
-                  TextSpan(text: '${s.strings.auth.otp_in} '),
-                  TextSpan(text: '${_secs}s', style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg3)),
-                ]))
-              : PButton(s.strings.auth.otp_resend,
-                  variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl, onTap: _busy ? null : () => _send())),
+        child: _secs > 0
+            ? RichText(
+                text: TextSpan(
+                  style: Typo.meta(ar: s.rtl),
+                  children: [
+                    TextSpan(text: '${s.strings.auth.otp_in} '),
+                    TextSpan(
+                      text: '${_secs}s',
+                      style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textTertiary),
+                    ),
+                  ],
+                ),
+              )
+            : PButton(
+                s.strings.auth.otp_resend,
+                variant: BtnVariant.ghost,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: _busy ? null : _send,
+              ),
+      ),
     ];
   }
 
-  Widget _done() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SizedBox(height: 8),
-        Center(
-          child: Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
-            child: const Icon(LucideIcons.check, size: 36, color: T.hueMint600),
+  Widget _done() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 72,
+              height: 72,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: AppColors.hueMint50, shape: BoxShape.circle),
+              child: const Icon(LucideIcons.check, size: 36, color: AppColors.hueMint600),
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
-        Text(s.strings.offline.go_done_title(s.gender),
-            textAlign: TextAlign.center, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        Text(s.strings.offline.go_done_help,
-            textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
-      ]);
+          const SizedBox(height: 14),
+          Text(
+            s.strings.offline.go_done_title(s.gender),
+            textAlign: TextAlign.center,
+            style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.strings.offline.go_done_help,
+            textAlign: TextAlign.center,
+            style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      );
 
   Widget _primary() {
     final st = s.strings.offline;
@@ -351,13 +381,14 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     };
     return Opacity(
       opacity: enabled ? 1 : 0.4,
-      child: PButton(label,
-          variant: BtnVariant.primary,
-          large: true,
-          block: true,
-          accent: s.accent,
-          ar: s.rtl,
-          onTap: enabled ? () => unawaited(onTap()) : null),
+      child: PButton(
+        label,
+        large: true,
+        block: true,
+        accent: s.accent,
+        ar: s.rtl,
+        onTap: enabled ? () => unawaited(onTap()) : null,
+      ),
     );
   }
 }

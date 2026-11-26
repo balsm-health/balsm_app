@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// Self-reported pain intensity on the standard 0–10 numeric rating scale
 /// (0 = none, 10 = worst imaginable).
+@immutable
 class PainLevel {
-  const PainLevel(this.value) : assert(value >= 0 && value <= 10);
+  const PainLevel(this.value) : assert(value >= 0 && value <= 10, 'pain level is 0-10');
 
   final int value;
 
