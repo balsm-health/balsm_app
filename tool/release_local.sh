@@ -6,7 +6,8 @@
 #
 #   tool/release_local.sh <alpha|beta|production> --build-number=N [options]
 #
-#   --stores=ios,play,huawei   which stores (default: all three)
+#   --stores=ios,play,huawei   which stores (default: all three; production
+#                              also deploys `web`, app.balsm.health)
 #   --build-number=N           required: above every build already uploaded
 #                              (the script checks Play's highest versionCode)
 #   --skip-build               upload what dist/local/ already holds
@@ -18,6 +19,7 @@
 #   alpha       staging   TestFlight · Play internal (released) · AppGallery draft
 #   beta        staging   TestFlight · Play closed testing `alpha` (released) · AppGallery draft
 #   production  prod      TestFlight · Play production (draft) · AppGallery draft
+#                         · web: app.balsm.health (Cloudflare Worker)
 #
 # Secrets come from .env.release in the checkout (git-ignored; start from
 # .env.release.example), or the file named by $BALSM_RELEASE_ENV. Mode 600,
@@ -41,7 +43,7 @@ step() { printf '\n==> %s\n' "$*"; }
 note() { echo "    $*"; }
 
 CHANNEL=""
-STORES="ios,play,huawei"
+STORES=""
 BUILD_NUMBER=""
 SKIP_BUILD=false
 ALLOW_DIRTY=false
@@ -59,9 +61,13 @@ for arg in "$@"; do
   esac
 done
 [ -n "$CHANNEL" ] || die "name the channel: alpha, beta or production (see --help)"
+if [ -z "$STORES" ]; then
+  if [ "$CHANNEL" = production ]; then STORES="ios,play,huawei,web"; else STORES="ios,play,huawei"; fi
+fi
 [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || die "--build-number=N is required (a positive integer above every uploaded build)"
 has() { case ",$STORES," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
-for s in ${STORES//,/ }; do case "$s" in ios|play|huawei) ;; *) die "unknown store: $s" ;; esac; done
+for s in ${STORES//,/ }; do case "$s" in ios|play|huawei|web) ;; *) die "unknown store: $s" ;; esac; done
+if has web && [ "$CHANNEL" != production ]; then die "web deploys production only (app.balsm.health serves the prod build)"; fi
 
 case "$CHANNEL" in
   alpha)      ENVF=staging; PLAY_TRACK=internal;   PLAY_STATUS=completed ;;
@@ -144,6 +150,11 @@ if has huawei; then
   HUAWEI_APP_ID="$(need HUAWEI_APP_ID)"
   note "AppGallery: app $HUAWEI_APP_ID"
 fi
+if has web; then
+  CLOUDFLARE_API_TOKEN="$(need CLOUDFLARE_API_TOKEN)"
+  command -v npx >/dev/null || die "web needs npx (Node.js)"
+  note "web: app.balsm.health (deploy/web/wrangler.jsonc)"
+fi
 SHARED_ENV="$(cfg SHARED_ENV_JSON_FILE)"
 
 # ── Source ────────────────────────────────────────────────────────────────
@@ -170,6 +181,7 @@ if $DRY_RUN; then
   has ios && note "upload xcrun altool --upload-app → App Store Connect (TestFlight)"
   has play && note "upload tool/play_upload.sh → Play track $PLAY_TRACK ($PLAY_STATUS)"
   has huawei && note "upload tool/appgallery_upload.sh → AppGallery app $HUAWEI_APP_ID (draft version)"
+  has web && note "deploy bin/balsm web balsm prod --base-href=/ → wrangler deploy → app.balsm.health, then smoke-check"
   exit 0
 fi
 
@@ -298,6 +310,19 @@ EOF
   fi
 fi
 
+if has web && ! $SKIP_BUILD; then
+  step "Web: building for the domain root"
+  ./bin/balsm web balsm "$ENVF" --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER" --base-href=/
+  # The same refusal as CI: a wrong base path or a missing verification file
+  # would take the site or deep links down.
+  ( cd app/build/web
+    grep -q '<base href="/">' index.html || die "index.html is not built for the domain root"
+    [ -s main.dart.js ] || die "main.dart.js is missing"
+    for f in .well-known/apple-app-site-association .well-known/assetlinks.json version/balsm.json; do
+      python3 -I -c 'import json,sys; json.load(open(sys.argv[1]))' "$f" || die "$f is missing or not JSON"
+    done )
+fi
+
 # ── Upload ──────────────────────────────────────────────────────────────────
 if has ios; then
   step "App Store Connect (TestFlight)"
@@ -319,8 +344,21 @@ if has huawei; then
     tool/appgallery_upload.sh --file "$APK"
 fi
 
+if has web; then
+  step "Web: deploying app.balsm.health"
+  [ -s app/build/web/index.html ] || die "no web build in app/build/web (build it first)"
+  node --test deploy/web/worker.test.mjs
+  CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" npx --yes wrangler@4 deploy -c deploy/web/wrangler.jsonc
+  sleep 10
+  for u in https://app.balsm.health/ https://app.balsm.health/version/balsm.json \
+           https://app.balsm.health/.well-known/apple-app-site-association https://app.balsm.health/.well-known/assetlinks.json; do
+    curl -fsS -o /dev/null --retry 5 --retry-delay 5 "$u" && note "ok   $u" || die "$u does not answer after the deploy"
+  done
+fi
+
 step "Done: $LABEL from $COMMIT"
 has ios && note "TestFlight: the build appears after processing; nothing submitted for review"
 has play && note "Play: track $PLAY_TRACK ($PLAY_STATUS)"
 has huawei && note "AppGallery: package on the version being edited; submit it in AppGallery Connect"
+has web && note "Web: app.balsm.health is live"
 note "Next CI release must use a higher build number than $BUILD_NUMBER, or Play refuses it."

@@ -29,7 +29,7 @@ always use the template.
 
 | Secret | What | How to get |
 |---|---|---|
-| `CLOUDFLARE_API_TOKEN` | Lets `release.yml` deploy the `balsm-app-web` Worker | Cloudflare dashboard → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, scoped to the Balsm account and the `balsm.health` zone |
+| `CLOUDFLARE_API_TOKEN` (environment `release-production`) | Lets `release.yml` deploy the `balsm-app-web` Worker | Cloudflare dashboard → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, scoped to the Balsm account and the `balsm.health` zone |
 
 Optional. With it, a production tag (`v1.2.0`, no `-alpha`/`-beta`) builds the
 web app for the domain root and deploys it with the Worker and the update
@@ -37,8 +37,10 @@ manifests, then smoke-checks the live site. Without it the `deploy-web` job
 is skipped and the release still passes; deploy by hand as in
 `docs/app-update.md`.
 
-The job runs in the `web-production` environment. Add required reviewers
-under **Repo → Settings → Environments** to make each deploy wait for approval.
+The job runs in the `release-production` environment, so the token is set
+there (`gh secret set CLOUDFLARE_API_TOKEN --env release-production`) and each
+deploy waits for one of its reviewers. Locally, `tool/release_local.sh
+production --stores=web` deploys the same build (docs/releasing.md).
 
 ## Android signing (release APK)
 

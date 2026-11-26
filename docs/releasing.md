@@ -168,6 +168,7 @@ first line of a file, so passwords need not sit in the file at all:
 | `ANDROID_KEY_PROPERTIES` | an existing `key.properties` (keystore, alias, passwords); or `ANDROID_KEYSTORE`, `ANDROID_KEY_ALIAS`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD` |
 | `PLAY_SERVICE_ACCOUNT_JSON_FILE` | path to the Play service account's JSON key |
 | `HUAWEI_CLIENT_ID`, `HUAWEI_CLIENT_SECRET`, `HUAWEI_APP_ID` | as the CI secrets |
+| `CLOUDFLARE_API_TOKEN` | production only: deploys app.balsm.health (`--stores=web`, part of a production release by default) |
 | `SHARED_ENV_JSON_FILE` | server list, used when `app/env/shared.json` is missing |
 
 The script leaves nothing behind: the certificate goes into a temporary

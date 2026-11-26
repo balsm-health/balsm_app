@@ -530,10 +530,10 @@ jobs:
     needs: [setup, github-release]
     if: needs.setup.outputs.channel == 'production'
     runs-on: ubuntu-latest
-    # A named environment, so required reviewers can be added in
-    # Repo → Settings → Environments without touching this file.
+    # Production, like the store uploads: release-production holds the
+    # Cloudflare token and waits for one of its reviewers before deploying.
     environment:
-      name: web-production
+      name: release-production
       url: https://app.balsm.health
     # Two production tags in a row: finish the first deploy, then run the next.
     concurrency:

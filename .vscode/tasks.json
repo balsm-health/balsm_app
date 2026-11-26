@@ -205,14 +205,16 @@
     },
     {
       "id": "stores",
-      "description": "Which stores",
+      "description": "Which stores (web = app.balsm.health, production only)",
       "type": "pickString",
       "options": [
         "ios,play,huawei",
+        "ios,play,huawei,web",
         "ios",
         "play",
         "huawei",
-        "play,huawei"
+        "play,huawei",
+        "web"
       ],
       "default": "ios,play,huawei"
     }
