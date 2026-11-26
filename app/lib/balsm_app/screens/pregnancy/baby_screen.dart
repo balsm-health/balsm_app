@@ -138,29 +138,26 @@ class _RenameSheetState extends ConsumerState<_RenameSheet> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: FamilySheet(
-        title: s.strings.family.f_name,
-        sub: p.name_sub,
-        children: [
-          TextField(
-            controller: _name,
-            autofocus: true,
-            maxLength: BirthDetails.maxNameLength,
-            decoration: fieldDecoration(s, p.name_ph).copyWith(counterText: ''),
-          ),
-          const SizedBox(height: 14),
-          PButton(
-            s.strings.family.save,
-            large: true,
-            block: true,
-            accent: s.accent,
-            ar: s.rtl,
-            onTap: _saving ? null : _save,
-          ),
-        ],
-      ),
+    return FamilySheet(
+      title: s.strings.family.f_name,
+      sub: p.name_sub,
+      children: [
+        TextField(
+          controller: _name,
+          autofocus: true,
+          maxLength: BirthDetails.maxNameLength,
+          decoration: fieldDecoration(s, p.name_ph).copyWith(counterText: ''),
+        ),
+        const SizedBox(height: 14),
+        PButton(
+          s.strings.family.save,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: _saving ? null : _save,
+        ),
+      ],
     );
   }
 }

@@ -100,8 +100,7 @@ class PregnancyScreen extends ConsumerWidget {
         MetricGrid(
           columns: 2,
           tiles: [
-            for (final b in active)
-              _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother),
+            for (final b in active) _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother),
           ],
         ),
         if (born.isNotEmpty) ...[
@@ -435,64 +434,61 @@ class _VisitSheetState extends ConsumerState<_VisitSheet> {
     final p = s.strings.pregnancy;
     final now = DateTime.now();
     final date = _date;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: FamilySheet(
-        title: p.next_visit_t,
-        children: [
-          LabelledField(
-            label: p.visit_date,
-            child: DayField(
-              value: date,
-              placeholder: p.pick_date,
-              onTap: () async {
-                final picked = await pickDay(
-                  context,
-                  title: p.visit_date,
-                  initial: date ?? now,
-                  first: now,
-                  last: now.add(const Duration(days: 300)),
-                );
-                if (picked != null && mounted) setState(() => _date = picked);
-              },
-            ),
+    return FamilySheet(
+      title: p.next_visit_t,
+      children: [
+        LabelledField(
+          label: p.visit_date,
+          child: DayField(
+            value: date,
+            placeholder: p.pick_date,
+            onTap: () async {
+              final picked = await pickDay(
+                context,
+                title: p.visit_date,
+                initial: date ?? now,
+                first: now,
+                last: now.add(const Duration(days: 300)),
+              );
+              if (picked != null && mounted) setState(() => _date = picked);
+            },
           ),
-          LabelledField(
-            label: p.visit_time,
-            child: TextField(
-              controller: _time,
-              keyboardType: TextInputType.datetime,
-              textDirection: TextDirection.ltr,
-              decoration: fieldDecoration(s, p.visit_time_ph),
-            ),
+        ),
+        LabelledField(
+          label: p.visit_time,
+          child: TextField(
+            controller: _time,
+            keyboardType: TextInputType.datetime,
+            textDirection: TextDirection.ltr,
+            decoration: fieldDecoration(s, p.visit_time_ph),
           ),
-          LabelledField(
-            label: p.visit_clinic,
-            child: TextField(controller: _clinic, decoration: fieldDecoration(s, null)),
-          ),
+        ),
+        LabelledField(
+          label: p.visit_clinic,
+          child: TextField(controller: _clinic, decoration: fieldDecoration(s, null)),
+        ),
+        PButton(
+          s.strings.family.save,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: date == null || _saving
+              ? null
+              : () => _save(NextVisit(date: date, time: _time.text, clinic: _clinic.text)),
+        ),
+        if (widget.pregnancy.nextVisit != null) ...[
+          const SizedBox(height: 8),
           PButton(
-            s.strings.family.save,
+            p.visit_remove,
             large: true,
             block: true,
-            accent: s.accent,
+            variant: BtnVariant.ghost,
             ar: s.rtl,
-            onTap: date == null || _saving
-                ? null
-                : () => _save(NextVisit(date: date, time: _time.text, clinic: _clinic.text)),
+            onTap: _saving ? null : () => _save(null),
           ),
-          if (widget.pregnancy.nextVisit != null) ...[
-            const SizedBox(height: 8),
-            PButton(
-              p.visit_remove,
-              large: true,
-              block: true,
-              variant: BtnVariant.ghost,
-              ar: s.rtl,
-              onTap: _saving ? null : () => _save(null),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }

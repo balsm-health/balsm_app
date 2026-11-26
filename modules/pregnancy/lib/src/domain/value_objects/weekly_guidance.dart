@@ -3,6 +3,8 @@
 /// anyone's pregnancy — and it changes only when the content does.
 library;
 
+import 'package:core/core.dart' show Media;
+
 /// The baby's typical size in a week; each figure is null where the sources
 /// give none.
 class GuidanceFetalSize {
@@ -18,21 +20,19 @@ class GuidanceFetalSize {
   bool get isEmpty => lengthMm == null && weightG == null && comparison == null;
 }
 
-/// A week's artwork: [key] names the image, [credit] who made it.
+/// A week's artwork: [media] is the picture (in its light/dark and other
+/// renditions), [credit] who made it.
 class GuidanceIllustration {
-  const GuidanceIllustration({
-    required this.key,
-    required this.credit,
-    required this.sourceUrl,
-  });
+  const GuidanceIllustration({required this.media});
 
-  final String key;
+  /// Public artwork on the CDN, fetched without a session.
+  final Media media;
 
-  /// Key of [WeeklyGuidance.illustrationCredits].
-  final String credit;
+  /// Key of [WeeklyGuidance.illustrationCredits]; empty when none.
+  String get credit => media.credit;
 
-  /// Where the artwork was published.
-  final String sourceUrl;
+  /// Where the artwork was published; empty when unknown.
+  String get sourceUrl => media.sourceUrl;
 }
 
 /// Who made a set of illustrations, and the line that credits them.

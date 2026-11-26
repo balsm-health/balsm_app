@@ -31,24 +31,28 @@ class BalsmSegmented<T> extends StatelessWidget {
         children: options.map((opt) {
           final isActive = opt == selected;
           return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(opt),
-              child: AnimatedContainer(
-                duration: Motion.base,
-                curve: Motion.easeOut,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadii.segment),
-                  boxShadow: isActive ? AppShadows.xs : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  labelOf(opt),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: FontSizes.bodySm,
-                    color: isActive ? AppColors.textPrimary : AppColors.textTertiary,
+            child: Semantics(
+              button: true,
+              selected: isActive,
+              child: GestureDetector(
+                onTap: () => onChanged(opt),
+                child: AnimatedContainer(
+                  duration: Motion.base,
+                  curve: Motion.easeOut,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadii.segment),
+                    boxShadow: isActive ? AppShadows.xs : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    labelOf(opt),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: FontSizes.bodySm,
+                      color: isActive ? AppColors.textPrimary : AppColors.textTertiary,
+                    ),
                   ),
                 ),
               ),

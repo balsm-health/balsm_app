@@ -71,28 +71,188 @@ class FetalSizeDto {
   Map<String, dynamic> toJson() => {'length_mm': lengthMm, 'weight_g': weightG, 'comparison': comparison};
 }
 
-/// A week's artwork: [key] names the image, [credit] who made it.
-class IllustrationDto {
-  const IllustrationDto({required this.key, required this.credit, required this.sourceUrl});
+/// A picture (video later) the API points at, in one or more renditions
+/// chosen along [axes]. Wire contract only; the app's `Media` value object
+/// and its rendition selector live in `core`.
+class MediaDto {
+  const MediaDto({
+    this.kind = 'image',
+    this.alt = '',
+    this.credit = '',
+    this.sourceUrl = '',
+    this.axes = const [],
+    this.renditions = const [],
+  });
 
-  /// Null when [json] is not an artwork object.
-  static IllustrationDto? fromJson(Object? json) {
+  /// Null when [json] is not a media object.
+  static MediaDto? fromJson(Object? json) {
     if (json is! Map<String, dynamic>) return null;
-    final key = json['key'];
-    if (key is! String || key.isEmpty) return null;
-    return IllustrationDto(key: key, credit: _text(json['credit']), sourceUrl: _text(json['source_url']));
+    return MediaDto(
+      kind: _text(json['kind']),
+      alt: _text(json['alt']),
+      credit: _text(json['credit']),
+      sourceUrl: _text(json['source_url']),
+      axes: [
+        if (json['axes'] case final List<dynamic> axes)
+          for (final a in axes)
+            if (MediaAxisDto.fromJson(a) case final axis?) axis,
+      ],
+      renditions: [
+        if (json['renditions'] case final List<dynamic> renditions)
+          for (final r in renditions)
+            if (MediaRenditionDto.fromJson(r) case final rendition?) rendition,
+      ],
+    );
   }
 
-  /// e.g. `pregnancy/week-12`.
-  final String key;
+  /// `image` (the only kind served today).
+  final String kind;
 
-  /// Key of [PregnancyWeeksResponse.illustrationCredits].
+  /// Spoken description, in the request's language.
+  final String alt;
+
+  /// Key of a credits table (e.g. [PregnancyWeeksResponse.illustrationCredits]);
+  /// empty when none.
   final String credit;
 
-  /// Where the artwork was published.
+  /// Where the artwork was published; empty when unknown.
   final String sourceUrl;
+  final List<MediaAxisDto> axes;
+  final List<MediaRenditionDto> renditions;
 
-  Map<String, dynamic> toJson() => {'key': key, 'credit': credit, 'source_url': sourceUrl};
+  Map<String, dynamic> toJson() => {
+        'kind': kind,
+        'alt': alt,
+        'credit': credit,
+        'source_url': sourceUrl,
+        'axes': [for (final a in axes) a.toJson()],
+        'renditions': [for (final r in renditions) r.toJson()],
+      };
+}
+
+/// A dimension renditions vary along: `source` `app` (the app fills the value:
+/// `theme`, `locale`, `platform`) or `user` (a switch on the media, with
+/// [label], [options] and [defaultValue]).
+class MediaAxisDto {
+  const MediaAxisDto({
+    required this.id,
+    required this.source,
+    this.label = '',
+    this.options = const [],
+    this.defaultValue = '',
+  });
+
+  /// Null when [json] has no id.
+  static MediaAxisDto? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final id = _text(json['id']);
+    if (id.isEmpty) return null;
+    return MediaAxisDto(
+      id: id,
+      source: _text(json['source']),
+      label: _text(json['label']),
+      options: [
+        if (json['options'] case final List<dynamic> options)
+          for (final o in options)
+            if (MediaOptionDto.fromJson(o) case final option?) option,
+      ],
+      defaultValue: _text(json['default']),
+    );
+  }
+
+  final String id;
+
+  /// `app` or `user`.
+  final String source;
+  final String label;
+  final List<MediaOptionDto> options;
+  final String defaultValue;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'source': source,
+        if (label.isNotEmpty) 'label': label,
+        if (options.isNotEmpty) 'options': [for (final o in options) o.toJson()],
+        if (defaultValue.isNotEmpty) 'default': defaultValue,
+      };
+}
+
+/// One value of a user axis and its label.
+class MediaOptionDto {
+  const MediaOptionDto({required this.value, this.label = ''});
+
+  /// Null when [json] has no value.
+  static MediaOptionDto? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final value = _text(json['value']);
+    if (value.isEmpty) return null;
+    return MediaOptionDto(value: value, label: _text(json['label']));
+  }
+
+  final String value;
+  final String label;
+
+  Map<String, dynamic> toJson() => {'value': value, 'label': label};
+}
+
+/// A file served [when] the axis values match (an axis absent from [when]
+/// matches anything), with an optional smaller [thumbnail].
+class MediaRenditionDto {
+  const MediaRenditionDto({required this.when, required this.file, this.thumbnail});
+
+  /// Null when [json] has no file url.
+  static MediaRenditionDto? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final file = MediaFileDto.fromJson(json);
+    if (file == null) return null;
+    return MediaRenditionDto(
+      when: {
+        if (json['when'] case final Map<String, dynamic> conditions)
+          for (final e in conditions.entries)
+            if (e.value case final String v) e.key: v,
+      },
+      file: file,
+      thumbnail: MediaFileDto.fromJson(json['thumbnail']),
+    );
+  }
+
+  final Map<String, String> when;
+  final MediaFileDto file;
+  final MediaFileDto? thumbnail;
+
+  Map<String, dynamic> toJson() => {
+        'when': when,
+        ...file.toJson(),
+        'thumbnail': thumbnail?.toJson(),
+      };
+}
+
+/// One file on the CDN. [width], [height] and [bytes] are 0 when unknown.
+class MediaFileDto {
+  const MediaFileDto({required this.url, this.mime = '', this.width = 0, this.height = 0, this.bytes = 0});
+
+  /// Null when [json] has no url.
+  static MediaFileDto? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final url = _text(json['url']);
+    if (url.isEmpty) return null;
+    int n(Object? v) => v is num ? v.toInt() : 0;
+    return MediaFileDto(
+      url: url,
+      mime: _text(json['mime']),
+      width: n(json['width']),
+      height: n(json['height']),
+      bytes: n(json['bytes']),
+    );
+  }
+
+  final String url;
+  final String mime;
+  final int width;
+  final int height;
+  final int bytes;
+
+  Map<String, dynamic> toJson() => {'url': url, 'mime': mime, 'width': width, 'height': height, 'bytes': bytes};
 }
 
 /// Who made a set of illustrations, and under which licence they are shown.
@@ -132,14 +292,14 @@ class IllustrationCreditDto {
 
 /// The baby's side of a week: a development fact, the size and the artwork.
 class BabyDto {
-  const BabyDto({this.fact = '', this.fetalSize = const FetalSizeDto(), this.illustration, this.sources = const []});
+  const BabyDto({this.fact = '', this.fetalSize = const FetalSizeDto(), this.media, this.sources = const []});
 
   factory BabyDto.fromJson(Object? json) {
     final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
     return BabyDto(
       fact: _text(map['fact']),
       fetalSize: FetalSizeDto.fromJson(map['fetal_size']),
-      illustration: IllustrationDto.fromJson(map['illustration']),
+      media: MediaDto.fromJson(map['media']),
       sources: _keys(map['sources']),
     );
   }
@@ -148,7 +308,7 @@ class BabyDto {
   final FetalSizeDto fetalSize;
 
   /// The week's artwork, or null when it has none.
-  final IllustrationDto? illustration;
+  final MediaDto? media;
 
   /// Ids of [PregnancyWeeksResponse.sources] behind the baby's copy.
   final List<String> sources;
@@ -156,7 +316,7 @@ class BabyDto {
   Map<String, dynamic> toJson() => {
         'fact': fact,
         'fetal_size': fetalSize.toJson(),
-        'illustration': illustration?.toJson(),
+        'media': media?.toJson(),
         'sources': sources,
       };
 }
@@ -343,7 +503,7 @@ class PregnancyWeeksResponse {
   /// Wording for each [PregnancyWeekDto.topics] key.
   final Map<String, String> topicLabels;
 
-  /// Credit for each [IllustrationDto.credit] key.
+  /// Credit for each [MediaDto.credit] key.
   final Map<String, IllustrationCreditDto> illustrationCredits;
 
   Map<String, dynamic> toJson() => {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,16 +153,7 @@ class _Footer extends StatelessWidget {
   }
 }
 
-/// Every asset the app ships, read once: a week's artwork shows only when
-/// its image is among them.
-final _shippedAssetsProvider = FutureProvider<Set<String>>(
-  (ref) async => (await AssetManifest.loadFromAssetBundle(rootBundle)).listAssets().toSet(),
-);
-
-/// Where the app keeps the image for an artwork key (`pregnancy/week-12`).
-String _artworkAsset(String key) => 'assets/$key.png';
-
-/// A week's guide (`MCWeekGuide`): the artwork (when the app ships it), the baby's size, tests
+/// A week's guide (`MCWeekGuide`): the artwork (when it loads), the baby's size, tests
 /// due, danger signs, topics, the multiples note and — in full — the sources.
 /// [compact] (the Pregnancy screen's card) leaves out the topics heading, the
 /// "Danger signs to know" list for a week without warnings and the sources,
@@ -191,6 +184,20 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
   bool _sourcesOpen = false;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ask the CDN for every week's artwork, and every option the user could
+    // switch it to, not just this one: a lone request for week-12.jpg would
+    // tell it how far along the patient is.
+    unawaited(
+      precacheMedia(context, [
+        for (final w in widget.guidance.weeks)
+          if (w.illustration case final art?) art.media,
+      ]),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
     final g = widget.guidance;
@@ -217,14 +224,14 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
       add(_SectionHead(icon: LucideIcons.baby, color: AppColors.hueAquaInk, text: label('baby_title')!));
     }
     final art = entry.illustration;
-    final shipped = ref.watch(_shippedAssetsProvider).value ?? const <String>{};
-    if (art != null && shipped.contains(_artworkAsset(art.key))) {
+    if (art != null) {
       add(
         _WeekArtwork(
           art: art,
           credit: g.illustrationCredits[art.credit]?.text,
           label: label('illustration', {'week': entry.week}),
           height: widget.compact ? 112 : 150,
+          compact: widget.compact,
         ),
       );
     }
@@ -343,10 +350,16 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
 }
 
 /// The week's artwork and its credit, opening the page it was published on.
-/// Shown only for a week that has artwork the app ships; otherwise the guide
-/// has no picture at all.
+/// [MediaView] draws nothing until the image arrives, and if it cannot be
+/// fetched the guide has no picture at all — never an empty frame.
 class _WeekArtwork extends StatelessWidget {
-  const _WeekArtwork({required this.art, required this.credit, required this.label, required this.height});
+  const _WeekArtwork({
+    required this.art,
+    required this.credit,
+    required this.label,
+    required this.height,
+    required this.compact,
+  });
   final GuidanceIllustration art;
 
   /// "Illustration: …, CC BY-ND 4.0", from the content; null leaves it out.
@@ -356,34 +369,30 @@ class _WeekArtwork extends StatelessWidget {
   final String? label;
   final double height;
 
+  /// On the card: the thumbnail when the content has one.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          image: true,
-          label: label,
-          child: Container(
-            height: height,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadii.tile),
-              border: Border.all(color: AppColors.ink100),
-              gradient: const RadialGradient(
-                center: Alignment.bottomCenter,
-                radius: 1.2,
-                colors: [AppColors.hueAqua50, AppColors.white],
-                stops: [0, 0.7],
-              ),
-            ),
-            child: Image.asset(_artworkAsset(art.key), fit: BoxFit.contain, excludeFromSemantics: true),
-          ),
+    return MediaView(
+      media: art.media,
+      compact: compact,
+      height: height,
+      semanticLabel: label,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        border: Border.all(color: AppColors.ink100),
+        gradient: const RadialGradient(
+          center: Alignment.bottomCenter,
+          radius: 1.2,
+          colors: [AppColors.hueAqua50, AppColors.white],
+          stops: [0, 0.7],
         ),
-        if (credit case final credit?)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
+      ),
+      footer: switch (credit) {
+        final credit? => Padding(
+            padding: const EdgeInsetsDirectional.only(top: 4),
             child: Semantics(
               link: true,
               child: GestureDetector(
@@ -392,7 +401,8 @@ class _WeekArtwork extends StatelessWidget {
               ),
             ),
           ),
-      ],
+        null => null,
+      },
     );
   }
 }

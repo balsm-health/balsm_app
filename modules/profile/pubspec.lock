@@ -245,6 +245,14 @@ packages:
       relative: true
     source: path
     version: "0.0.0"
+  cross_file:
+    dependency: transitive
+    description:
+      name: cross_file
+      sha256: f141ea4f277af142a0356955707f6556f37b03947d39d55585981a06ca437bd6
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.5+5"
   crypto:
     dependency: transitive
     description:
@@ -381,6 +389,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  file_sized:
+    dependency: transitive
+    description:
+      name: file_sized
+      sha256: "0cd5f26da4d6c44d3c5b750acc4392980e1eb68c74ace96a471f989c6becbf43"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
+  file_type_plus:
+    dependency: transitive
+    description:
+      name: file_type_plus
+      sha256: d2e49599d0e78cd7d1732933dafc8b777e32b0fe46c02f4276e78d4dcace5263
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   fixnum:
     dependency: transitive
     description:
@@ -762,6 +786,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.11.1"
+  media_source:
+    dependency: transitive
+    description:
+      name: media_source
+      sha256: c96164dfeac12083f2ff551b9126fcad7132053492243b86acbf806f67845377
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   meta:
     dependency: transitive
     description:

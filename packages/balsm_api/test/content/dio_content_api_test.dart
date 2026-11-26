@@ -81,8 +81,53 @@ Map<String, dynamic> _full() => _payload()
             'weight_g': w['week'] == 5 ? 45 : null,
             'comparison': w['week'] == 4 ? 'بذرة' : null,
           },
-          'illustration': w['week'] == 5
-              ? {'key': 'pregnancy/week-05', 'credit': 'art', 'source_url': 'https://example.test/art'}
+          'media': w['week'] == 5
+              ? {
+                  'kind': 'image',
+                  'alt': 'رسم الأسبوع 5',
+                  'credit': 'art',
+                  'source_url': 'https://example.test/art',
+                  'axes': [
+                    {'id': 'theme', 'source': 'app'},
+                    {
+                      'id': 'gender',
+                      'source': 'user',
+                      'label': 'الطفل',
+                      'options': [
+                        {'value': 'girl', 'label': 'بنت'},
+                        {'value': 'boy', 'label': 'ولد'},
+                      ],
+                      'default': 'girl',
+                    },
+                  ],
+                  'renditions': [
+                    {
+                      'when': {'theme': 'light'},
+                      'url': 'https://cdn.example.test/w5.jpg',
+                      'mime': 'image/jpeg',
+                      'width': 679,
+                      'height': 480,
+                      'bytes': 30795,
+                      'thumbnail': {
+                        'url': 'https://cdn.example.test/w5-thumb.jpg',
+                        'mime': 'image/jpeg',
+                        'width': 160,
+                        'height': 113,
+                        'bytes': 4100,
+                      },
+                    },
+                    {
+                      'when': {'theme': 'dark'},
+                      'url': 'https://cdn.example.test/w5-dark.jpg',
+                      'mime': 'image/jpeg',
+                      'width': 679,
+                      'height': 480,
+                      'bytes': 30100,
+                      'thumbnail': null,
+                    },
+                    {'when': <String, String>{}, 'mime': 'image/jpeg'},
+                  ],
+                }
               : null,
           'sources': ['src-1'],
         },
@@ -157,8 +202,26 @@ void main() {
       expect(five.dangerSigns, ['bleeding']);
       expect(five.topics, ['visits']);
       expect(five.sources, ['src-1']);
-      expect(four.baby.illustration, isNull);
-      expect((five.baby.illustration!.key, five.baby.illustration!.credit), ('pregnancy/week-05', 'art'));
+      expect(four.baby.media, isNull);
+      final art = five.baby.media!;
+      expect(
+        (art.kind, art.alt, art.credit, art.sourceUrl),
+        ('image', 'رسم الأسبوع 5', 'art', 'https://example.test/art'),
+      );
+      expect([for (final a in art.axes) (a.id, a.source)], [('theme', 'app'), ('gender', 'user')]);
+      final gender = art.axes.last;
+      expect((gender.label, gender.defaultValue), ('الطفل', 'girl'));
+      expect([for (final o in gender.options) (o.value, o.label)], [('girl', 'بنت'), ('boy', 'ولد')]);
+      // The rendition without a url is dropped, not a crash.
+      final renditions = [for (final r in art.renditions) (r.when.toString(), r.file.url)];
+      expect(renditions, [
+        ('{theme: light}', 'https://cdn.example.test/w5.jpg'),
+        ('{theme: dark}', 'https://cdn.example.test/w5-dark.jpg'),
+      ]);
+      final light = art.renditions.first;
+      expect((light.file.mime, light.file.width, light.file.height, light.file.bytes), ('image/jpeg', 679, 480, 30795));
+      expect((light.thumbnail!.url, light.thumbnail!.width), ('https://cdn.example.test/w5-thumb.jpg', 160));
+      expect(art.renditions.last.thumbnail, isNull);
       expect(parsed.illustrationCredits['art']!.text, 'رسم: فنان تجريبي');
       expect(five.symptoms, ['nausea']);
       expect(five.tips, ['نصيحة 5']);
@@ -178,7 +241,7 @@ void main() {
       expect(parsed.labels, isEmpty);
       expect(parsed.topicLabels, isEmpty);
       final baby = week.baby;
-      expect((baby.fetalSize.lengthMm, baby.fetalSize.comparison, baby.illustration), (null, null, null));
+      expect((baby.fetalSize.lengthMm, baby.fetalSize.comparison, baby.media), (null, null, null));
       expect(week.testsDue, isEmpty);
     });
 

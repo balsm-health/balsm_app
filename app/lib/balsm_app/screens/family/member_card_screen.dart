@@ -396,36 +396,33 @@ class _ContactSheetState extends ConsumerState<_ContactSheet> {
     final s = AppScope.of(context);
     final f = s.strings.family;
     final ok = _name.text.trim().isNotEmpty && _phone.text.trim().isNotEmpty;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: FamilySheet(
-        title: f.add_contact,
-        children: [
-          TextField(
-            controller: _name,
-            autofocus: true,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(labelText: f.contact_name),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            textDirection: TextDirection.ltr,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(labelText: f.contact_phone),
-          ),
-          const SizedBox(height: 18),
-          PButton(
-            f.contact_add,
-            large: true,
-            block: true,
-            accent: s.accent,
-            ar: s.rtl,
-            onTap: ok && !_saving ? _add : null,
-          ),
-        ],
-      ),
+    return FamilySheet(
+      title: f.add_contact,
+      children: [
+        TextField(
+          controller: _name,
+          autofocus: true,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(labelText: f.contact_name),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _phone,
+          keyboardType: TextInputType.phone,
+          textDirection: TextDirection.ltr,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(labelText: f.contact_phone),
+        ),
+        const SizedBox(height: 18),
+        PButton(
+          f.contact_add,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: ok && !_saving ? _add : null,
+        ),
+      ],
     );
   }
 }

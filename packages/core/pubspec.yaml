@@ -46,6 +46,7 @@ dependencies:
   json_annotation: ^4.9.0
   lucide_icons_flutter: ^4.0.3
   material_ui: ^1.2.0
+  media_source: ^2.0.0
 
   meta: any
   # Installed version, for the app-update check.
