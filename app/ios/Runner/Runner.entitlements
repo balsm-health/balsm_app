@@ -6,7 +6,7 @@
   <!-- webcredentials: lets the Passwords app save and fill balsm.health
        credentials for this app, and share them with the website. It needs
        https://balsm.health/.well-known/apple-app-site-association to list
-       8F78S7D344.app.balsm.health under "webcredentials".
+       56V9N23Y78.app.balsm.health under "webcredentials".
        The domain is literal here, unlike applinks below: a password is saved
        against one identity, and a build variable that resolves differently per
        flavour would strand saved credentials on the wrong domain. -->

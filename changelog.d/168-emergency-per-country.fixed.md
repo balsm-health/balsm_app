@@ -1,0 +1,1 @@
+The Emergency numbers screen now follows the country you are in, instead of always showing Egypt's numbers: Egypt keeps its four lines, other countries show their national emergency number, and a country with none on file says so. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

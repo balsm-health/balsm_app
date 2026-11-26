@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// How a care-team attachment should be read.
 enum CareFileKind {
   /// A vault-relative path. The bytes live encrypted in the user file store.
@@ -21,6 +23,7 @@ enum CareFileKind {
 /// [locator] is the only address either kind has — a vault path for
 /// [CareFileKind.file], an absolute URL for [CareFileKind.link] — so it is also
 /// the identity used to detach one.
+@immutable
 class CareProviderFile {
   const CareProviderFile({required this.kind, required this.locator});
 

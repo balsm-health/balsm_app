@@ -1,13 +1,14 @@
-import '../localization/i18n/messages.i69n.dart';
-import '../localization/i18n/messages_ar.i69n.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:balsm_api/balsm_api.dart' show NetworkManager;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../localization/core_messages.dart';
+import '../localization/i18n/messages.i69n.dart';
 import '../network/api_providers.dart';
-import '_tokens.dart';
 import 'shared_widgets.dart';
+import 'tokens.dart';
 
 /// G6 / FR-046a·b / SC-011a — PUBLIC (no-auth) service status page.
 ///
@@ -41,6 +42,36 @@ class ServiceHealth {
     required this.label,
     required this.incidents,
   });
+
+  /// Tolerant parser for whatever the backend returns. Accepts a Map with a
+  /// `status`/`state`/`health` field and an optional `incidents` list.
+  factory ServiceHealth.fromJson(Object? json) {
+    // The API wraps every body in `{ "data": … }`; read inside it.
+    if (json is Map && json['data'] is Map) return ServiceHealth.fromJson(json['data']);
+    if (json is Map) {
+      final rawStatus = (json['status'] ?? json['state'] ?? json['health'])?.toString();
+      final level = _levelFrom(rawStatus);
+      final label = (rawStatus == null || rawStatus.trim().isEmpty) ? _defaultLabel(level) : rawStatus.trim();
+      return ServiceHealth(
+        level: level,
+        label: label,
+        incidents: _incidentsFrom(json['incidents'] ?? json['events']),
+      );
+    }
+    if (json is String) {
+      final level = _levelFrom(json);
+      return ServiceHealth(
+        level: level,
+        label: json.trim().isEmpty ? _defaultLabel(level) : json.trim(),
+        incidents: const [],
+      );
+    }
+    return const ServiceHealth(
+      level: ServiceStatusLevel.unknown,
+      label: 'Status unknown',
+      incidents: [],
+    );
+  }
 
   final ServiceStatusLevel level;
 
@@ -87,7 +118,7 @@ class ServiceHealth {
     }
   }
 
-  static List<StatusIncident> _incidentsFrom(dynamic raw) {
+  static List<StatusIncident> _incidentsFrom(Object? raw) {
     if (raw is! List) return const [];
     final out = <StatusIncident>[];
     for (final item in raw) {
@@ -97,44 +128,16 @@ class ServiceHealth {
         final title = (item['title'] ?? item['name'] ?? item['summary'] ?? item['message'] ?? 'Incident').toString();
         final detailRaw = item['description'] ?? item['detail'] ?? item['body'];
         final sevRaw = item['severity'] ?? item['status'] ?? item['impact'];
-        out.add(StatusIncident(
-          title: title,
-          detail: detailRaw?.toString(),
-          severity: sevRaw?.toString(),
-        ));
+        out.add(
+          StatusIncident(
+            title: title,
+            detail: detailRaw?.toString(),
+            severity: sevRaw?.toString(),
+          ),
+        );
       }
     }
     return out;
-  }
-
-  /// Tolerant parser for whatever the backend returns. Accepts a Map with a
-  /// `status`/`state`/`health` field and an optional `incidents` list.
-  factory ServiceHealth.fromJson(dynamic json) {
-    // The API wraps every body in `{ "data": … }`; read inside it.
-    if (json is Map && json['data'] is Map) return ServiceHealth.fromJson(json['data']);
-    if (json is Map) {
-      final rawStatus = (json['status'] ?? json['state'] ?? json['health'])?.toString();
-      final level = _levelFrom(rawStatus);
-      final label = (rawStatus == null || rawStatus.trim().isEmpty) ? _defaultLabel(level) : rawStatus.trim();
-      return ServiceHealth(
-        level: level,
-        label: label,
-        incidents: _incidentsFrom(json['incidents'] ?? json['events']),
-      );
-    }
-    if (json is String) {
-      final level = _levelFrom(json);
-      return ServiceHealth(
-        level: level,
-        label: json.trim().isEmpty ? _defaultLabel(level) : json.trim(),
-        incidents: const [],
-      );
-    }
-    return const ServiceHealth(
-      level: ServiceStatusLevel.unknown,
-      label: 'Status unknown',
-      incidents: [],
-    );
   }
 }
 
@@ -142,7 +145,7 @@ class ServiceHealth {
 ///
 /// Uses the raw client rather than [NetworkManager] so no auth token or
 /// envelope-unwrapping is applied — the endpoint is `AllowAnonymous`.
-final serviceStatusProvider = FutureProvider.autoDispose<ServiceHealth>((ref) async {
+final FutureProvider<ServiceHealth> serviceStatusProvider = FutureProvider.autoDispose<ServiceHealth>((ref) async {
   final dio = ref.watch(balsmApiClientProvider).dio;
   final res = await dio.get<dynamic>('/status');
   return ServiceHealth.fromJson(res.data);
@@ -162,11 +165,11 @@ class StatusScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(serviceStatusProvider);
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       appBar: AppBar(
-        title: Text(_msgs(context).status.title),
-        backgroundColor: BalsmColors.cream50,
-        foregroundColor: BalsmColors.ink900,
+        title: Text(coreMessagesOf(context).status.title),
+        backgroundColor: AppColors.cream50,
+        foregroundColor: AppColors.ink900,
         elevation: 0,
         automaticallyImplyLeading: Navigator.of(context).canPop(),
       ),
@@ -202,26 +205,26 @@ class _HealthView extends StatelessWidget {
     switch (health.level) {
       case ServiceStatusLevel.operational:
         return (
-          fg: BalsmColors.success,
-          bg: BalsmColors.successBg,
+          fg: AppColors.success,
+          bg: AppColors.successBackground,
           icon: Icons.check_circle_outline,
         );
       case ServiceStatusLevel.degraded:
         return (
-          fg: BalsmColors.warning,
-          bg: BalsmColors.warningBg,
+          fg: AppColors.warning,
+          bg: AppColors.warningBackground,
           icon: Icons.error_outline,
         );
       case ServiceStatusLevel.down:
         return (
-          fg: BalsmColors.danger,
-          bg: BalsmColors.dangerBg,
+          fg: AppColors.danger,
+          bg: AppColors.dangerBackground,
           icon: Icons.cancel_outlined,
         );
       case ServiceStatusLevel.unknown:
         return (
-          fg: BalsmColors.ink500,
-          bg: BalsmColors.ink50,
+          fg: AppColors.ink500,
+          bg: AppColors.ink50,
           icon: Icons.help_outline,
         );
     }
@@ -238,7 +241,7 @@ class _HealthView extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: p.bg,
-            borderRadius: BorderRadius.circular(BalsmRadius.md),
+            borderRadius: BorderRadius.circular(AppRadii.md),
           ),
           child: Row(
             children: [
@@ -246,9 +249,9 @@ class _HealthView extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  _levelLabel(_msgs(context), health.level),
+                  _levelLabel(coreMessagesOf(context), health.level),
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: FontSizes.subhead,
                     fontWeight: FontWeight.w700,
                     color: p.fg,
                   ),
@@ -259,19 +262,19 @@ class _HealthView extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         Text(
-          _msgs(context).status.incidents,
-          style: TextStyle(
-            fontSize: 13,
+          coreMessagesOf(context).status.incidents,
+          style: const TextStyle(
+            fontSize: FontSizes.bodySm,
             fontWeight: FontWeight.w700,
-            color: BalsmColors.fg3,
+            color: AppColors.textTertiary,
             letterSpacing: 0.4,
           ),
         ),
         const SizedBox(height: 12),
         if (health.incidents.isEmpty)
           Text(
-            _msgs(context).status.no_incidents,
-            style: TextStyle(fontSize: 15, color: BalsmColors.fg2),
+            coreMessagesOf(context).status.no_incidents,
+            style: const TextStyle(fontSize: FontSizes.bodyLg, color: AppColors.textSecondary),
           )
         else
           for (final incident in health.incidents) ...[
@@ -293,9 +296,9 @@ class _IncidentTile extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(BalsmRadius.md),
-        border: Border.all(color: BalsmColors.borderStrong),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.borderStrong),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,27 +306,27 @@ class _IncidentTile extends StatelessWidget {
           Text(
             incident.title,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: FontSizes.bodyLg,
               fontWeight: FontWeight.w700,
-              color: BalsmColors.fg1,
+              color: AppColors.textPrimary,
             ),
           ),
-          if (incident.severity != null && incident.severity!.isNotEmpty) ...[
+          if (incident.severity case final severity? when incident.severity!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              incident.severity!,
+              severity,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: FontSizes.meta,
                 fontWeight: FontWeight.w600,
-                color: BalsmColors.warning,
+                color: AppColors.warning,
               ),
             ),
           ],
-          if (incident.detail != null && incident.detail!.isNotEmpty) ...[
+          if (incident.detail case final detail? when incident.detail!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              incident.detail!,
-              style: const TextStyle(fontSize: 14, color: BalsmColors.fg2),
+              detail,
+              style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textSecondary),
             ),
           ],
         ],
@@ -343,23 +346,23 @@ class _UnavailableView extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: BalsmColors.ink50,
-        borderRadius: BorderRadius.circular(BalsmRadius.md),
+        color: AppColors.ink50,
+        borderRadius: BorderRadius.circular(AppRadii.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.cloud_off_outlined, color: BalsmColors.ink500, size: 26),
-              SizedBox(width: 12),
+              const Icon(Icons.cloud_off_outlined, color: AppColors.ink500, size: 26),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _msgs(context).status.unavailable,
-                  style: TextStyle(
-                    fontSize: 17,
+                  coreMessagesOf(context).status.unavailable,
+                  style: const TextStyle(
+                    fontSize: FontSizes.subheadSm,
                     fontWeight: FontWeight.w700,
-                    color: BalsmColors.fg1,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -367,8 +370,8 @@ class _UnavailableView extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _msgs(context).status.unavailable_body,
-            style: TextStyle(fontSize: 14, color: BalsmColors.fg2),
+            coreMessagesOf(context).status.unavailable_body,
+            style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -389,7 +392,7 @@ class _SupportFooter extends StatelessWidget {
     );
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
+    } on Object catch (_) {
       // Best-effort; nothing sensitive to surface.
     }
   }
@@ -400,35 +403,35 @@ class _SupportFooter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _msgs(context).status.need_help,
-          style: TextStyle(
-            fontSize: 13,
+          coreMessagesOf(context).status.need_help,
+          style: const TextStyle(
+            fontSize: FontSizes.bodySm,
             fontWeight: FontWeight.w700,
-            color: BalsmColors.fg3,
+            color: AppColors.textTertiary,
             letterSpacing: 0.4,
           ),
         ),
         const SizedBox(height: 4),
         InkWell(
           onTap: _emailSupport,
-          borderRadius: BorderRadius.circular(BalsmRadius.md),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.mail_outline, size: 20, color: BalsmColors.appAccent),
-                const SizedBox(width: 12),
+                Icon(Icons.mail_outline, size: 20, color: AppColors.hueBlue),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     StatusScreen.supportEmail,
-                    style: const TextStyle(
-                      color: BalsmColors.appAccent,
-                      fontSize: 15,
+                    style: TextStyle(
+                      color: AppColors.hueBlue,
+                      fontSize: FontSizes.bodyLg,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 20, color: BalsmColors.ink300),
+                Icon(Icons.chevron_right, size: 20, color: AppColors.ink300),
               ],
             ),
           ),
@@ -453,8 +456,6 @@ final statusRoutes = <RouteBase>[
 
 /// The core bundle for the screen's language: the page follows the app's
 /// locale instead of always speaking English.
-Messages _msgs(BuildContext context) =>
-    Localizations.localeOf(context).languageCode == 'ar' ? const Messages_ar() : const Messages();
 
 /// What the page says for each level, in the screen's language. The server's
 /// own word ("operational") is not shown: it is a code, not copy.

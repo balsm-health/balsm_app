@@ -1,7 +1,9 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../i18n/i18n.dart';
 
 /// Account-deletion explainer + entry point.
 ///
@@ -11,63 +13,57 @@ import 'package:go_router/go_router.dart';
 class DeleteAccountScreen extends ConsumerWidget {
   const DeleteAccountScreen({super.key});
 
-  static const _retained = ['Disclosure record', 'Deletion log'];
-
-  /// Deleted from Balsm's own servers. Care team is named explicitly rather than
-  /// left to "All PHI on server": it is the only health record the patient can
-  /// see in the app that Balsm also holds, so a patient reading this column has
-  /// to be able to find it (FR-513).
-  static const _deleted = ['Account', 'Handle', 'Sessions', 'Care team (cloud copy)'];
-
-  static const _wiped = [
-    'All PHI on device',
-    'Care team',
-    'All PHI on server (after grace)',
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(deletionStringsProvider);
+    final retained = [m.itemDisclosureRecord, m.itemDeletionLog];
+
+    // Deleted from Balsm's own servers. Care team is named explicitly rather than
+    // left to "All PHI on server": it is the only health record the patient can
+    // see in the app that Balsm also holds, so a patient reading this column has
+    // to be able to find it (FR-513).
+    final deleted = [m.itemAccount, m.itemHandle, m.itemSessions, m.itemCareTeamCloud];
+    final wiped = [m.itemPhiDevice, m.itemCareTeam, m.itemPhiServer];
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BalsmAppBar.withBack(
-              title: 'Delete account',
+              title: m.title,
               onBack: () => context.pop(),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
                 children: [
-                  const Text(
-                    'What happens to your data',
-                    style: TextStyle(
-                      fontSize: 18,
+                  Text(
+                    m.dataHeading,
+                    style: const TextStyle(
+                      fontSize: FontSizes.subhead,
                       fontWeight: FontWeight.w700,
-                      color: BalsmColors.fg1,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Deleting your account is permanent. Here is exactly what '
-                    'is kept, removed, and wiped.',
-                    style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
+                  Text(
+                    m.dataIntro,
+                    style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
                   ),
                   const SizedBox(height: 20),
                   _DisclosureTable(
-                    retained: _retained,
-                    deleted: _deleted,
-                    wiped: _wiped,
+                    retained: retained,
+                    deleted: deleted,
+                    wiped: wiped,
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
               child: BalsmButton(
-                label: 'Request account deletion',
+                label: m.requestDeletion,
                 variant: BalsmButtonVariant.danger,
                 icon: Icons.delete_outline,
                 onPressed: () => context.goNamed('deletion.confirm'),
@@ -80,7 +76,7 @@ class DeleteAccountScreen extends ConsumerWidget {
   }
 }
 
-class _DisclosureTable extends StatelessWidget {
+class _DisclosureTable extends ConsumerWidget {
   const _DisclosureTable({
     required this.retained,
     required this.deleted,
@@ -92,14 +88,15 @@ class _DisclosureTable extends StatelessWidget {
   final List<String> wiped;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(deletionStringsProvider);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: _DisclosureColumn(
-            title: 'Retained',
-            color: BalsmColors.ink600,
+            title: m.columnRetained,
+            color: AppColors.ink600,
             icon: Icons.lock_outline,
             items: retained,
           ),
@@ -107,8 +104,8 @@ class _DisclosureTable extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _DisclosureColumn(
-            title: 'Deleted',
-            color: BalsmColors.warning,
+            title: m.columnDeleted,
+            color: AppColors.warning,
             icon: Icons.remove_circle_outline,
             items: deleted,
           ),
@@ -116,8 +113,8 @@ class _DisclosureTable extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _DisclosureColumn(
-            title: 'Wiped',
-            color: BalsmColors.danger,
+            title: m.columnWiped,
+            color: AppColors.danger,
             icon: Icons.delete_forever_outlined,
             items: wiped,
           ),
@@ -145,10 +142,10 @@ class _DisclosureColumn extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: BalsmColors.surface,
-        borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: Border.all(color: BalsmColors.border),
-        boxShadow: BalsmShadow.xs,
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.xs,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +155,7 @@ class _DisclosureColumn extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: FontSizes.bodySm,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -169,7 +166,7 @@ class _DisclosureColumn extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 item,
-                style: const TextStyle(fontSize: 12, color: BalsmColors.fg2),
+                style: const TextStyle(fontSize: FontSizes.meta, color: AppColors.textSecondary),
               ),
             ),
           ),

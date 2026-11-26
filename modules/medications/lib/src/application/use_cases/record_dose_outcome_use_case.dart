@@ -2,13 +2,13 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/dose_event.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/dose_corrected.dart';
 import '../../domain/events/dose_skipped.dart';
 import '../../domain/events/dose_snoozed.dart';
 import '../../domain/events/dose_taken.dart';
-import '../ports/medications_data_source.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_medications_data_source.dart';
+import '../ports/medications_data_source.dart';
 
 /// Records a dose outcome by appending a new (immutable) dose event and
 /// dispatching the matching domain event.

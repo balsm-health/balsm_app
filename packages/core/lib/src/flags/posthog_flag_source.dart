@@ -5,7 +5,7 @@ import 'feature_flags.dart';
 /// Flags served by PostHog.
 ///
 /// Asking PostHog for flags sends it this device's analytics id, so it is
-/// product analytics as far as the patient's choice goes: with [allowed] false
+/// product analytics as far as the patient's choice goes: with `allowed` false
 /// — no PostHog project in this build, or the patient opted out — no request
 /// is made and every flag reads as "no opinion".
 ///

@@ -39,12 +39,13 @@ ResponseBody jsonResponse(String json, {int status = 200, Map<String, List<Strin
 
 /// Dio wired to a [FakeHttpAdapter], mirroring BalsmApiClient BaseOptions.
 Dio fakeDio(FakeHttpAdapter adapter) {
-  final dio = Dio(BaseOptions(
-    baseUrl: 'https://api.test',
-    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
-    // Surface non-2xx as DioException like production defaults.
-  ));
-  dio.httpClientAdapter = adapter;
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://api.test',
+      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      // Surface non-2xx as DioException like production defaults.
+    ),
+  )..httpClientAdapter = adapter;
   return dio;
 }
 

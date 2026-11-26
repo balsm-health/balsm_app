@@ -32,7 +32,7 @@ void main() {
   final otp = Platform.environment['E2E_OTP'] ?? '123456';
   final deviceId = Platform.environment['E2E_DEVICE_ID'] ?? '0b1e5c00-0000-4000-8000-00000000e2e5';
   final country = Platform.environment['E2E_COUNTRY'] ?? 'EG';
-  final deviceLabel = 'e2e-suite';
+  const deviceLabel = 'e2e-suite';
 
   group('Balsm API E2E', () {
     late BalsmApiClient client;
@@ -62,103 +62,137 @@ void main() {
 
     // ── Auth journey (ordered) ──────────────────────────────────────────────
 
-    test('POST /auth/otp/request accepts the snake_case body', () async {
-      await auth.requestOtp(
-        RequestOtpRequest(email: email, countryCode: country, purpose: OtpPurpose.continueFlow),
-      );
-      // Completing without throwing == 2xx (NetworkManager maps non-2xx to
-      // ApiException).
-    }, skip: skip);
+    test(
+      'POST /auth/otp/request accepts the snake_case body',
+      () async {
+        await auth.requestOtp(
+          RequestOtpRequest(email: email, countryCode: country, purpose: OtpPurpose.continueFlow),
+        );
+        // Completing without throwing == 2xx (NetworkManager maps non-2xx to
+        // ApiException).
+      },
+      skip: skip,
+    );
 
-    test('POST /auth/otp/verify issues a token pair', () async {
-      final res = await auth.verifyOtp(VerifyOtpRequest(
-        email: email,
-        code: otp,
-        deviceId: deviceId,
-        deviceLabel: deviceLabel,
-      ));
-      expect(res.accessToken, isNotEmpty);
-      expect(res.refreshToken, isNotEmpty);
-      expect(res.userId, isNotEmpty);
-      accessToken = res.accessToken;
-      refreshToken = res.refreshToken;
-      bearer(accessToken);
-    }, skip: skip);
+    test(
+      'POST /auth/otp/verify issues a token pair',
+      () async {
+        final res = await auth.verifyOtp(
+          VerifyOtpRequest(
+            email: email,
+            code: otp,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ),
+        );
+        expect(res.accessToken, isNotEmpty);
+        expect(res.refreshToken, isNotEmpty);
+        expect(res.userId, isNotEmpty);
+        accessToken = res.accessToken;
+        refreshToken = res.refreshToken;
+        bearer(accessToken);
+      },
+      skip: skip,
+    );
 
-    test('POST /auth/refresh rotates the token pair', () async {
-      if (refreshToken == null) fail('no refresh token from verify step');
-      final res = await auth.refresh(RefreshTokenRequest(
-        refreshToken: refreshToken!,
-        deviceId: deviceId,
-      ));
-      expect(res.accessToken, isNotEmpty);
-      expect(res.refreshToken, isNotEmpty);
-      accessToken = res.accessToken;
-      refreshToken = res.refreshToken;
-      bearer(accessToken);
-    }, skip: skip);
+    test(
+      'POST /auth/refresh rotates the token pair',
+      () async {
+        if (refreshToken == null) fail('no refresh token from verify step');
+        final res = await auth.refresh(
+          RefreshTokenRequest(
+            refreshToken: refreshToken!,
+            deviceId: deviceId,
+          ),
+        );
+        expect(res.accessToken, isNotEmpty);
+        expect(res.refreshToken, isNotEmpty);
+        accessToken = res.accessToken;
+        refreshToken = res.refreshToken;
+        bearer(accessToken);
+      },
+      skip: skip,
+    );
 
-    test('POST /auth/sign-out succeeds for the authenticated session', () async {
-      if (accessToken == null) fail('no access token');
-      await auth.signOut();
-      bearer(null);
-    }, skip: skip);
+    test(
+      'POST /auth/sign-out succeeds for the authenticated session',
+      () async {
+        if (accessToken == null) fail('no access token');
+        await auth.signOut();
+        bearer(null);
+      },
+      skip: skip,
+    );
 
     // ── Authenticated read endpoints ────────────────────────────────────────
     // These require a signed-in session; they run after a fresh verify so they
     // are independent of the sign-out above.
 
-    test('authenticated account + sessions endpoints', () async {
-      final res = await auth.verifyOtp(VerifyOtpRequest(
-        email: email,
-        code: otp,
-        deviceId: deviceId,
-        deviceLabel: deviceLabel,
-      ));
-      bearer(res.accessToken);
-      addTearDown(() => bearer(null));
+    test(
+      'authenticated account + sessions endpoints',
+      () async {
+        final res = await auth.verifyOtp(
+          VerifyOtpRequest(
+            email: email,
+            code: otp,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ),
+        );
+        bearer(res.accessToken);
+        addTearDown(() => bearer(null));
 
-      // GET /account/self — profile summary for the signed-in user.
-      final self = await account.getSelf();
-      expect(self, isNotNull);
-      expect(self!.id, isNotEmpty);
+        // GET /account/self — profile summary for the signed-in user.
+        final self = await account.getSelf();
+        expect(self, isNotNull);
+        expect(self!.id, isNotEmpty);
 
-      // GET /sessions — active sessions for this user.
-      final list = await sessions.listSessions();
-      expect(list, isA<List<SessionResponse>>());
+        // GET /sessions — active sessions for this user.
+        final list = await sessions.listSessions();
+        expect(list, isA<List<SessionResponse>>());
 
-      // GET /account/handle/available — availability probe.
-      final avail = await account.checkHandleAvailability('e2e_handle_probe');
-      expect(avail.available, isA<bool>());
+        // GET /account/handle/available — availability probe.
+        final avail = await account.checkHandleAvailability('e2e_handle_probe');
+        expect(avail.available, isA<bool>());
 
-      // PUT /account/language — write, then read back to confirm it persisted.
-      await account.changeLanguage(const ChangeLanguageRequest(preferredLanguage: 'en'));
-      final after = await account.getSelf();
-      expect(after!.preferredLanguage, 'en');
-    }, skip: skip);
+        // PUT /account/language — write, then read back to confirm it persisted.
+        await account.changeLanguage(const ChangeLanguageRequest(preferredLanguage: 'en'));
+        final after = await account.getSelf();
+        expect(after!.preferredLanguage, 'en');
+      },
+      skip: skip,
+    );
 
-    test('password: set (authenticated) then sign in', () async {
-      const pw = 'E2ePassw0rd!';
-      // Establish a session, set a password on it.
-      final v = await auth.verifyOtp(VerifyOtpRequest(
-        email: email,
-        code: otp,
-        deviceId: deviceId,
-        deviceLabel: deviceLabel,
-      ));
-      bearer(v.accessToken);
-      await auth.setPassword(const SetPasswordRequest(password: pw));
-      bearer(null);
+    test(
+      'password: set (authenticated) then sign in',
+      () async {
+        const pw = 'E2ePassw0rd!';
+        // Establish a session, set a password on it.
+        final v = await auth.verifyOtp(
+          VerifyOtpRequest(
+            email: email,
+            code: otp,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ),
+        );
+        bearer(v.accessToken);
+        await auth.setPassword(const SetPasswordRequest(password: pw));
+        bearer(null);
 
-      // Sign in with email + password → fresh tokens.
-      final signedIn = await auth.passwordSignIn(PasswordSignInRequest(
-        email: email,
-        password: pw,
-        deviceId: deviceId,
-        deviceLabel: deviceLabel,
-      ));
-      expect(signedIn.accessToken, isNotEmpty);
-      expect(signedIn.userId, isNotEmpty);
-    }, skip: skip);
+        // Sign in with email + password → fresh tokens.
+        final signedIn = await auth.passwordSignIn(
+          PasswordSignInRequest(
+            email: email,
+            password: pw,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ),
+        );
+        expect(signedIn.accessToken, isNotEmpty);
+        expect(signedIn.userId, isNotEmpty);
+      },
+      skip: skip,
+    );
   });
 }

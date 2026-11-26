@@ -1,13 +1,17 @@
 import 'package:app/balsm_app/app_state.dart';
-import 'package:core/core.dart';
-import 'package:app/balsm_app/screens/metric_log.dart';
-import 'package:app/balsm_app/screens/quick_log.dart';
+import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/checkin_shared.dart';
+import 'package:app/balsm_app/screens/metric_log.dart';
+import 'package:app/balsm_app/screens/quick_log.dart';
+import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'support/flag_overrides.dart';
 
 /// quicklog.jsx `Sheet` — Save in the header and at the bottom, Cancel, and a
 /// discard prompt before unsaved input is thrown away.
@@ -19,18 +23,21 @@ void main() {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text(s.strings.profile.m_mood));
@@ -151,18 +158,21 @@ void main() {
     tester.view.physicalSize = const Size(402, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
   }
@@ -204,5 +214,97 @@ void main() {
     final p = s.strings.profile;
     expect(top(tester, p.m_pulse), greaterThan(top(tester, p.m_o2)));
     expect(top(tester, p.m_pulse), lessThan(top(tester, p.m_weight)));
+  });
+
+  group('a family member is the active profile (quicklog.jsx member banner)', () {
+    const kid = FamilyMember(
+      id: HealthProfileId.value('hp-kid'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Kid',
+    );
+
+    Future<void> open(WidgetTester tester, {FamilyMember? member, bool ar = false}) async {
+      s = PatientAppState()..attachFlags(flagsWith({AppFlags.motherChild: true}));
+      if (ar) s.setLang(LanguageCode.ar);
+      tester.view.physicalSize = const Size(402, 874);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          overrides: [activeFamilyMemberProvider.overrideWithValue(member)],
+          child: AppScope(
+            state: s,
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('says whose profile it logs to, and how to log for yourself', (tester) async {
+      await open(tester, member: kid);
+      expect(find.text(s.strings.checkin.ql_self_hint(s.gender)), findsOne);
+      expect(find.text('${s.strings.checkin.ql_logging_for(s.gender)}Test', findRichText: true), findsOne);
+    });
+
+    testWidgets('logging for yourself shows no hint', (tester) async {
+      await open(tester);
+      expect(find.text(s.strings.checkin.ql_self_hint(s.gender)), findsNothing);
+    });
+
+    testWidgets('the Arabic hint addresses the patient by gender', (tester) async {
+      await open(tester, member: kid, ar: true);
+      expect(find.text(s.strings.checkin.ql_self_hint(s.gender)), findsOne);
+      expect(s.strings.checkin.ql_self_hint(Gender.female), 'لتسجّلي لنفسك، اختاري ملفك من أعلى الشاشة الرئيسية.');
+      expect(s.strings.checkin.ql_self_hint(Gender.male), 'لتسجّل لنفسك، اختر ملفك من أعلى الشاشة الرئيسية.');
+      expect(s.strings.checkin.ql_logging_for(Gender.female), 'تسجّلين لـ');
+    });
+
+    // quicklog.jsx FLAT_ITEMS: a child (under 18) has no blood pressure or
+    // glucose rows; an adult member and you keep the full list.
+    final now = DateTime.now();
+    final child = FamilyMember(
+      id: const HealthProfileId.value('hp-child'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Child',
+      dateOfBirth: DateTime(now.year - 6),
+    );
+    final grownUp = FamilyMember(
+      id: const HealthProfileId.value('hp-adult'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Adult',
+      dateOfBirth: DateTime(now.year - 40),
+    );
+    Finder row(String label) => find.text(label, skipOffstage: false);
+
+    testWidgets('a child gets the child readings only', (tester) async {
+      await open(tester, member: child);
+      final p = s.strings.profile;
+      expect(row(p.m_bp), findsNothing);
+      expect(row(p.m_glucose), findsNothing);
+      for (final l in [p.m_o2, p.m_pulse, p.m_weight, p.m_mood, p.m_pain]) {
+        expect(row(l), findsOne, reason: l);
+      }
+      expect(row(s.strings.checkin.full_checkin), findsNothing, reason: 'its BP/glucose promise is adult');
+    });
+
+    for (final (who, m) in [('an adult member', grownUp), ('you', null)]) {
+      testWidgets('$who keeps blood pressure and glucose', (tester) async {
+        await open(tester, member: m);
+        final p = s.strings.profile;
+        for (final l in [p.m_bp, p.m_glucose, p.m_o2, p.m_pulse, p.m_weight, p.m_mood, p.m_pain]) {
+          expect(row(l), findsOne, reason: l);
+        }
+        expect(row(s.strings.checkin.full_checkin), findsOne);
+      });
+    }
   });
 }

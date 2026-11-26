@@ -1,8 +1,10 @@
 import 'package:core/core.dart';
 
+import '../../../profile.dart' show HealthProfile;
+import '../../domain/aggregates/health_profile.dart' show HealthProfile;
 import '../../domain/entities/care_provider.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/value_objects/care_provider_file.dart';
+import '../../domain/value_objects/ids.dart';
 
 /// Persistence port for the patient's care team.
 ///

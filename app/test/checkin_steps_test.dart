@@ -20,17 +20,19 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(MaterialApp(
-      home: AppScope(
-        state: state,
-        child: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(20),
-            child: CheckInSteps(s: state, steps: steps, current: current),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppScope(
+          state: state,
+          child: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(20),
+              child: CheckInSteps(s: state, steps: steps, current: current),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return state;
   }

@@ -15,9 +15,9 @@
 /// `preview_harness.dart` for the PHI rule that shapes the rest.
 library;
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../kit.dart';
 import '../tokens.dart';
@@ -79,7 +79,13 @@ Widget roundBtn() => Row(
       children: [
         RoundBtn(icon: LucideIcons.x, semanticLabel: 'Close', onTap: () {}),
         RoundBtn(icon: LucideIcons.download, semanticLabel: 'Download', ghost: true, onTap: () {}),
-        RoundBtn(icon: LucideIcons.locateFixed, semanticLabel: 'Locate', bg: Colors.white, fg: T.fg2, onTap: () {}),
+        RoundBtn(
+          icon: LucideIcons.locateFixed,
+          semanticLabel: 'Locate',
+          bg: AppColors.white,
+          fg: AppColors.textSecondary,
+          onTap: () {},
+        ),
       ],
     );
 
@@ -116,10 +122,10 @@ Widget iconSquare() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
       children: [
-        IconSquare(LucideIcons.pill, bg: T.hueBlue50, fg: T.hueBlue),
-        IconSquare(LucideIcons.stethoscope, bg: T.hueViolet50, fg: T.hueViolet),
-        IconSquare(LucideIcons.flaskConical, bg: T.hueMint50, fg: T.hueMint600),
-        IconSquare(LucideIcons.building2, bg: T.dangerBg, fg: T.danger, size: 52, iconSize: 26),
+        IconSquare(LucideIcons.pill, bg: AppColors.hueBlue50, fg: AppColors.hueBlue),
+        IconSquare(LucideIcons.stethoscope, bg: AppColors.hueViolet50, fg: AppColors.hueViolet),
+        IconSquare(LucideIcons.flaskConical, bg: AppColors.hueMint50, fg: AppColors.hueMint600),
+        IconSquare(LucideIcons.building2, bg: AppColors.dangerBackground, fg: AppColors.danger, size: 52, iconSize: 26),
       ],
     );
 
@@ -128,9 +134,9 @@ Widget avatar() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
       children: [
-        Avatar(initials: 'SA', color: T.hueBlue, size: 32),
-        Avatar(initials: 'SA', color: T.hueViolet),
-        Avatar(initials: 'SA', color: T.hueMint600, size: 64),
+        Avatar(initials: 'SA', color: AppColors.hueBlue, size: 32),
+        Avatar(initials: 'SA', color: AppColors.hueViolet),
+        Avatar(initials: 'SA', color: AppColors.hueMint600, size: 64),
       ],
     );
 
@@ -159,7 +165,7 @@ Widget pillKinds() => const Wrap(
         Pill('Violet', kind: PillKind.violet),
         Pill('Expiring', kind: PillKind.expiring),
         Pill('Emerald', kind: PillKind.emerald),
-        Pill('Neutral', kind: PillKind.neutral),
+        Pill('Neutral'),
         Pill('Brand', kind: PillKind.brand),
         Pill('Outline', kind: PillKind.outline),
       ],
@@ -181,9 +187,9 @@ Widget bChip() => Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        BChip('Inactive', active: false, accent: T.hueViolet, onTap: () {}),
-        BChip('Active', active: true, accent: T.hueViolet, onTap: () {}),
-        BChip('Blue accent', active: true, accent: T.hueBlue, onTap: () {}),
+        BChip('Inactive', active: false, accent: AppColors.hueViolet, onTap: () {}),
+        BChip('Active', active: true, accent: AppColors.hueViolet, onTap: () {}),
+        BChip('Blue accent', active: true, accent: AppColors.hueBlue, onTap: () {}),
       ],
     );
 
@@ -208,7 +214,7 @@ Widget spinner() => const Row(
       children: [
         Spinner(size: 18, stroke: 2),
         Spinner(),
-        Spinner(size: 44, stroke: 4, color: T.hueViolet),
+        Spinner(size: 44, stroke: 4, color: AppColors.hueViolet),
       ],
     );
 
@@ -219,9 +225,9 @@ Widget ringProgress() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
       children: [
-        RingProgress(progress: 0, color: T.hueViolet, label: '0%'),
-        RingProgress(progress: 0.35, color: T.hueViolet, label: '35%'),
-        RingProgress(progress: 1, color: T.hueMint600, label: 'Done'),
+        RingProgress(progress: 0, color: AppColors.hueViolet, label: '0%'),
+        RingProgress(progress: 0.35, color: AppColors.hueViolet, label: '35%'),
+        RingProgress(progress: 1, color: AppColors.hueMint600, label: 'Done'),
       ],
     );
 
@@ -230,7 +236,7 @@ Widget linearProgress() => const Column(
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
       children: [
-        LinearProgress(value: 0),
+        LinearProgress(),
         LinearProgress(value: 0.45),
         LinearProgress(value: 1),
         LinearProgress(indeterminate: true),
@@ -280,7 +286,7 @@ Widget pressable() => Pressable(
 @Preview(name: 'PressHighlight', group: 'Motion', size: Size(390, 200), wrapper: balsmPreviewPadded)
 Widget pressHighlight() => PressHighlight(
       onTap: () {},
-      radius: T.rLg,
+      radius: AppRadii.lg,
       child: const Padding(padding: EdgeInsets.all(16), child: Text('Tints on press')),
     );
 
@@ -335,7 +341,7 @@ Widget lIcon() => const Row(
       children: [
         LIcon(LucideIcons.heart, size: 18),
         LIcon(LucideIcons.pill, size: 24),
-        LIcon(LucideIcons.stethoscope, size: 32, color: T.hueViolet),
+        LIcon(LucideIcons.stethoscope, size: 32, color: AppColors.hueViolet),
         LIcon(LucideIcons.flaskConical, size: 32, stroke: 2.6),
       ],
     );
@@ -351,18 +357,24 @@ Widget palette() => const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 10,
       children: [
-        _Swatches('Hues', [T.hueAqua, T.hueEmerald, T.hueBlue, T.hueMint, T.hueViolet]),
+        _Swatches(
+          'Hues',
+          [AppColors.hueAqua, AppColors.hueEmerald, AppColors.hueBlue, AppColors.hueMint, AppColors.hueViolet],
+        ),
         _Swatches('Hues 600', [
-          T.hueAqua600,
-          T.hueEmerald600,
-          T.hueBlue600,
-          T.hueMint600,
-          T.hueViolet600,
+          AppColors.hueAqua600,
+          AppColors.hueEmerald600,
+          AppColors.hueBlue600,
+          AppColors.hueMint600,
+          AppColors.hueViolet600,
         ]),
-        _Swatches('Ink', [T.ink900, T.ink700, T.ink500, T.ink300, T.ink100]),
-        _Swatches('Status', [T.success, T.warning, T.danger, T.controlled, T.expiring]),
-        _Swatches('Cream', [T.cream50, T.cream100, T.cream200]),
-        _Swatches('Sun', [T.sun400, T.sun500, T.sun600]),
+        _Swatches('Ink', [AppColors.ink900, AppColors.ink700, AppColors.ink500, AppColors.ink300, AppColors.ink100]),
+        _Swatches(
+          'Status',
+          [AppColors.success, AppColors.warning, AppColors.danger, AppColors.controlled, AppColors.expiring],
+        ),
+        _Swatches('Cream', [AppColors.cream50, AppColors.cream100, AppColors.cream200]),
+        _Swatches('Sun', [AppColors.sun400, AppColors.sun500, AppColors.sun600]),
       ],
     );
 
@@ -396,16 +408,18 @@ class _Swatches extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: colors
-                .map((c) => Container(
-                      width: 52,
-                      height: 38,
-                      margin: const EdgeInsetsDirectional.only(end: 6),
-                      decoration: BoxDecoration(
-                        color: c,
-                        borderRadius: BorderRadius.circular(T.rSm),
-                        border: Border.all(color: T.border),
-                      ),
-                    ))
+                .map(
+                  (c) => Container(
+                    width: 52,
+                    height: 38,
+                    margin: const EdgeInsetsDirectional.only(end: 6),
+                    decoration: BoxDecoration(
+                      color: c,
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ],

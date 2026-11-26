@@ -1,0 +1,1 @@
+Records, medicines and readings that someone else added, changed or shared now show who it was, and open a history of every change that cannot be edited. ([#165](https://github.com/balsm-health/balsm_app/pull/165))

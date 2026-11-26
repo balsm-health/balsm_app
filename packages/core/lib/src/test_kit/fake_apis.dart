@@ -1,7 +1,8 @@
 import 'package:balsm_api/balsm_api.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../network/api_providers.dart';
+import '../update/maintenance_notice.dart';
 
 /// The single synthetic identity every e2e run uses. Fixed values so assertions
 /// can name them.
@@ -116,13 +117,11 @@ class FakeAccountApi implements AccountApi {
 
   /// The language [getSelf] answers with. Public so a screenshot driver can
   /// flip locale without going through the change-language endpoint.
-  String get language => _language;
-  set language(String value) => _language = value;
+  String language = E2eFixture.language;
 
   /// The handle [getSelf] answers with. Public so a screenshot driver can use
   /// a persona handle instead of the fixture default.
-  String? get handle => _handle;
-  set handle(String? value) => _handle = value;
+  String? handle = E2eFixture.handle;
 
   /// The remaining profile fields [getSelf] answers with. Null keeps the
   /// endpoint's "not set yet" shape, which is what e2e asserts against; the
@@ -135,45 +134,41 @@ class FakeAccountApi implements AccountApi {
   String? dateOfBirth;
   String? nationalId;
 
-  String? _handle = E2eFixture.handle;
-  String? _firstName;
-  String? _lastName;
-  String _language = E2eFixture.language;
   String _countryCode = E2eFixture.countryCode;
 
   /// Names the fake reports. Public so a screenshot driver can set them
   /// without round-tripping through [updateProfile].
-  set firstName(String? value) => _firstName = value;
-  set lastName(String? value) => _lastName = value;
+  String? firstName;
+  String? lastName;
 
   @override
   Future<AccountSelfResponse?> getSelf({CancelToken? cancelToken}) async => AccountSelfResponse(
         id: E2eFixture.userId,
-        handle: _handle,
-        firstName: firstNameByLanguage?[_language] ?? _firstName,
-        lastName: lastNameByLanguage?[_language] ?? _lastName,
-        displayName: displayNameByLanguage?[_language] ?? E2eFixture.displayName,
+        handle: handle,
+        firstName: firstNameByLanguage?[language] ?? firstName,
+        lastName: lastNameByLanguage?[language] ?? lastName,
+        displayName: displayNameByLanguage?[language] ?? E2eFixture.displayName,
         bio: bio,
         gender: gender,
         nationality: nationality,
         phone: phone,
         countryCode: _countryCode,
-        preferredLanguage: _language,
+        preferredLanguage: language,
         dateOfBirth: dateOfBirth,
         nationalId: nationalId,
       );
 
   @override
   Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request, {CancelToken? cancelToken}) async {
-    _handle = request.handle;
-    return ClaimHandleResponse(handle: _handle);
+    handle = request.handle;
+    return ClaimHandleResponse(handle: handle);
   }
 
   @override
   Future<void> updateProfile(UpdateProfileRequest request, {CancelToken? cancelToken}) async {
     // Null means "leave unchanged" on the real endpoint; mirror that.
-    _firstName = request.firstName ?? _firstName;
-    _lastName = request.lastName ?? _lastName;
+    firstName = request.firstName ?? firstName;
+    lastName = request.lastName ?? lastName;
     gender = request.gender ?? gender;
     nationality = request.nationality ?? nationality;
     phone = request.phone ?? phone;
@@ -183,7 +178,7 @@ class FakeAccountApi implements AccountApi {
 
   @override
   Future<void> changeLanguage(ChangeLanguageRequest request, {CancelToken? cancelToken}) async {
-    _language = request.preferredLanguage;
+    language = request.preferredLanguage;
   }
 
   @override
@@ -321,7 +316,7 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
       hours: '08:00–20:00',
       phone: '+20 2 0000 0003',
       distanceKm: 2.1,
-      rating: 4.0,
+      rating: 4,
     ),
     CareEntityResponse(
       id: 'e2e-dentist-1',
@@ -383,6 +378,242 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
   Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken}) async => const [];
 }
 
+/// In-memory [FamilyLinksApi] holding one account's view of its links.
+///
+/// [links] and [cards] are the knobs: seed a row to reach a branch, read them
+/// back to assert what the client sent. A jti in [knownJtis] resolves; any
+/// other answers `404`, as the server does for unknown, revoked and expired
+/// tokens alike. No names or health data are invented here.
+class FakeFamilyLinksApi implements FamilyLinksApi {
+  /// The caller's links, by id.
+  final links = <String, FamilyLinkResponse>{};
+
+  /// Cards the other party sealed for the caller, by link id.
+  final cards = <String, SealedCardResponse>{};
+
+  /// Cards the caller sealed for the other party, by link id.
+  final sentCards = <String, PutSealedCardRequest>{};
+
+  /// Public keys the caller sent, by link id.
+  final sentKeys = <String, String>{};
+
+  /// Profile-QR jtis that resolve to another account.
+  final knownJtis = <String>{};
+
+  /// Every call made, as "verb id", in order.
+  final calls = <String>[];
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  static const _missing = ApiException(code: 'not_found', statusCode: 404);
+  static const _conflict = ApiException(code: 'conflict', statusCode: 409);
+
+  void _guard(String call) {
+    calls.add(call);
+    if (failWith case final failWith?) throw failWith;
+  }
+
+  FamilyLinkResponse _with(FamilyLinkResponse l, {String? status, bool? byMe}) => FamilyLinkResponse(
+        id: l.id,
+        relation: l.relation,
+        status: status ?? l.status,
+        direction: l.direction,
+        createdAt: l.createdAt,
+        updatedAt: l.updatedAt,
+        otherAccountId: l.otherAccountId,
+        otherDisplayName: l.otherDisplayName,
+        otherHandle: l.otherHandle,
+        otherPublicKey: l.otherPublicKey,
+        cardSharedByMe: byMe ?? l.cardSharedByMe,
+        cardSharedWithMe: cards.containsKey(l.id),
+      );
+
+  @override
+  Future<void> create(CreateFamilyLinkRequest request, {CancelToken? cancelToken}) async {
+    _guard('create ${request.id}');
+    if (links.containsKey(request.id)) return;
+    if (!knownJtis.contains(request.jti)) throw _missing;
+    sentKeys[request.id] = request.publicKey;
+    links[request.id] = FamilyLinkResponse(
+      id: request.id,
+      relation: request.relation,
+      status: 'pending',
+      direction: 'outgoing',
+      createdAt: DateTime.utc(2026),
+    );
+  }
+
+  @override
+  Future<List<FamilyLinkResponse>> incoming({String? status, CancelToken? cancelToken}) async {
+    _guard('incoming');
+    return [
+      for (final l in links.values)
+        if (l.direction == 'incoming' && (status == null || l.status == status)) _with(l),
+    ];
+  }
+
+  @override
+  Future<List<FamilyLinkResponse>> outgoing({CancelToken? cancelToken}) async {
+    _guard('outgoing');
+    return [
+      for (final l in links.values)
+        if (l.direction == 'outgoing') _with(l),
+    ];
+  }
+
+  @override
+  Future<FamilyLinkResponse> get(String id, {CancelToken? cancelToken}) async {
+    _guard('get $id');
+    final l = links[id];
+    if (l == null) throw _missing;
+    return _with(l);
+  }
+
+  @override
+  Future<void> approve(String id, FamilyLinkKeyRequest request, {CancelToken? cancelToken}) async {
+    _guard('approve $id');
+    final l = links[id];
+    if (l == null || l.direction != 'incoming') throw _missing;
+    if (l.status != 'pending') throw _conflict;
+    sentKeys[id] = request.publicKey;
+    links[id] = _with(l, status: 'linked');
+  }
+
+  @override
+  Future<void> decline(String id, {CancelToken? cancelToken}) async {
+    _guard('decline $id');
+    final l = links[id];
+    if (l == null || l.direction != 'incoming') throw _missing;
+    if (l.status != 'pending') throw _conflict;
+    links[id] = _with(l, status: 'declined');
+  }
+
+  @override
+  Future<void> delete(String id, {CancelToken? cancelToken}) async {
+    _guard('delete $id');
+    final l = links[id];
+    if (l == null) return;
+    if (l.status == 'pending' && l.direction == 'outgoing') {
+      links[id] = _with(l, status: 'cancelled', byMe: false);
+    } else if (l.status == 'linked') {
+      links[id] = _with(l, status: 'unlinked', byMe: false);
+    }
+    sentCards.remove(id);
+    cards.remove(id);
+  }
+
+  @override
+  Future<void> putKeys(String id, FamilyLinkKeyRequest request, {CancelToken? cancelToken}) async {
+    _guard('putKeys $id');
+    if (!links.containsKey(id)) throw _missing;
+    sentKeys[id] = request.publicKey;
+  }
+
+  @override
+  Future<void> putCard(String id, PutSealedCardRequest request, {CancelToken? cancelToken}) async {
+    _guard('putCard $id');
+    final l = links[id];
+    if (l == null) throw _missing;
+    final prior = sentCards[id];
+    if (l.status != 'linked' || (prior != null && request.version <= prior.version)) throw _conflict;
+    sentCards[id] = request;
+    links[id] = _with(l, byMe: true);
+  }
+
+  @override
+  Future<SealedCardResponse?> getCard(String id, {CancelToken? cancelToken}) async {
+    _guard('getCard $id');
+    if (!links.containsKey(id)) throw _missing;
+    return cards[id];
+  }
+
+  @override
+  Future<void> deleteCard(String id, {CancelToken? cancelToken}) async {
+    _guard('deleteCard $id');
+    sentCards.remove(id);
+    final l = links[id];
+    if (l != null) links[id] = _with(l, byMe: false);
+  }
+}
+
+/// In-memory [ContentApi]. [weeks] is what a 200 carries (null: the
+/// server has nothing — answers 404); [etag] is the server's current tag, and a
+/// request already holding it gets [NotModified]. Placeholder copy only.
+class FakeContentApi implements ContentApi {
+  FakeContentApi({this.weeks, this.etag = '"fake-etag"'});
+
+  PregnancyWeeksResponse? weeks;
+  String etag;
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  /// The If-None-Match each call sent, in order.
+  final sentEtags = <String?>[];
+
+  /// The `lang` each call asked for, in order.
+  final sentLangs = <String>[];
+
+  @override
+  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({
+    required String lang,
+    String? etag,
+    CancelToken? cancelToken,
+  }) async {
+    sentEtags.add(etag);
+    sentLangs.add(lang);
+    if (failWith case final failWith?) throw failWith;
+    final body = weeks;
+    if (body == null) throw const ApiException(code: 'not_found', statusCode: 404);
+    if (etag == this.etag) return const NotModified();
+    return Modified(body, etag: this.etag);
+  }
+}
+
+/// In-memory [MaintenanceApi]. Off by default so no flow is stopped by it;
+/// set [mode] (and [failWith] for an unreachable server) to force a branch.
+class FakeMaintenanceApi implements MaintenanceApi {
+  FakeMaintenanceApi({this.mode = 'off', this.message, this.endsAt, this.updatedAt});
+
+  String mode;
+  String? message;
+  DateTime? endsAt;
+
+  /// When the server's switch last changed — the start of the window.
+  DateTime? updatedAt;
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  /// How many times the status was read.
+  int calls = 0;
+
+  @override
+  Future<MaintenanceStatusResponse> getStatus({CancelToken? cancelToken}) async {
+    calls++;
+    if (failWith case final failWith?) throw failWith;
+    return MaintenanceStatusResponse(mode: mode, message: message, endsAt: endsAt, updatedAt: updatedAt);
+  }
+}
+
+/// In-memory [ManifestMaintenanceSource]: answers [notice] (null = the
+/// manifest could not be read) without touching the network.
+class FakeManifestMaintenanceSource extends ManifestMaintenanceSource {
+  FakeManifestMaintenanceSource({this.notice}) : super(url: 'https://example.invalid/version.json');
+
+  MaintenanceNotice? notice;
+
+  /// How many times the manifest was read.
+  int calls = 0;
+
+  @override
+  Future<MaintenanceNotice?> read() async {
+    calls++;
+    return notice;
+  }
+}
+
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force
 /// a branch; omit it for a fresh default.
 ///
@@ -397,6 +628,9 @@ List<Override> e2eApiOverrides({
   FakeDisclosureApi? disclosure,
   FakeGeofenceApi? geofence,
   FakeCareDirectoryApi? careDirectory,
+  FakeFamilyLinksApi? familyLinks,
+  FakeContentApi? content,
+  FakeMaintenanceApi? maintenance,
 }) =>
     [
       authApiProvider.overrideWithValue(auth ?? FakeAuthApi()),
@@ -407,4 +641,7 @@ List<Override> e2eApiOverrides({
       disclosureApiProvider.overrideWithValue(disclosure ?? FakeDisclosureApi()),
       geofenceApiProvider.overrideWithValue(geofence ?? FakeGeofenceApi()),
       careDirectoryApiProvider.overrideWithValue(careDirectory ?? FakeCareDirectoryApi()),
+      familyLinksApiProvider.overrideWithValue(familyLinks ?? FakeFamilyLinksApi()),
+      contentApiProvider.overrideWithValue(content ?? FakeContentApi()),
+      maintenanceApiProvider.overrideWithValue(maintenance ?? FakeMaintenanceApi()),
     ];

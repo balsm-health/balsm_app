@@ -128,7 +128,7 @@ class FeatureFlags extends ChangeNotifier {
       try {
         await source.refresh();
         live.add(source);
-      } catch (_) {
+      } on Object catch (_) {
         // Offline, or the vendor is down. Its last answers stay as they are.
       }
     }
@@ -142,7 +142,7 @@ class FeatureFlags extends ChangeNotifier {
       for (final source in live) {
         try {
           value = await source.read(flag.key);
-        } catch (_) {
+        } on Object catch (_) {
           failed = true;
           continue;
         }
@@ -185,7 +185,7 @@ class FeatureFlags extends ChangeNotifier {
   Future<String?> _read(String key) async {
     try {
       return await _store?.get<String>(key);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }
@@ -193,7 +193,7 @@ class FeatureFlags extends ChangeNotifier {
   Future<void> _write(String key, Map<String, bool> map) async {
     try {
       await _store?.put<String>(key, jsonEncode(map));
-    } catch (_) {
+    } on Object catch (_) {
       // The values still hold for this launch.
     }
   }
@@ -207,7 +207,7 @@ class FeatureFlags extends ChangeNotifier {
         for (final e in json.entries)
           if (e.key is String && e.value is bool) e.key as String: e.value as bool,
       };
-    } catch (_) {
+    } on Object catch (_) {
       return {};
     }
   }

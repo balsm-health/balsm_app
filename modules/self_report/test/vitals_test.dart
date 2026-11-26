@@ -6,7 +6,7 @@ import 'package:self_report/self_report.dart';
 void main() {
   test('the same readings are equal, with equal hashes', () {
     const a = Vitals(systolic: 120, diastolic: 80, heartRate: 72);
-    final b = const Vitals().copyWith(systolic: 120, diastolic: 80, heartRate: 72);
+    final b = Vitals.empty.copyWith(systolic: 120, diastolic: 80, heartRate: 72);
     expect(identical(a, b), isFalse);
     expect(a, b);
     expect(a.hashCode, b.hashCode);
@@ -30,7 +30,10 @@ void main() {
   });
 
   test('a fresh empty snapshot equals Vitals.empty', () {
+    // The constructor call is the thing under test; the named constant would make the comparison trivial.
+    // ignore: use_named_constants
     expect(const Vitals(), Vitals.empty);
+    // A non-const instance proves equality is by value, not by const canonicalisation.
     // ignore: prefer_const_constructors
     expect(Vitals(), Vitals.empty);
   });

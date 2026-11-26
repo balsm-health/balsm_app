@@ -27,13 +27,15 @@ void main() {
 
   group('CareEntity.fromResponse', () {
     test('maps absent fields to empty strings, never invented values', () {
-      final e = CareEntity.fromResponse(const CareEntityResponse(
-        id: 'x',
-        type: 'pharmacy',
-        nameEn: 'Fixture Pharmacy',
-        lat: 30.0,
-        lng: 31.2,
-      ));
+      final e = CareEntity.fromResponse(
+        const CareEntityResponse(
+          id: 'x',
+          type: 'pharmacy',
+          nameEn: 'Fixture Pharmacy',
+          lat: 30,
+          lng: 31.2,
+        ),
+      );
 
       expect(e.name.ar, '');
       expect(e.hours, '', reason: 'no source supplies opening hours');
@@ -62,7 +64,7 @@ void main() {
         LatLng(31.2653, 32.3019), // Port Said
         LatLng(31.2810, 34.2600), // Rafah, north-east corner
         LatLng(22.3500, 36.5000), // Halayib, south-east
-        LatLng(22.0000, 25.0000), // south-west desert corner
+        LatLng(22, 25), // south-west desert corner
         LatLng(29.2032, 25.5195), // Siwa, western oasis
       ]) {
         expect(kCareCoverage.contains(p), isTrue, reason: '$p should be covered');
@@ -109,8 +111,11 @@ void main() {
       // and saying why beats returning something false.
       expect(const CareSearch().tooZoomedOut, isFalse);
       expect(const CareSearch(tooZoomedOut: true).tooZoomedOut, isTrue);
-      expect(const CareSearch(tooZoomedOut: true).copyWith(text: 'lab').tooZoomedOut, isTrue,
-          reason: 'an unrelated edit must not silently re-enable the query');
+      expect(
+        const CareSearch(tooZoomedOut: true).copyWith(text: 'lab').tooZoomedOut,
+        isTrue,
+        reason: 'an unrelated edit must not silently re-enable the query',
+      );
       expect(const CareSearch(tooZoomedOut: true).copyWith(tooZoomedOut: false).tooZoomedOut, isFalse);
     });
 

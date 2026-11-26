@@ -7,9 +7,11 @@ import 'package:core/core.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/rendering.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+
+import 'shake_detector.dart';
 
 /// True on a real phone or tablet (Android or iOS), where a shake opens Dev
 /// Config. False on an emulator, a simulator, desktop and web, where nobody
@@ -24,7 +26,7 @@ final canShakeProvider = FutureProvider<bool>((ref) async {
       TargetPlatform.iOS => (await info.iosInfo).isPhysicalDevice,
       _ => false,
     };
-  } catch (_) {
+  } on Object catch (_) {
     return false;
   }
 });
@@ -34,9 +36,9 @@ final canShakeProvider = FutureProvider<bool>((ref) async {
 /// only), so exposing the shake everywhere is safe.
 class ShakeToDevConfig extends ConsumerStatefulWidget {
   const ShakeToDevConfig({
-    super.key,
     required this.navigatorKey,
     required this.child,
+    super.key,
   });
 
   /// The app's root navigator — this widget lives ABOVE it (in
@@ -50,7 +52,7 @@ class ShakeToDevConfig extends ConsumerStatefulWidget {
 
 /// The whole app, in `MaterialApp.builder`: what Dev Config's Report bug tab
 /// attaches as its screenshot, and what the desktop menu saves.
-final appCaptureKey = GlobalKey(debugLabel: 'app-capture');
+final GlobalKey<State<StatefulWidget>> appCaptureKey = GlobalKey(debugLabel: 'app-capture');
 
 /// A PNG of the app as it is now, or null when there's nothing to capture.
 /// Taken BEFORE Dev Config is pushed, so it shows the screen the bug is on.
@@ -62,7 +64,7 @@ Future<Uint8List?> captureApp({double pixelRatio = 1.5}) async {
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
     return data?.buffer.asUint8List();
-  } catch (_) {
+  } on Object catch (_) {
     // A boundary that hasn't painted yet can't be captured — report without one.
     return null;
   }
@@ -75,18 +77,20 @@ Future<void> openDevConfig(BuildContext context) async {
   final controller = ProviderScope.containerOf(context).read(balsmApiControllerProvider);
   final navigator = Navigator.of(context, rootNavigator: true);
   final screenshot = await captureApp();
-  await navigator.push(MaterialPageRoute<void>(
-    builder: (_) => ServerSelectorScreen(controller: controller, screenshot: screenshot),
-  ));
+  await navigator.push(
+    MaterialPageRoute<void>(
+      builder: (_) => ServerSelectorScreen(controller: controller, screenshot: screenshot),
+    ),
+  );
 }
 
 class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
   StreamSubscription<UserAccelerometerEvent>? _sub;
-  DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
   bool _open = false;
 
   // userAccelerometer excludes gravity → ~0 at rest, spikes high on a shake.
-  static const _thresholdMs2 = 14.0;
+  // The detector wants several spikes in a row, so a bump doesn't open Dev Config.
+  final _detector = ShakeDetector();
 
   @override
   void initState() {
@@ -96,16 +100,13 @@ class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
     // channel that does not exist on web). Dev Config stays reachable there
     // from the desktop menu.
     if (kIsWeb) return;
-    _sub = userAccelerometerEventStream().listen(_onEvent, onError: (_) {});
+    // The 200 ms default misses the peaks of a shake; 66 ms catches them.
+    _sub = userAccelerometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(_onEvent, onError: (_) {});
   }
 
   void _onEvent(UserAccelerometerEvent e) {
     final mag = sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
-    if (mag < _thresholdMs2) return;
-    final now = DateTime.now();
-    if (now.difference(_last) < const Duration(seconds: 1)) return; // debounce
-    _last = now;
-    _openDevConfig();
+    if (_detector.onSample(mag, DateTime.now())) unawaited(_openDevConfig());
   }
 
   Future<void> _openDevConfig() async {
@@ -114,18 +115,20 @@ class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
     _open = true;
     final screenshot = await captureApp();
     await nav
-        .push(MaterialPageRoute<void>(
-          builder: (_) => ServerSelectorScreen(
-            controller: ref.read(balsmApiControllerProvider),
-            screenshot: screenshot,
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => ServerSelectorScreen(
+              controller: ref.read(balsmApiControllerProvider),
+              screenshot: screenshot,
+            ),
           ),
-        ))
+        )
         .whenComplete(() => _open = false);
   }
 
   @override
   void dispose() {
-    _sub?.cancel();
+    unawaited(_sub?.cancel());
     super.dispose();
   }
 

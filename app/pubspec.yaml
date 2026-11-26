@@ -6,102 +6,114 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
 dependencies:
+  account:
+    path: ../modules/account
+  app_links: ^7.2.2
+  auth:
+    path: ../modules/auth
+  balsm_api:
+    path: ../packages/balsm_api
   # slices() / splitBetween() — Dart team package, already in the tree
   # transitively. Declared directly so it can be imported.
   collection: ^1.19.0
+  core:
+    path: ../packages/core
+  # Font for CupertinoIcons, which cupertino_ui (Flutter 3.47 split) references.
+  # Without it the icon tree-shaker warns and those glyphs render as boxes.
+  cupertino_icons: ^2.0.0
+  deletion:
+    path: ../modules/deletion
+  device_info_plus: ^13.3.0
+  dio: ^5.8.0
+  disclosure:
+    path: ../modules/disclosure
+  emergency_card:
+    path: ../modules/emergency_card
+  family:
+    path: ../modules/family
+  family_link:
+    path: ../modules/family_link
+  file_picker: ^13.4.1  # Marker clustering for the care map — the directory holds ~19k places, so
+  # plotting them unclustered is unusable and janks the frame budget.
+  fluster: ^1.2.0
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  core:
-    path: ../packages/core
-  balsm_api:
-    path: ../packages/balsm_api
-  auth:
-    path: ../modules/auth
-  disclosure:
-    path: ../modules/disclosure
-  profile:
-    path: ../modules/profile
-  emergency_card:
-    path: ../modules/emergency_card
-  medications:
-    path: ../modules/medications
-  self_report:
-    path: ../modules/self_report
-  records:
-    path: ../modules/records
-  prescriptions:
-    path: ../modules/prescriptions
-  sessions:
-    path: ../modules/sessions
-  account:
-    path: ../modules/account
-  deletion:
-    path: ../modules/deletion
+  flutter_map: ^8.3.2
+  flutter_riverpod: ^3.4.1
+  flutter_secure_storage: ^10.3.1
+  flutter_svg: ^2.0.10+1
+  gal: ^3.0.1
   geofence_block:
     path: ../modules/geofence_block
-  flutter_riverpod: ^2.6.1
-  go_router: ^14.0.0
-  app_links: ^6.3.0
-  url_strategy: ^0.3.0
-  lucide_icons_flutter: ^3.1.19
-  # Typed i18n codegen (same fork as core) — app-shell strings live in
+  geolocator: ^13.0.4
+  go_router: ^18.1.4  # Typed i18n codegen (same fork as core) — app-shell strings live in
   # balsm_app/i18n/*.i69n.json, generated via build_runner.
   i69n:
     git:
       url: https://github.com/balsm-health/i69n
       ref: master
-  flutter_svg: ^2.0.10+1
-  # Exact-artwork hit testing on the body map (see widgets/body_hit_map.dart).
+  image_picker: ^1.1.2
+  latlong2: ^0.10.1
+  lucide_icons_flutter: ^4.0.3
+  marionette_flutter: ^0.7.0
+  material_ui: ^1.2.0
+  medications:
+    path: ../modules/medications
+  mobile_scanner: ^7.4.2
+  pasteboard: ^0.6.2  # Exact-artwork hit testing on the body map (see widgets/body_hit_map.dart).
   # Both are already in the tree via flutter_svg; declared because we import them.
   path_parsing: ^1.1.0
-  xml: ^6.6.1
-  qr_flutter: ^4.1.0
-  flutter_map: ^7.0.2
-  # Marker clustering for the care map — the directory holds ~19k places, so
-  # plotting them unclustered is unusable and janks the frame budget.
-  fluster: ^1.2.0
-  latlong2: ^0.9.1
-  geolocator: ^13.0.1
-  url_launcher: ^6.3.0
-  image_picker: ^1.1.2
-  file_picker: ^8.1.7
   path_provider: ^2.1.5
-  dio: ^5.8.0
-  flutter_secure_storage: ^9.2.4
+  pdfrx: ^3.1.0
+  pregnancy:
+    path: ../modules/pregnancy
+  prescriptions:
+    path: ../modules/prescriptions
+  profile:
+    path: ../modules/profile
+  qr_flutter: ^4.1.0
+  records:
+    path: ../modules/records
+  riverpod: any
+  self_report:
+    path: ../modules/self_report
   sensors_plus: ^7.1.0
-  material_ui: ^1.2.0
-  # Font for CupertinoIcons, which cupertino_ui (Flutter 3.47 split) references.
-  # Without it the icon tree-shaker warns and those glyphs render as boxes.
-  cupertino_icons: ^1.0.8
-  pdfrx: ^2.6.1
-  share_plus: ^12.0.2
-  gal: ^2.3.3
-  mobile_scanner: ^7.4.2
-  pasteboard: ^0.5.0
-  device_info_plus: ^12.4.0
+  sessions:
+    path: ../modules/sessions
+  share_plus: ^13.3.1
+  url_launcher: ^6.3.0
+  url_strategy: ^0.3.0
+  vaccinations:
+    path: ../modules/vaccinations
+  xml: ^6.6.1
 dev_dependencies:
+  balsm_lints:
+    path: ../packages/balsm_lints
+  build_runner: ^2.4.13
   # Test-only: care_repository_test opens an in-memory AppDatabase.
-  drift: ^2.29.0
-  # Test-only: analytics_consent_toggle_test seeds the KV store via
-  # SharedPreferences.setMockInitialValues.
-  shared_preferences: ^2.3.0
-  # Test-only: device_location_test fakes the platform's location answers.
-  geolocator_platform_interface: ^4.2.8
-  plugin_platform_interface: ^2.1.8
-  patrol: ^4.9.0
+  drift: ^2.31.0
   flutter_test:
     sdk: flutter
+  # Test-only: device_location_test fakes the platform's location answers.
+  geolocator_platform_interface: ^4.2.8
+  # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
+  golden_toolkit: ^0.15.0
+  # Test-only: permission_denied_test fakes the picker's "permission refused" answers.
+  image_picker_platform_interface: ^2.11.1
   integration_test:
     sdk: flutter
   mocktail: ^1.0.4
-  # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
-  golden_toolkit: ^0.15.0
-  flutter_lints: ^4.0.0
-  yaml: ^3.1.2
-  build_runner: ^2.4.13
+  patrol: ^4.9.0
+  plugin_platform_interface: ^2.1.8
+  # Test-only: analytics_consent_toggle_test seeds the KV store via
+  # SharedPreferences.setMockInitialValues.
+  shared_preferences: ^2.3.0
+  # Test-only: the monkey e2e stubs external launches (tel:, mailto:, links) so a random tap cannot leave the app.
+  url_launcher_platform_interface: ^2.3.2
   vm_service: ^15.3.0
+  yaml: ^3.1.2
 dependency_overrides:
   # path_provider_foundation 2.6.0 migrated to package:objective_c + the
   # experimental native-assets build, which mislinks on iOS (Foundation not
@@ -165,6 +177,9 @@ flutter:
 # bundle id (both app.balsm.health), NOT the gradle namespace.
 patrol:
   app_name: Balsm
+  # Patrol suites live here; plain integration_test files beside them run
+  # with `flutter test integration_test` and are not Patrol's.
+  test_directory: integration_test/patrol
   android:
     package_name: app.balsm.health
   ios:

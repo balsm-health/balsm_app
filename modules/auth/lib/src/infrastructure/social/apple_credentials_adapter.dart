@@ -37,7 +37,7 @@ class AppleCredentialsAdapter implements SocialCredentialsPort {
       return e.code == AuthorizationErrorCode.canceled
           ? const SocialCredentialsCancelled()
           : const SocialCredentialsFailure();
-    } catch (_) {
+    } on Object catch (_) {
       return const SocialCredentialsFailure();
     }
   }

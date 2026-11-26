@@ -18,7 +18,7 @@ enum StorageTarget {
       };
 
   /// Picker order: device first, then clouds.
-  static const picker = [local, icloud, gdrive, balsmCloud];
+  static const List<StorageTarget> picker = [local, icloud, gdrive, balsmCloud];
 
   static final Map<String, StorageTarget> _byId = {
     for (final t in values) t.id: t,

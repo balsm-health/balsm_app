@@ -7,9 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// Synthetic, non-PHI.
 class _Thing {
   const _Thing(this.name);
+  factory _Thing.fromJson(Map<String, dynamic> j) => _Thing(j['name'] as String);
   final String name;
   Map<String, dynamic> toJson() => {'name': name};
-  static _Thing fromJson(Map<String, dynamic> j) => _Thing(j['name'] as String);
 }
 
 void main() {
@@ -32,10 +32,13 @@ void main() {
 
   test('a miss fetches and retains', () async {
     var calls = 0;
-    final got = await cached.read('k', fetch: () async {
-      calls++;
-      return const _Thing('fetched');
-    });
+    final got = await cached.read(
+      'k',
+      fetch: () async {
+        calls++;
+        return const _Thing('fetched');
+      },
+    );
     expect(got!.name, 'fetched');
     expect(calls, 1);
     expect((await cached.peek('k'))!.name, 'fetched');
@@ -44,10 +47,13 @@ void main() {
   test('a fresh hit does not fetch', () async {
     await cached.read('k', fetch: () async => const _Thing('first'));
     var calls = 0;
-    final got = await cached.read('k', fetch: () async {
-      calls++;
-      return const _Thing('second');
-    });
+    final got = await cached.read(
+      'k',
+      fetch: () async {
+        calls++;
+        return const _Thing('second');
+      },
+    );
     expect(calls, 0, reason: 'a fresh row must not touch the network');
     expect(got!.name, 'first');
   });

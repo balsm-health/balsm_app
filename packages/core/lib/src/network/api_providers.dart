@@ -65,6 +65,23 @@ final careTeamApiProvider = Provider<CareTeamApi>((ref) {
   return DioCareTeamApi(net: ref.watch(networkManagerProvider));
 });
 
+/// Family links between two accounts and the sealed emergency cards shared
+/// over them (Identity & Access). Ciphertext only — the server never reads a card.
+final familyLinksApiProvider = Provider<FamilyLinksApi>((ref) {
+  return DioFamilyLinksApi(net: ref.watch(networkManagerProvider));
+});
+
+/// Platform reference content — general information, the same for every
+/// caller (week-by-week pregnancy guidance). Never patient data.
+final contentApiProvider = Provider<ContentApi>((ref) {
+  return DioContentApi(net: ref.watch(networkManagerProvider));
+});
+
+/// Platform maintenance flag — anonymous, no PHI; polled by the app shell.
+final maintenanceApiProvider = Provider<MaintenanceApi>((ref) {
+  return DioMaintenanceApi(net: ref.watch(networkManagerProvider));
+});
+
 /// Map-pack bytes downloader.
 ///
 /// Deliberately NOT built on [balsmApiClientProvider]'s Dio: basemaps come

@@ -1,0 +1,1 @@
+Pregnancy tracking keeps to its limits: "Add a baby" stops at eight babies instead of adding a ninth, and the due-date picker no longer offers a day too far ahead late in the evening, which made "Start tracking" fail with "Couldn't save". ([#168](https://github.com/balsm-health/balsm_app/pull/168))

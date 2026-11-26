@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../app_state.dart';
@@ -39,7 +39,7 @@ int vaultViewerCacheWidth(double logicalWidth, double devicePixelRatio) =>
 /// bytes NEVER touch disk — no temp files, no share/export — so the vault's
 /// at-rest encryption holds for the whole preview path. Bytes are never logged.
 class VaultFileViewer extends ConsumerStatefulWidget {
-  const VaultFileViewer({super.key, required this.paths, this.index = 0, this.title});
+  const VaultFileViewer({required this.paths, super.key, this.index = 0, this.title});
 
   /// Every file in the set being viewed; the design pages a record's files in
   /// place rather than closing and reopening (`AttachmentViewer`).
@@ -84,88 +84,93 @@ class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
     final blob = ref.watch(vaultBlobProvider(path));
     final many = widget.paths.length > 1;
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(children: [
-        Positioned.fill(
-          child: blob.when(
-            loading: () => const Center(child: MarkSpinner(size: 44)),
-            // The reason is not something to render over PHI — keep it generic.
-            error: (_, __) => _CantOpen(s: s),
-            data: (bytes) => bytes == null ? _CantOpen(s: s) : _content(context, bytes),
+      backgroundColor: AppColors.black,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: blob.when(
+              loading: () => const Center(child: MarkSpinner(size: 44)),
+              // The reason is not something to render over PHI — keep it generic.
+              error: (_, __) => _CantOpen(s: s),
+              data: (bytes) => bytes == null ? _CantOpen(s: s) : _content(context, bytes),
+            ),
           ),
-        ),
-        Positioned(
-          top: MediaQuery.paddingOf(context).top + 8,
-          left: 12,
-          child: RoundBtn(
+          PositionedDirectional(
+            top: MediaQuery.paddingOf(context).top + 8,
+            start: 12,
+            child: RoundBtn(
               icon: LucideIcons.x,
               semanticLabel: s.strings.common.a11y_close,
-              onTap: () => Navigator.of(context).pop()),
-        ),
-        if (title != null && title!.isNotEmpty)
-          Positioned(
-            top: MediaQuery.paddingOf(context).top + 10,
-            left: 64,
-            right: 64,
-            child: Column(children: [
-              Text(
-                title!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+              onTap: () => Navigator.of(context).pop(),
+            ),
+          ),
+          if (title case final titleValue? when title!.isNotEmpty)
+            PositionedDirectional(
+              top: MediaQuery.paddingOf(context).top + 10,
+              start: 64,
+              end: 64,
+              child: Column(
+                children: [
+                  Text(
+                    titleValue,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white, fontWeight: FontWeight.w600),
+                  ),
+                  // Kind · size meta (design att-bar) — derived from the decrypted
+                  // bytes; nothing else about the file is disclosed.
+                  if (blob.value case final b?)
+                    Text(
+                      '${vaultFileKind(path, b) == VaultFileKind.pdf ? 'PDF' : s.strings.settings.add_photo} · ${_fmtSize(b.length)}'
+                      '${many ? ' · ${_i + 1}/${widget.paths.length}' : ''}',
+                      textAlign: TextAlign.center,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white54, fontSize: FontSizes.meta),
+                    ),
+                ],
               ),
-              // Kind · size meta (design att-bar) — derived from the decrypted
-              // bytes; nothing else about the file is disclosed.
-              if (blob.valueOrNull case final b?)
-                Text(
-                  '${vaultFileKind(path, b) == VaultFileKind.pdf ? 'PDF' : s.strings.settings.add_photo} · ${_fmtSize(b.length)}'
-                  '${many ? ' · ${_i + 1}/${widget.paths.length}' : ''}',
-                  textAlign: TextAlign.center,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white54, fontSize: FS.xs),
+            ),
+          // `.att-nav` — 44px discs pinned to the stage's edges. Directional
+          // insets so RTL puts "previous" on the right, as the design does.
+          if (many) ...[
+            PositionedDirectional(
+              start: 10,
+              top: 0,
+              bottom: 0,
+              // Chevrons, as `.att-nav` draws them — and they point toward the
+              // edge they sit on, which RTL flips along with the position.
+              child: Center(
+                child: _NavDisc(
+                  icon: backChevron(context),
+                  onTap: () => _step(-1),
                 ),
-            ]),
-          ),
-        // `.att-nav` — 44px discs pinned to the stage's edges. Directional
-        // insets so RTL puts "previous" on the right, as the design does.
-        if (many) ...[
-          PositionedDirectional(
-            start: 10,
-            top: 0,
-            bottom: 0,
-            // Chevrons, as `.att-nav` draws them — and they point toward the
-            // edge they sit on, which RTL flips along with the position.
-            child: Center(
-              child: _NavDisc(
-                icon: s.rtl ? LucideIcons.chevronRight : LucideIcons.chevronLeft,
-                onTap: () => _step(-1),
               ),
             ),
-          ),
-          PositionedDirectional(
-            end: 10,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: _NavDisc(
-                icon: s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight,
-                onTap: () => _step(1),
+            PositionedDirectional(
+              end: 10,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _NavDisc(
+                  icon: forwardChevron(context),
+                  onTap: () => _step(1),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _ThumbStrip(
-              paths: widget.paths,
-              current: _i,
-              bottomInset: MediaQuery.paddingOf(context).bottom,
-              onPick: (n) => _step(n - _i),
+            PositionedDirectional(
+              start: 0,
+              end: 0,
+              bottom: 0,
+              child: _ThumbStrip(
+                paths: widget.paths,
+                current: _i,
+                bottomInset: MediaQuery.paddingOf(context).bottom,
+                onPick: (n) => _step(n - _i),
+              ),
             ),
-          ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 
@@ -176,7 +181,7 @@ class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
           bytes,
           // Cache key only — the vault-relative path, never file content.
           sourceName: path,
-          params: const PdfViewerParams(backgroundColor: Colors.black),
+          params: const PdfViewerParams(backgroundColor: AppColors.black),
         );
       case VaultFileKind.image:
         return InteractiveViewer(
@@ -209,11 +214,14 @@ class _CantOpen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(LucideIcons.fileX, size: 40, color: Colors.white38),
-        const SizedBox(height: 12),
-        Text(s.strings.records.rec_preview_failed, style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white70)),
-      ]),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(LucideIcons.fileX, size: 40, color: AppColors.white38),
+          const SizedBox(height: 12),
+          Text(s.strings.records.rec_preview_failed, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white70)),
+        ],
+      ),
     );
   }
 }
@@ -226,7 +234,7 @@ class _NavDisc extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: const Color(0x991F2D3D),
+        color: AppColors.scrimHeavy,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -234,7 +242,7 @@ class _NavDisc extends StatelessWidget {
           child: SizedBox(
             width: 44,
             height: 44,
-            child: Icon(icon, size: 24, color: Colors.white),
+            child: Icon(icon, size: 24, color: AppColors.white),
           ),
         ),
       );
@@ -258,28 +266,30 @@ class _ThumbStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.fromLTRB(14, 12, 14, bottomInset + 18),
-        child: Row(children: [
-          for (final (n, p) in paths.indexed)
-            Padding(
-              padding: EdgeInsetsDirectional.only(end: n == paths.length - 1 ? 0 : 8),
-              child: GestureDetector(
-                onTap: () => onPick(n),
-                child: Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: const Color(0x1FFFFFFF),
-                    borderRadius: BorderRadius.circular(T.rMd),
-                    border: Border.all(color: n == current ? Colors.white : Colors.transparent, width: 2),
+        padding: EdgeInsetsDirectional.fromSTEB(14, 12, 14, bottomInset + 18),
+        child: Row(
+          children: [
+            for (final (n, p) in paths.indexed)
+              Padding(
+                padding: EdgeInsetsDirectional.only(end: n == paths.length - 1 ? 0 : 8),
+                child: GestureDetector(
+                  onTap: () => onPick(n),
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: AppColors.white12,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      border: Border.all(color: n == current ? AppColors.white : Colors.transparent, width: 2),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: p.toLowerCase().endsWith('.pdf')
+                        ? const Icon(LucideIcons.fileText, size: 18, color: AppColors.white70)
+                        : VaultImage(path: p, height: 54),
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: p.toLowerCase().endsWith('.pdf')
-                      ? const Icon(LucideIcons.fileText, size: 18, color: Colors.white70)
-                      : VaultImage(path: p, height: 54),
                 ),
               ),
-            ),
-        ]),
+          ],
+        ),
       );
 }

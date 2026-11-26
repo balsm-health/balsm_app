@@ -21,7 +21,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-4986625321',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'البسط',
     lat: 30.0436041,
     lng: 31.235055,
@@ -31,7 +30,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-3220051546',
     type: 'pharmacy',
     nameEn: 'Al Azaby',
-    nameAr: null,
     lat: 30.0472273,
     lng: 31.2385883,
     distanceKm: 0.42,
@@ -48,7 +46,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-8611347645',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'مكتب صحة - عابدين',
     lat: 30.0441751,
     lng: 31.2432214,
@@ -57,7 +54,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-8343379230',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'مستشفى هيئة النقل العام',
     lat: 30.051386,
     lng: 31.2383746,
@@ -66,7 +62,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-8611347646',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'مركز طبي عابدين (ابو طبل)',
     lat: 30.0397738,
     lng: 31.2442788,
@@ -79,12 +74,11 @@ const docshotsPlaces = <CareEntityResponse>[
     nameAr: 'صيدلية الاسعاف برمسيس',
     lat: 30.0505352,
     lng: 31.2432447,
-    distanceKm: 1.0,
+    distanceKm: 1,
   ),
   CareEntityResponse(
     id: 'osm-4475957330',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'فضل',
     lat: 30.0447829,
     lng: 31.247019,
@@ -94,7 +88,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-13177651606',
     type: 'pharmacy',
     nameEn: 'Dr George Anwar ferig',
-    nameAr: null,
     lat: 30.0466929,
     lng: 31.2467434,
     distanceKm: 1.09,
@@ -102,7 +95,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12734648689',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية حسنين',
     lat: 30.039432,
     lng: 31.2473226,
@@ -111,7 +103,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12734648688',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية الخليج',
     lat: 30.038827,
     lng: 31.2496848,
@@ -120,7 +111,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-9741078672',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'عيادة كريم سعيد',
     lat: 30.0315752,
     lng: 31.2314815,
@@ -129,7 +119,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409495',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة أمراض الدم',
     lat: 30.0323652,
     lng: 31.2284404,
@@ -138,7 +127,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12734648691',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية د. طارق العلكي (عوني سابقا)',
     lat: 30.0395234,
     lng: 31.2503667,
@@ -147,7 +135,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409496',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'ليزر الجلدية',
     lat: 30.032434,
     lng: 31.2282301,
@@ -156,7 +143,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952190991',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة السكر و عيادة الغدد و عيادة السمنة و التغذية',
     lat: 30.0320338,
     lng: 31.2290907,
@@ -165,7 +151,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952190992',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الرمد',
     lat: 30.0319818,
     lng: 31.2286432,
@@ -174,7 +159,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409492',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة مخ وأعصاب والصدر',
     lat: 30.0321163,
     lng: 31.2283203,
@@ -183,7 +167,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409493',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة العلاج الطبيعى',
     lat: 30.0322389,
     lng: 31.2280005,
@@ -192,7 +175,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-5991676985',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'هشام ابو النصر',
     lat: 30.0544628,
     lng: 31.2468809,
@@ -201,7 +183,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952190989',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة العلاج الطبيغى',
     lat: 30.0317477,
     lng: 31.228866,
@@ -210,7 +191,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12734648694',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية صفوت',
     lat: 30.0406523,
     lng: 31.2513199,
@@ -219,7 +199,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952190990',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الجلدية',
     lat: 30.0317811,
     lng: 31.2285843,
@@ -228,7 +207,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952212932',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الجراحة',
     lat: 30.0318111,
     lng: 31.2284692,
@@ -237,7 +215,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952212933',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الجراحة',
     lat: 30.0318742,
     lng: 31.2282933,
@@ -246,7 +223,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952212934',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الباطنة و عيادة جراحة مخ و اعصاب',
     lat: 30.0319308,
     lng: 31.2281655,
@@ -255,7 +231,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409489',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة العظام',
     lat: 30.0320253,
     lng: 31.227904,
@@ -264,7 +239,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952440615',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'مبنى بنك الدم و عيادة طب الأسرة',
     lat: 30.0314661,
     lng: 31.2291979,
@@ -273,7 +247,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952435106',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'ليزر الرمد',
     lat: 30.0315237,
     lng: 31.2286979,
@@ -282,7 +255,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952190988',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الذكورة',
     lat: 30.0316047,
     lng: 31.2284755,
@@ -291,7 +263,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409494',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة السمعيات',
     lat: 30.0316704,
     lng: 31.2282452,
@@ -300,7 +271,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409490',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الباطنة و القلب و المتوطنة',
     lat: 30.0317355,
     lng: 31.2280885,
@@ -309,7 +279,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952409491',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'عيادة الروماتزم',
     lat: 30.0318302,
     lng: 31.2277924,
@@ -318,7 +287,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12734648692',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية د. نورهان',
     lat: 30.0402617,
     lng: 31.2516418,
@@ -327,7 +295,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-12952212926',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'مسجد كلية الطب',
     lat: 30.0311244,
     lng: 31.2291704,
@@ -336,7 +303,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-13114620339',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية أبو العز',
     lat: 30.0296859,
     lng: 31.2326448,
@@ -372,7 +338,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-6364912887',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'مستشفى ستار',
     lat: 30.0421128,
     lng: 31.2170023,
@@ -381,7 +346,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-13119302916',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'مكتب صحة - الدرب الاحمر',
     lat: 30.0397371,
     lng: 31.2538745,
@@ -390,7 +354,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-5419428221',
     type: 'pharmacy',
-    nameEn: null,
     nameAr: 'صيدلية رشدى',
     lat: 30.0596702,
     lng: 31.2447349,
@@ -417,7 +380,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-4364876094',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'د. إيهاب عامر (المنيل)',
     lat: 30.0271988,
     lng: 31.226678,
@@ -427,7 +389,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-12279357505',
     type: 'pharmacy',
     nameEn: 'Mohamed Salama Pharmacy',
-    nameAr: null,
     lat: 30.0602141,
     lng: 31.2231422,
     distanceKm: 2.13,
@@ -444,7 +405,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-4338866103',
     type: 'hospital',
-    nameEn: null,
     nameAr: 'مستشفى جامكا',
     lat: 30.0464766,
     lng: 31.2126874,
@@ -453,7 +413,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-599356121',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'El Fouly ENT Clinic دكتور محمود الفولى أنف و أذن',
     lat: 30.038883,
     lng: 31.2134027,
@@ -463,7 +422,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-3323245676',
     type: 'pharmacy',
     nameEn: 'Gomhouria Pharmacy',
-    nameAr: null,
     lat: 30.060219,
     lng: 31.2213085,
     distanceKm: 2.24,
@@ -481,7 +439,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-12278567032',
     type: 'pharmacy',
     nameEn: 'New Universal Pharmacy',
-    nameAr: null,
     lat: 30.0614677,
     lng: 31.2228682,
     distanceKm: 2.26,
@@ -490,7 +447,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-5860415668',
     type: 'pharmacy',
     nameEn: 'elezaby',
-    nameAr: null,
     lat: 30.0627036,
     lng: 31.2465299,
     distanceKm: 2.29,
@@ -508,7 +464,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-12273123734',
     type: 'pharmacy',
     nameEn: 'Nagui',
-    nameAr: null,
     lat: 30.0628325,
     lng: 31.2231035,
     distanceKm: 2.38,
@@ -516,7 +471,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-5518514125',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'مركز السمع و الاتزان د/منى العقاد',
     lat: 30.0242377,
     lng: 31.2261714,
@@ -534,7 +488,6 @@ const docshotsPlaces = <CareEntityResponse>[
   CareEntityResponse(
     id: 'osm-9822436734',
     type: 'clinic',
-    nameEn: null,
     nameAr: 'د. عمرو عنتر أخصائي التخاطب',
     lat: 30.0235306,
     lng: 31.2261325,
@@ -544,7 +497,6 @@ const docshotsPlaces = <CareEntityResponse>[
     id: 'osm-946548114',
     type: 'pharmacy',
     nameEn: 'Pharmacy 24/7',
-    nameAr: null,
     lat: 30.034447,
     lng: 31.2117289,
     distanceKm: 2.56,

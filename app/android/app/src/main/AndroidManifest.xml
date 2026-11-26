@@ -3,6 +3,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Location is optional: the care map falls back to a fixed centre. Without
+         these, ACCESS_FINE_LOCATION implies a required GPS and Play hides the app
+         from devices that lack one. -->
+    <uses-feature android:name="android.hardware.location" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <!-- gal: saving the QR image to the gallery needs this on Android 9 and
          below only; API 29+ uses scoped MediaStore inserts with no permission. -->
     <uses-permission
@@ -67,11 +72,11 @@
          consent has been read off disk, and before the PHI scrub is installed. -->
     <meta-data android:name="com.posthog.posthog.AUTO_INIT" android:value="false"/>
   </application>
-  <uses-permission android:name="android.permission.INTERNET"/>
-  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-  <uses-permission android:name="android.permission.VIBRATE"/>
-  <!-- No exact-alarm permissions. Nothing in the app schedules an alarm or a
-       timed notification, and Play restricts USE_EXACT_ALARM to alarm and
-       calendar apps. If medication reminders are built, add back
-       SCHEDULE_EXACT_ALARM only (the user grants it in settings). -->
+  <!-- No notification, boot or exact-alarm permissions. Nothing in the app
+       schedules an alarm or a timed notification, and Play restricts
+       USE_EXACT_ALARM to alarm and calendar apps. If medication reminders are
+       built, add flutter_local_notifications back (it brings POST_NOTIFICATIONS
+       and VIBRATE), RECEIVE_BOOT_COMPLETED for rescheduling after a restart, and
+       SCHEDULE_EXACT_ALARM only (the user grants it in settings). On iOS
+       permission_handler also needs PERMISSION_NOTIFICATIONS=1 in the Podfile. -->
 </manifest>

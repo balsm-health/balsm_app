@@ -1,0 +1,1 @@
+Editing a record's name, type, date or tags now shows on its detail page straight away instead of keeping the old values until you reopen it. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

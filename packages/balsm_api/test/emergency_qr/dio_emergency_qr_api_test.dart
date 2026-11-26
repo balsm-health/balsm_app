@@ -7,8 +7,9 @@ import '../helpers/fake_http_adapter.dart';
 
 void main() {
   test('mint posts server-contract snake_case body and parses token envelope', () async {
-    final adapter = FakeHttpAdapter((options) =>
-        jsonResponse('{"data": {"token_id": "jti-1", "expires_at": "2026-07-02T10:00:00Z"}, "error": null}'));
+    final adapter = FakeHttpAdapter(
+      (options) => jsonResponse('{"data": {"token_id": "jti-1", "expires_at": "2026-07-02T10:00:00Z"}, "error": null}'),
+    );
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
     final res = await api.mint(const MintQrRequest(ciphertextBase64: 'abc=', ttlSeconds: 900, profileEtag: 'e1'));
@@ -41,9 +42,13 @@ void main() {
   });
 
   test('active GETs and parses the caller token', () async {
-    final adapter = FakeHttpAdapter((_) => jsonResponse(jsonEncode({
-          'data': {'token_id': 'jti-2', 'expires_at': null, 'ttl_seconds': 0}
-        })));
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse(
+        jsonEncode({
+          'data': {'token_id': 'jti-2', 'expires_at': null, 'ttl_seconds': 0},
+        }),
+      ),
+    );
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
     final res = await api.active();
@@ -62,9 +67,13 @@ void main() {
   });
 
   test('resolve GETs token path and parses the v2.0 envelope', () async {
-    final adapter = FakeHttpAdapter((_) => jsonResponse(jsonEncode({
-          'data': {'v': 1, 'type': 'profile', 'expires_at': null, 'ciphertext_base64': 'abc='}
-        })));
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse(
+        jsonEncode({
+          'data': {'v': 1, 'type': 'profile', 'expires_at': null, 'ciphertext_base64': 'abc='},
+        }),
+      ),
+    );
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
     final res = await api.resolve('jti-9');
@@ -77,13 +86,17 @@ void main() {
   });
 
   test('scans GETs history and parses entries', () async {
-    final adapter = FakeHttpAdapter((_) => jsonResponse(jsonEncode({
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse(
+        jsonEncode({
           'data': {
             'scans': [
               {'token_id': 'jti-1', 'resolved_at': '2026-01-01T00:00:00Z', 'client': 'web', 'country': null},
-            ]
-          }
-        })));
+            ],
+          },
+        }),
+      ),
+    );
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
     final scans = await api.scans();

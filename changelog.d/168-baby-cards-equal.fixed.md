@@ -1,0 +1,1 @@
+Baby cards on the pregnancy screen sit in a two-column grid and are all the same height, whether or not a baby has a measurement or a long name; a single baby keeps one column instead of stretching across the page. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

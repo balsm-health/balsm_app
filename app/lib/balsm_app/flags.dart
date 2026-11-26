@@ -44,7 +44,43 @@ abstract final class AppFlags {
     description: 'Corner ribbon marking this release as a beta.',
   );
 
-  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner];
+  /// Mother & Child (P003b): family member profiles on this device, the
+  /// people picker that re-points the whole app to one of them, and their
+  /// emergency cards. Off keeps today's single-profile app, including the
+  /// session-only account switcher.
+  static const motherChild = FeatureFlag(
+    'mother_child',
+    fallback: false,
+    label: 'Mother & Child',
+    description:
+        'Family profiles, the people picker, per-member emergency cards, child vaccinations and growth, and pregnancy tracking.',
+  );
+
+  /// Family links (P003b, Identity & Access): add someone with their own
+  /// Balsm account by scanning their profile QR, approve or decline incoming
+  /// requests, and share a sealed emergency card per link. Off by default — it
+  /// sends data to the server. Only takes effect with [motherChild] on too:
+  /// its screens are the Mother & Child ones ([familyLinkOn]).
+  static const familyLink = FeatureFlag(
+    'family_link',
+    fallback: false,
+    label: 'Family links',
+    description:
+        'Link Balsm accounts by profile QR; approve requests; share a sealed emergency card. Needs Mother & Child.',
+  );
+
+  /// Maintenance mode: the app reads Balsm's maintenance flag (an anonymous,
+  /// PHI-free GET) and, while a super admin has set it, shows the read-only
+  /// strip or the full-screen page and pauses writes. On by default — it only
+  /// reads. Switch off if the check itself misbehaves.
+  static const maintenance = FeatureFlag(
+    'maintenance',
+    fallback: true,
+    label: 'Maintenance mode',
+    description: 'Honour the server maintenance flag: read-only strip, paused actions, full-screen block.',
+  );
+
+  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild, familyLink, maintenance];
 }
 
 extension DataCategorySync on DataCategory {
@@ -59,3 +95,7 @@ extension DataCategorySync on DataCategory {
 /// the type's own flag are on.
 bool cloudSyncOn(DataCategory category, FeatureFlags flags) =>
     category.hasSyncEngine && flags.isOn(AppFlags.sync) && flags.isOn(AppFlags.syncFor(category));
+
+/// Whether family links are offered in this build, on this device, right now:
+/// both its own flag and Mother & Child, whose screens carry it, are on.
+bool familyLinkOn(FeatureFlags flags) => flags.isOn(AppFlags.motherChild) && flags.isOn(AppFlags.familyLink);

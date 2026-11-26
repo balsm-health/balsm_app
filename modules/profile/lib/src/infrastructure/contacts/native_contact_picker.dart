@@ -36,7 +36,7 @@ class NativeContactPicker implements ContactPicker {
     Contact? picked;
     try {
       picked = await FlutterContacts.native.showPicker(properties: await propertiesFor(defaultTargetPlatform));
-    } catch (_) {
+    } on Object catch (_) {
       return const [];
     }
 
@@ -64,7 +64,7 @@ class NativeContactPicker implements ContactPicker {
     if (platform != TargetPlatform.android) return wanted;
     try {
       return await FlutterContacts.permissions.has(PermissionType.read) ? wanted : const <ContactProperty>{};
-    } catch (_) {
+    } on Object catch (_) {
       // Checking is not worth failing the pick over; the name alone still works.
       return const <ContactProperty>{};
     }

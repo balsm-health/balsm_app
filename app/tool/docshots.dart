@@ -30,8 +30,9 @@ Future<void> main(List<String> args) async {
   final flags = args.where((a) => a.startsWith('--')).toSet();
   final positional = args.where((a) => !a.startsWith('--')).toList();
   if (positional.length < 3) {
-    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> <out-dir> [--ios|--android]');
-    stderr.writeln('  <out-dir> is brand/device scoped, e.g. screenshots/balsm/iphone');
+    stderr
+      ..writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> <out-dir> [--ios|--android]')
+      ..writeln('  <out-dir> is brand/device scoped, e.g. screenshots/balsm/iphone');
     exit(64);
   }
   final wsUri = positional[0].replaceFirst('http://', 'ws://') + (positional[0].endsWith('/') ? 'ws' : '/ws');

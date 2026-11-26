@@ -1,13 +1,13 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 /// List row porting prototype `.list-row` (icon + grow text + chevron-right).
 /// RTL flips chevron via Transform.scale(-1, 1).
 class BalsmListRow extends StatelessWidget {
   const BalsmListRow({
+    required this.label,
     super.key,
     this.leading,
-    required this.label,
     this.sublabel,
     this.trailing,
     this.onTap,
@@ -25,12 +25,11 @@ class BalsmListRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        highlightColor: BalsmColors.ink50,
+        highlightColor: AppColors.ink50,
         splashColor: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -39,8 +38,8 @@ class BalsmListRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
               child: Row(
                 children: [
-                  if (leading != null) ...[
-                    _IconContainer(child: leading!),
+                  if (leading case final leading?) ...[
+                    _IconContainer(child: leading),
                     const SizedBox(width: 14),
                   ],
                   Expanded(
@@ -52,34 +51,31 @@ class BalsmListRow extends StatelessWidget {
                           label,
                           style: const TextStyle(
                             fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                            color: BalsmColors.fg1,
+                            fontSize: FontSizes.body,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        if (sublabel != null) ...[
+                        if (sublabel case final sublabel?) ...[
                           const SizedBox(height: 2),
                           Text(
-                            sublabel!,
+                            sublabel,
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: BalsmColors.fg3,
+                              fontSize: FontSizes.bodySm,
+                              color: AppColors.textTertiary,
                             ),
                           ),
                         ],
                       ],
                     ),
                   ),
-                  if (trailing != null) ...[
+                  if (trailing case final trailing?) ...[
                     const SizedBox(width: 8),
-                    trailing!,
+                    trailing,
                   ] else if (showChevron)
-                    Transform.scale(
-                      scaleX: isRtl ? -1 : 1,
-                      child: const Icon(
-                        Icons.chevron_right,
-                        size: 18,
-                        color: BalsmColors.fg4,
-                      ),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: AppColors.textHint,
                     ),
                 ],
               ),
@@ -88,7 +84,7 @@ class BalsmListRow extends StatelessWidget {
               const Divider(
                 height: 1,
                 thickness: 1,
-                color: BalsmColors.ink100,
+                color: AppColors.ink100,
                 indent: 18,
                 endIndent: 18,
               ),
@@ -109,13 +105,13 @@ class _IconContainer extends StatelessWidget {
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: BalsmColors.appAccent50,
-        borderRadius: BorderRadius.circular(BalsmRadius.sm),
+        color: AppColors.hueBlue50,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
       child: IconTheme(
         data: const IconThemeData(
           size: 19,
-          color: BalsmColors.appAccent600,
+          color: AppColors.hueBlue600,
         ),
         child: Center(child: child),
       ),

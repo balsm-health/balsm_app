@@ -1,6 +1,6 @@
 import 'package:app/balsm_app/responsive.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Coverage for `responsive.dart` — the shared adaptive layer every screen in
 /// the app builds on (ContentColumn width caps, AdaptiveRow/Split/Grid
@@ -12,9 +12,11 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
       tester.view.physicalSize = surface;
       tester.view.devicePixelRatio = 1.0;
-      await tester.pumpWidget(const MaterialApp(
-        home: ContentColumn(maxWidth: 720, child: SizedBox(key: Key('c'), width: double.infinity, height: 40)),
-      ));
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: ContentColumn(maxWidth: 720, child: SizedBox(key: Key('c'), width: double.infinity, height: 40)),
+        ),
+      );
       return tester.getSize(find.byKey(const Key('c'))).width;
     }
 
@@ -35,7 +37,6 @@ void main() {
             body: SizedBox(
               width: width,
               child: const AdaptiveRow(
-                breakpoint: Bp.sm,
                 children: [
                   SizedBox(key: Key('a'), height: 10),
                   SizedBox(key: Key('b'), height: 10),
@@ -69,7 +70,6 @@ void main() {
             body: SizedBox(
               width: width,
               child: const AdaptiveSplit(
-                breakpoint: Bp.md,
                 primary: SizedBox(key: Key('primary'), height: 20),
                 aside: SizedBox(key: Key('aside'), height: 20),
               ),
@@ -97,17 +97,19 @@ void main() {
 
   group('AdaptiveGrid', () {
     Future<int> columnCountAt(WidgetTester tester, double width) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: width,
-            child: AdaptiveGrid(
-              colMin: 150,
-              children: List.generate(6, (i) => SizedBox(key: Key('t$i'), height: 40)),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: width,
+              child: AdaptiveGrid(
+                colMin: 150,
+                children: List.generate(6, (i) => SizedBox(key: Key('t$i'), height: 40)),
+              ),
             ),
           ),
         ),
-      ));
+      );
       final firstTop = tester.getTopLeft(find.byKey(const Key('t0'))).dy;
       var cols = 0;
       for (var i = 0; i < 6; i++) {

@@ -4,9 +4,9 @@ import 'flavor.dart';
 import 'server_preset.dart';
 
 class ActiveServerStore {
+  const ActiveServerStore(this._storage);
   final FlutterSecureStorage _storage;
   static const _key = 'balsm.active_server_preset';
-  const ActiveServerStore(this._storage);
 
   Future<ServerPreset?> read() async {
     final json = await _storage.read(key: _key);
@@ -18,7 +18,7 @@ class ActiveServerStore {
       // (BalsmApiController resolves it at runtime) — baking an address in
       // here would persist one that is only true on today's network.
       return ServerPreset(label: m['label'] as String, apiBaseUrl: m['apiBaseUrl'] as String);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

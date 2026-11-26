@@ -1,0 +1,1 @@
+Choosing a blood type looks and works the same on every screen (your profile, a family member and a newborn): the eight standard types plus "Not sure". A blood type you already saved, including a rare one, is still shown. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

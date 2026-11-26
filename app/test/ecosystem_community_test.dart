@@ -1,7 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
-import 'package:app/balsm_app/tokens.dart';
-import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/ecosystem_sheet.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,18 +23,23 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Scaffold(
-            body: Builder(builder: (context) {
-              return TextButton(onPressed: () => showEcosystemSheet(context), child: const Text('open'));
-            }),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return TextButton(onPressed: () => showEcosystemSheet(context), child: const Text('open'));
+                },
+              ),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     return state;
@@ -79,7 +83,7 @@ void main() {
     final s = AppScope.of(tester.element(find.byType(SvgPicture).first));
     final tinted = tester
         .widgetList<Container>(find.byType(Container))
-        .where((c) => (c.decoration as BoxDecoration?)?.color == T.ink50);
+        .where((c) => (c.decoration as BoxDecoration?)?.color == AppColors.ink50);
     // Two ecosystem parts + seven social tiles.
     expect(tinted.length, greaterThanOrEqualTo(9));
     expect(s.strings.ecosystem.eco_follow_t, isNotEmpty);

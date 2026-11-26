@@ -111,7 +111,7 @@ class ImportCareContactsUseCase {
       _bus.publish(HealthProfileUpdated(userId: userId, fieldChanged: 'care_providers_imported'));
 
       return AppResult.success(created);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

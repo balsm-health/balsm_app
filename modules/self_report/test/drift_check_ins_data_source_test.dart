@@ -21,8 +21,8 @@ void main() {
         mood: Mood.good,
         painLevel: const PainLevel(6),
         painSites: {
-          PainSite(Muscle.chest),
-          PainSite(Muscle.bk_lower),
+          const PainSite(Muscle.chest),
+          const PainSite(Muscle.bk_lower),
         },
         symptoms: {SymptomId.headache, SymptomId.nausea},
         vitals: const Vitals(systolic: 120, diastolic: 80, glucoseFasting: 95),
@@ -38,8 +38,8 @@ void main() {
     expect(got!.mood, Mood.good);
     expect(got.painLevel.value, 6);
     expect(got.painSites, {
-      PainSite(Muscle.chest),
-      PainSite(Muscle.bk_lower),
+      const PainSite(Muscle.chest),
+      const PainSite(Muscle.bk_lower),
     });
     expect(got.symptoms.map((s) => s.id).toSet(), {'headache', 'nausea'});
     expect(got.vitals.systolic, 120);
@@ -51,7 +51,7 @@ void main() {
 
   test('a quick-log entry with no mood round-trips as null, not a fabricated score', () async {
     final bpOnly = CheckIn(
-      id: CheckInId.value('chk-bp'),
+      id: const CheckInId.value('chk-bp'),
       healthProfileId: profile,
       recordedAt: DateTime.utc(2026, 7, 24, 18),
       painLevel: PainLevel.none,
@@ -69,7 +69,7 @@ void main() {
 
   test('a pulse-only quick-log entry round-trips its heart rate', () async {
     final pulse = CheckIn(
-      id: CheckInId.value('chk-pulse'),
+      id: const CheckInId.value('chk-pulse'),
       healthProfileId: profile,
       recordedAt: DateTime.utc(2026, 7, 24, 19),
       painLevel: PainLevel.none,
@@ -92,7 +92,7 @@ void main() {
 
   test('findAll returns newest-first and is profile-scoped', () async {
     final older = CheckIn(
-      id: CheckInId.value('chk-old'),
+      id: const CheckInId.value('chk-old'),
       healthProfileId: profile,
       recordedAt: DateTime.utc(2026, 7, 20),
       mood: Mood.ok,
@@ -102,7 +102,7 @@ void main() {
       vitals: Vitals.empty,
     );
     await ds.put(older.id, older);
-    await ds.put(CheckInId.value('chk-new'), sample('chk-new')); // 2026-07-24
+    await ds.put(const CheckInId.value('chk-new'), sample('chk-new')); // 2026-07-24
 
     final all = await ds.findAll();
     expect(all.map((c) => c.id.value), ['chk-new', 'chk-old']); // newest first
@@ -125,7 +125,7 @@ void main() {
   test('mutations with no active profile throw NoActiveProfileException', () async {
     final signedOut = DriftCheckInsDataSource(db, () => null);
     expect(
-      () => signedOut.put(CheckInId.value('x'), sample('x')),
+      () => signedOut.put(const CheckInId.value('x'), sample('x')),
       throwsA(isA<NoActiveProfileException>()),
     );
     expect(await signedOut.findAll(), isEmpty);
@@ -133,13 +133,13 @@ void main() {
 
   test('same region on two tissues round-trips as two sites', () async {
     final c = CheckIn(
-      id: CheckInId.value('chk-layers'),
+      id: const CheckInId.value('chk-layers'),
       healthProfileId: profile,
       recordedAt: DateTime.utc(2026, 8, 24, 9),
       painLevel: const PainLevel(4),
       painSites: {
-        PainSite(Muscle.l_knee),
-        PainSite(Joint.l_knee),
+        const PainSite(Muscle.l_knee),
+        const PainSite(Joint.l_knee),
       },
       symptoms: const {},
       vitals: Vitals.empty,
@@ -154,7 +154,7 @@ void main() {
           id: CheckInId.value(id),
           healthProfileId: profile,
           recordedAt: DateTime.utc(2026, 7, 24, 9),
-          painLevel: const PainLevel(0),
+          painLevel: PainLevel.none,
           painSites: const {},
           symptoms: details.keys.toSet(),
           symptomDetails: details,

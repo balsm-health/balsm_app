@@ -26,7 +26,7 @@ void main() {
     expect(buffer.entries.single.message, isNot(contains('Metformin')));
   });
 
-  test('an exception\'s own text is not buffered — only its type', () {
+  test("an exception's own text is not buffered — only its type", () {
     DevLogAnalyticsLogger(buffer: buffer).logError(Exception('patient Layla Hassan, DOB 1990-01-01'));
     final line = buffer.entries.single.message;
     expect(line, isNot(contains('Layla')));

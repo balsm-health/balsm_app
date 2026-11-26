@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/profile_qr_payload.dart';
 
-/// Decrypted result of a public QR resolve. [payload] is null for a legacy
+/// Decrypted result of a public QR resolve. `payload` is null for a legacy
 /// (pre-v2.0) ciphertext — the UI shows a "re-open your app to refresh this
 /// code" hint instead of data; the owner's device self-migrates via refresh.
 typedef ResolvedProfileQr = ({ProfileQrPayload? payload, String type});
@@ -79,7 +79,7 @@ class ResolveEmergencyQrTokenUseCase {
       // payload-less result, never as data.
       final profile = ProfileQrPayload.tryParseString(utf8.decode(plaintext));
       return AppResult.success((payload: profile, type: resolved.type));
-    } catch (_) {
+    } on Object catch (_) {
       // Decryption / auth-tag failure — never surface PHI or raw error detail.
       return AppResult.failure(
         const ValidationFailure('Could not decrypt profile QR'),
@@ -96,7 +96,7 @@ class ResolveEmergencyQrTokenUseCase {
         '=',
       );
       return base64Url.decode(padded);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

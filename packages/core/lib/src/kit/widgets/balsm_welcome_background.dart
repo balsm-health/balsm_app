@@ -1,13 +1,13 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 /// Welcome background porting prototype `.wbg` / `.wgrad`.
 /// Full-bleed watercolor wash with a vertical fade to the cream surface.
 /// Asset: `packages/core/assets/brand/balsm-background.png`
 class BalsmWelcomeBackground extends StatelessWidget {
   const BalsmWelcomeBackground({
-    super.key,
     required this.child,
+    super.key,
   });
 
   final Widget child;
@@ -18,7 +18,7 @@ class BalsmWelcomeBackground extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // Cream surface
-        Container(color: BalsmColors.cream50),
+        Container(color: AppColors.cream50),
         // `.wbg` — full-bleed cover, then `.wgrad` fades it to cream.
         // Image's own `opacity`, not an Opacity wrapper: wrapping a
         // full-bleed image forces a saveLayer offscreen composite every frame,
@@ -35,9 +35,9 @@ class BalsmWelcomeBackground extends StatelessWidget {
           ),
         ),
         // Gradient fade to cream
-        Positioned.fill(
+        const Positioned.fill(
           child: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -46,10 +46,10 @@ class BalsmWelcomeBackground extends StatelessWidget {
                 // 88% rather than 100%.
                 stops: [0.0, 0.30, 0.62, 0.88],
                 colors: [
-                  Color(0x14FAFAF7), // cream-50 at 8%
-                  Color(0x57FAFAF7), // cream-50 at 34%
-                  Color(0xF0FAFAF7), // cream-50 at 94%
-                  BalsmColors.cream50,
+                  AppColors.creamMist, // cream-50 at 8%
+                  AppColors.creamVeil, // cream-50 at 34%
+                  AppColors.creamFrost, // cream-50 at 94%
+                  AppColors.cream50,
                 ],
               ),
             ),

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+import 'package:core/core.dart' show GoogleSignInGate;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../application/ports/social_credentials_port.dart';
@@ -24,14 +24,10 @@ class GoogleCredentialsAdapter implements SocialCredentialsPort {
   @override
   Future<SocialCredentialsResult> obtain() async {
     try {
-      final signIn = GoogleSignIn(
-        serverClientId: serverClientId,
-        clientId: defaultTargetPlatform == TargetPlatform.iOS && iosClientId.isNotEmpty ? iosClientId : null,
-      );
-      final account = await signIn.signIn();
-      if (account == null) return const SocialCredentialsCancelled();
+      await GoogleSignInGate.ensureInitialized(serverClientId: serverClientId, clientId: iosClientId);
+      final account = await GoogleSignIn.instance.authenticate();
 
-      final idToken = (await account.authentication).idToken;
+      final idToken = account.authentication.idToken;
       if (idToken == null) return const SocialCredentialsFailure(missingToken: true);
 
       final (given, family) = _splitDisplayName(account.displayName);
@@ -41,7 +37,11 @@ class GoogleCredentialsAdapter implements SocialCredentialsPort {
         givenName: given,
         familyName: family,
       );
-    } catch (_) {
+    } on GoogleSignInException catch (e) {
+      return e.code == GoogleSignInExceptionCode.canceled
+          ? const SocialCredentialsCancelled()
+          : const SocialCredentialsFailure();
+    } on Object catch (_) {
       return const SocialCredentialsFailure();
     }
   }

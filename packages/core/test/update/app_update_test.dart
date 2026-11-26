@@ -70,7 +70,7 @@ void main() {
       }''';
 
       test('the named platform is forced, the others are only offered it', () {
-        expect(eval('1.9.0', platform: 'ios', m: m).status, UpdateStatus.required);
+        expect(eval('1.9.0', m: m).status, UpdateStatus.required);
         expect(eval('1.9.0', platform: 'macos', m: m).status, UpdateStatus.available);
         expect(eval('1.9.0', platform: 'macos', m: m).latest, '2.0.0');
       });
@@ -80,7 +80,7 @@ void main() {
         expect(eval('1.9.0', platform: 'android', m: m).status, UpdateStatus.required);
         expect(eval('2.0.0', platform: 'android', m: m).status, UpdateStatus.required);
         // iOS already past its forced release: 2.1.0 is optional there.
-        expect(eval('2.0.0', platform: 'ios', m: m).status, UpdateStatus.available);
+        expect(eval('2.0.0', m: m).status, UpdateStatus.available);
       });
 
       test('a platform is never forced to a release it does not have', () {
@@ -124,7 +124,7 @@ void main() {
         expect(eval('1.9.0', m: typo).status, UpdateStatus.available);
       });
 
-      test('a minimum met only by another platform\'s release is ignored', () {
+      test("a minimum met only by another platform's release is ignored", () {
         const m = '{"min": {"ios": "2.0.0"}, "versions": {"2.0.0": {"platforms": ["android"]}}}';
         expect(eval('1.9.0', m: m).status, UpdateStatus.none);
       });
@@ -136,15 +136,15 @@ void main() {
             'versions': {
               '1.0.0': {
                 'notes': {
-                  'en': ['one']
-                }
+                  'en': ['one'],
+                },
               },
               '1.1.0': {
                 'force': force,
                 'withdrawn': withdrawn,
                 'notes': {
-                  'en': ['pulled']
-                }
+                  'en': ['pulled'],
+                },
               },
             },
           });
@@ -172,8 +172,8 @@ void main() {
             '1.1.1': {
               'force': true,
               'notes': {
-                'en': ['fix']
-              }
+                'en': ['fix'],
+              },
             },
           },
         });
@@ -322,12 +322,12 @@ void main() {
       expect(cairo.date, utc.date);
     });
 
-    test('a time with no zone is read as UTC, not as the phone\'s local time', () {
+    test("a time with no zone is read as UTC, not as the phone's local time", () {
       expect(parseReleaseDate('2026-10-09T14:30:00')!.date, DateTime.utc(2026, 10, 9, 14, 30));
       expect(parseReleaseDate('2026-10-09 14:30')!.date, DateTime.utc(2026, 10, 9, 14, 30));
     });
 
-    test('a time is shown in the reader\'s own zone', () {
+    test("a time is shown in the reader's own zone", () {
       final at = DateTime.utc(2026, 10, 9, 14, 30);
       final local = at.toLocal();
       String two(int n) => n.toString().padLeft(2, '0');
@@ -344,26 +344,28 @@ void main() {
       expect(formatReleaseDate(const ReleaseNote(version: '1.0.0')), '');
     });
 
-    test('the manifest\'s date reaches the note, with or without a time', () {
+    test("the manifest's date reaches the note, with or without a time", () {
       const m = '{"versions": {"2.0.0": {"date": "2026-10-09T14:30:00Z", "notes": {"en": ["a"]}}, '
           '"1.5.0": {"date": "2026-09-01", "notes": {"en": ["b"]}}}}';
       final notes = eval('1.0.0', m: m).notes;
       expect(notes.first.hasTime, isTrue);
       expect(notes.first.date, DateTime.utc(2026, 10, 9, 14, 30));
       expect(notes.last.hasTime, isFalse);
-      expect(notes.last.date, DateTime(2026, 9, 1));
+      expect(notes.last.date, DateTime(2026, 9));
     });
   });
 
   group('full release notes link', () {
     test('is narrowed to this build: brand, platform, language, installed version', () {
-      final uri = Uri.parse(evaluateUpdate(
-        installed: '1.2.0+9',
-        manifest: manifest,
-        platform: 'ios',
-        lang: 'ar',
-        brand: AppBrand.balsm_pro,
-      ).notesUrl!);
+      final uri = Uri.parse(
+        evaluateUpdate(
+          installed: '1.2.0+9',
+          manifest: manifest,
+          platform: 'ios',
+          lang: 'ar',
+          brand: AppBrand.balsm_pro,
+        ).notesUrl!,
+      );
       expect('${uri.scheme}://${uri.host}${uri.path}', 'https://pro.balsm.health/whats-new');
       expect(uri.queryParameters, {'brand': 'balsm_pro', 'from': '1.2.0', 'platform': 'ios', 'lang': 'ar'});
     });

@@ -5,8 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// scrubber would otherwise redact them, and a new key is a privacy review.
 void main() {
   test('every product-event property key is allowlisted', () {
-    expect(kTelemetryAllowlist.containsAll(kProductEventPropKeys), isTrue,
-        reason: 'not allowlisted: ${kProductEventPropKeys.difference(kTelemetryAllowlist)}');
+    expect(
+      kTelemetryAllowlist.containsAll(kProductEventPropKeys),
+      isTrue,
+      reason: 'not allowlisted: ${kProductEventPropKeys.difference(kTelemetryAllowlist)}',
+    );
   });
 
   test('none of them is a metric, symptom or free-text key', () {

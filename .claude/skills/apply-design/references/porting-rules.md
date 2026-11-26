@@ -10,18 +10,16 @@ a value; find the token.
 
 | Prototype | Dart |
 |---|---|
-| `--hue-*`, `--ink-*`, `--cream-*`, `--sun-*` | `T.*` in `app/lib/balsm_app/tokens.dart` |
-| the same, for shared kernel widgets | `BalsmColors.*` in `packages/core/lib/src/kit/_tokens.dart` |
-| `--r-*` radii | `T.rXs … T.rPill` |
-| `--shadow-*` | `T.shadowXs/Sm/Md`, `T.accentShadow` |
-| `--dur-*`, `--ease-*` | `Motion.fast/base/slow`, `Motion.easeOut/In/InOut` |
-| `--pt-*` type scale | `FS.*` in `kit.dart` |
+| `--hue-*`, `--ink-*`, `--cream-*`, `--sun-*` | `AppColors.*` in `packages/core/lib/src/kit/app_colors.dart` (one palette for the app and the kernel) |
+| `--r-*` radii | `AppRadii.xs … AppRadii.pill` in `packages/core/lib/src/kit/` |
+| `--shadow-*` | `AppShadows.xs/sm/md/lg` |
+| `--dur-*`, `--ease-*` | `Motion.fast/base/slow`, `Motion.easeOut/easeInOut` |
+| `--pt-*` type scale | `FontSizes.*` in `packages/core/lib/src/kit/` |
 | `--font-display/body/arabic/mono` | `Typo.display/title/heading/…` |
 | accent rebinding (`--balsm-primary`) | `Accent` + `AccentScope` |
 
-**A token that changed in the design must change in both token files.** They are
-deliberate duplicates — `tokens.dart` serves the prototype port, `_tokens.dart`
-serves the shared kernel — and they must not drift apart.
+**Every token type has one home**, in `packages/core/lib/src/kit/` (see CODING_STANDARDS §13). A token that
+changed in the design changes there, once; the app and the kernel both read it.
 
 If a delta introduces a value that has no token, add the token; do not inline it.
 
@@ -33,7 +31,7 @@ If a delta introduces a value that has no token, add the token; do not inline it
 | `rgba(r,g,b,a)` | `Color(0xAARRGGBB)` — alpha first, `a*255` rounded, keep the original `rgba()` in a trailing comment |
 | `box-shadow: x y blur spread c` | `BoxShadow(color:, offset: Offset(x,y), blurRadius: blur, spreadRadius: spread)` |
 | `cubic-bezier(a,b,c,d)` | `Cubic(a,b,c,d)` |
-| `border-radius: 999px` | `T.rPill` |
+| `border-radius: 999px` | `AppRadii.pill` |
 | `gap` / `margin` in flex | `Wrap`/`Column` spacing or `SizedBox`; do not fake it with `Padding` on children |
 | `padding-inline-*`, `margin-inline-*` | `EdgeInsetsDirectional` — **never** `EdgeInsets.only(left:)` |
 | `left`/`right` in a positioned rule | `PositionedDirectional` |

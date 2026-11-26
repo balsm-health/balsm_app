@@ -11,8 +11,11 @@ void main() {
     final snapshot = await SnapshotService(db).export();
     final tables = (snapshot['tables'] as Map).cast<String, dynamic>();
 
-    expect(tables.containsKey('cache_entry'), isFalse,
-        reason: 'cache_entry must stay out of SnapshotService._tables — '
-            'cache is not PHI and must not travel in a backup');
+    expect(
+      tables.containsKey('cache_entry'),
+      isFalse,
+      reason: 'cache_entry must stay out of SnapshotService._tables — '
+          'cache is not PHI and must not travel in a backup',
+    );
   });
 }

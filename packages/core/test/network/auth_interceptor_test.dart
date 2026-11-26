@@ -264,10 +264,16 @@ void main() {
       );
 
       expect(h.adapter.requests.single.path, path);
-      expect(h.adapter.requests.single.headers.containsKey('Authorization'), isFalse,
-          reason: 'a token-issuing endpoint never consumes a token');
-      expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse,
-          reason: '401 here is a credential failure, not an expired access token');
+      expect(
+        h.adapter.requests.single.headers.containsKey('Authorization'),
+        isFalse,
+        reason: 'a token-issuing endpoint never consumes a token',
+      );
+      expect(
+        h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh),
+        isFalse,
+        reason: '401 here is a credential failure, not an expired access token',
+      );
     });
   }
 

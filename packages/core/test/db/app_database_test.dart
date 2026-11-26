@@ -22,13 +22,13 @@ void main() {
     addTearDown(() => dir.delete(recursive: true));
 
     // Seed the legacy table with a raw sqlite3 connection, then close it.
-    final seed = sqlite3.open(file.path);
-    seed.execute(
-      'CREATE TABLE medications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, '
-      'name TEXT NOT NULL, schedule_type TEXT NOT NULL, '
-      'schedule_config TEXT NOT NULL, start_date TEXT NOT NULL)',
-    );
-    seed.dispose();
+    sqlite3.open(file.path)
+      ..execute(
+        'CREATE TABLE medications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, '
+        'name TEXT NOT NULL, schedule_type TEXT NOT NULL, '
+        'schedule_config TEXT NOT NULL, start_date TEXT NOT NULL)',
+      )
+      ..dispose();
 
     // Opening AppDatabase over the legacy file must not throw.
     final legacy = AppDatabase(NativeDatabase(file));
@@ -50,14 +50,14 @@ void main() {
     final file = File('${dir.path}/legacy.db');
     addTearDown(() => dir.delete(recursive: true));
 
-    final seed = sqlite3.open(file.path);
-    seed.execute(
-      'CREATE TABLE sync_outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, '
-      'entity TEXT NOT NULL, entity_id TEXT NOT NULL, op TEXT NOT NULL, '
-      'payload TEXT NOT NULL, created_at INTEGER NOT NULL, '
-      'attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT)',
-    );
-    seed.dispose();
+    sqlite3.open(file.path)
+      ..execute(
+        'CREATE TABLE sync_outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'entity TEXT NOT NULL, entity_id TEXT NOT NULL, op TEXT NOT NULL, '
+        'payload TEXT NOT NULL, created_at INTEGER NOT NULL, '
+        'attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT)',
+      )
+      ..dispose();
 
     final legacy = AppDatabase(NativeDatabase(file));
     addTearDown(legacy.close);
@@ -72,8 +72,11 @@ void main() {
   test('PHI schema creates the profile-anchor columns and indexes', () async {
     for (final table in ['medications', 'health_record']) {
       final cols = await db.customSelect('PRAGMA table_info($table)').get();
-      expect(cols.map((r) => r.read<String>('name')), contains('health_profile_id'),
-          reason: '$table must carry the dependants profile anchor');
+      expect(
+        cols.map((r) => r.read<String>('name')),
+        contains('health_profile_id'),
+        reason: '$table must carry the dependants profile anchor',
+      );
     }
     final idx = await db.customSelect("SELECT name FROM sqlite_master WHERE type = 'index'").get();
     final names = idx.map((r) => r.read<String>('name')).toList();
@@ -117,11 +120,11 @@ void main() {
         schedule_type, schedule_config, start_date)
       VALUES ('m1', 'u1', NULL, 'A', 'daily', '{}', 't')''');
 
-    final id = await db.ensureSelfHealthProfile(UserId.value('u1'));
+    final id = await db.ensureSelfHealthProfile(const UserId.value('u1'));
     expect(id.value, isNotEmpty);
 
     // Idempotent — same id on every later call, no duplicate rows.
-    final again = await db.ensureSelfHealthProfile(UserId.value('u1'));
+    final again = await db.ensureSelfHealthProfile(const UserId.value('u1'));
     expect(again.value, id.value);
     final rows = await db.customSelect("SELECT id FROM health_profile WHERE user_id = 'u1'").get();
     expect(rows.length, 1);
@@ -139,18 +142,17 @@ void main() {
   });
 
   test('backfill statement anchors NULL rows and never overwrites', () async {
-    await db.customStatement("INSERT INTO health_profile (id, user_id, updated_at) VALUES ('hp1','u1','t')");
+    await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, updated_at) VALUES ('hp1','u1',1,'t')");
+    // A dependent of the same account must never be picked as the anchor.
+    await db.customStatement(
+      "INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) VALUES ('hp0','u1',0,'dependent','t')",
+    );
     await db.customStatement('''
       INSERT INTO medications (id, user_id, health_profile_id, name,
         schedule_type, schedule_config, start_date)
       VALUES ('m1', 'u1', NULL, 'A', 'daily', '{}', 't'),
              ('m2', 'u1', 'hp-existing', 'B', 'daily', '{}', 't')''');
-    // Byte-identical to the convergent backfill in AppDatabase.beforeOpen.
-    await db.customStatement('''
-      UPDATE medications SET health_profile_id =
-        (SELECT hp.id FROM health_profile hp
-          WHERE hp.user_id = medications.user_id)
-      WHERE health_profile_id IS NULL''');
+    await db.runProfileAnchorBackfill();
     final rows = await db.customSelect('SELECT id, health_profile_id FROM medications ORDER BY id').get();
     expect(rows[0].read<String>('health_profile_id'), 'hp1');
     expect(rows[1].read<String>('health_profile_id'), 'hp-existing');
@@ -161,20 +163,20 @@ void main() {
     final file = File('${dir.path}/legacy.db');
     addTearDown(() => dir.delete(recursive: true));
 
-    final seed = sqlite3.open(file.path);
-    seed.execute(
-      'CREATE TABLE check_in (id TEXT PRIMARY KEY, health_profile_id TEXT NOT NULL, '
-      "recorded_at TEXT NOT NULL, mood INTEGER NOT NULL, pain_level INTEGER NOT NULL)",
-    );
-    seed.execute(
-      'CREATE TABLE check_in_pain_region ('
-      'check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE, '
-      'region_id TEXT NOT NULL, PRIMARY KEY (check_in_id, region_id))',
-    );
-    seed.execute("INSERT INTO check_in (id, health_profile_id, recorded_at, mood, pain_level) "
-        "VALUES ('c1', 'hp1', '2026-01-01', 0, 4)");
-    seed.execute("INSERT INTO check_in_pain_region (check_in_id, region_id) VALUES ('c1', 'chest')");
-    seed.dispose();
+    sqlite3.open(file.path)
+      ..execute(
+        'CREATE TABLE check_in (id TEXT PRIMARY KEY, health_profile_id TEXT NOT NULL, '
+        'recorded_at TEXT NOT NULL, mood INTEGER NOT NULL, pain_level INTEGER NOT NULL)',
+      )
+      ..execute(
+        'CREATE TABLE check_in_pain_region ( '
+        'check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE, '
+        'region_id TEXT NOT NULL, PRIMARY KEY (check_in_id, region_id))',
+      )
+      ..execute('INSERT INTO check_in (id, health_profile_id, recorded_at, mood, pain_level) '
+          "VALUES ('c1', 'hp1', '2026-01-01', 0, 4)")
+      ..execute("INSERT INTO check_in_pain_region (check_in_id, region_id) VALUES ('c1', 'chest')")
+      ..dispose();
 
     final legacy = AppDatabase(NativeDatabase(file));
     addTearDown(legacy.close);

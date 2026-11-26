@@ -72,7 +72,7 @@ class CachedValue<T> {
   T? _tryDecode(String payload) {
     try {
       return _decode(jsonDecode(payload) as Map<String, dynamic>);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

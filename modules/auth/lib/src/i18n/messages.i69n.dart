@@ -13,6 +13,19 @@ class Messages implements i69n.I69nMessageBundle {
   OtpMessages get otp => OtpMessages(this);
   SocialMessages get social => SocialMessages(this);
   LockoutMessages get lockout => LockoutMessages(this);
+  String errorLockedFor(int seconds) => "Account temporarily locked. Try again in $seconds seconds.";
+  String get errorInvalidRequest => "The request was invalid. Please check your input.";
+  String get errorUnauthorized => "Authentication required. Please sign in again.";
+  String get errorForbidden => "Access denied.";
+  String get errorNotFound => "The requested resource was not found.";
+  String get errorConflict => "A conflict occurred. This account may already exist.";
+  String get errorValidation => "Validation failed. Please check your input.";
+  String get errorLocked => "Account temporarily locked. Please try again later.";
+  String get errorRateLimited => "Too many requests. Please wait before trying again.";
+  String get errorServer => "A server error occurred. Please try again later.";
+  String get errorOtpExpired => "The verification code has expired. Please request a new one.";
+  String get errorOtpInvalid => "Incorrect verification code.";
+  String get errorUnexpected => "An unexpected error occurred. Please try again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -29,6 +42,32 @@ class Messages implements i69n.I69nMessageBundle {
         return social;
       case 'lockout':
         return lockout;
+      case 'errorLockedFor':
+        return errorLockedFor;
+      case 'errorInvalidRequest':
+        return errorInvalidRequest;
+      case 'errorUnauthorized':
+        return errorUnauthorized;
+      case 'errorForbidden':
+        return errorForbidden;
+      case 'errorNotFound':
+        return errorNotFound;
+      case 'errorConflict':
+        return errorConflict;
+      case 'errorValidation':
+        return errorValidation;
+      case 'errorLocked':
+        return errorLocked;
+      case 'errorRateLimited':
+        return errorRateLimited;
+      case 'errorServer':
+        return errorServer;
+      case 'errorOtpExpired':
+        return errorOtpExpired;
+      case 'errorOtpInvalid':
+        return errorOtpInvalid;
+      case 'errorUnexpected':
+        return errorUnexpected;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

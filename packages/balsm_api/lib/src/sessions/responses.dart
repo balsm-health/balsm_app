@@ -11,18 +11,6 @@ class SessionResponse {
     this.approxLocation,
   });
 
-  final String id;
-  final String deviceId;
-  final String deviceLabel;
-  final String deviceType;
-  final DateTime firstSeenAt;
-  final DateTime lastActivityAt;
-  final DateTime? revokedAt;
-  final bool isCurrent;
-
-  /// G11: coarse (city/region) location string, or null when the API omits it.
-  final String? approxLocation;
-
   factory SessionResponse.fromJson(Map<String, dynamic> json) => SessionResponse(
         id: json['id'] as String,
         deviceId: json['device_id'] as String,
@@ -34,14 +22,26 @@ class SessionResponse {
         isCurrent: json['is_current'] as bool? ?? false,
         approxLocation: json['approx_location'] as String?,
       );
+
+  final String id;
+  final String deviceId;
+  final String deviceLabel;
+  final String deviceType;
+  final DateTime firstSeenAt;
+  final DateTime lastActivityAt;
+  final DateTime? revokedAt;
+  final bool isCurrent;
+
+  /// G11: coarse (city/region) location string, or null when the API omits it.
+  final String? approxLocation;
 }
 
 class RevokeAllSessionsResponse {
   const RevokeAllSessionsResponse({required this.revokedCount});
 
-  final int revokedCount;
-
   factory RevokeAllSessionsResponse.fromJson(Map<String, dynamic> json) => RevokeAllSessionsResponse(
         revokedCount: (json['revoked_count'] as num?)?.toInt() ?? 0,
       );
+
+  final int revokedCount;
 }

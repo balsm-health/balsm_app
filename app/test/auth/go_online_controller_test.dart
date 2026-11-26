@@ -135,7 +135,7 @@ void main() {
     expect(storage.data.containsKey('balsm.offline.disclosure_pending'), isFalse);
   });
 
-  test('details saved while device-only become the new account\'s, then are forgotten', () async {
+  test("details saved while device-only become the new account's, then are forgotten", () async {
     storage.data[AccountProfileUseCase.kLocalProfileKey] = '{"first_name":"Test","gender":"female"}';
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
     when(() => signIn.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1'))
@@ -152,9 +152,13 @@ void main() {
 
   test('new id: re-keys local rows before publishing sign-in', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
     when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
 
     // Record the order: the files must move before anyone hears of the new id.
@@ -176,10 +180,13 @@ void main() {
   test('retry after a failed re-key uses the pinned offline id, not the server id', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
     // goOnline persists the session, overwriting balsm.user_id — as the real one does.
-    when(() => signIn.goOnline(
+    when(
+      () => signIn.goOnline(
         email: any(named: 'email'),
         code: any(named: 'code'),
-        clientAccountId: any(named: 'clientAccountId'))).thenAnswer((_) async {
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async {
       storage.data['balsm.user_id'] = 'srv-9';
       return AppResult.success(const GoOnlineNewId('srv-9'));
     });
@@ -205,9 +212,13 @@ void main() {
 
   test('a failed file move is a failure and leaves the pin on the offline id', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
     when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to')))
         .thenThrow(StateError('target owner already has files'));
 
@@ -218,13 +229,43 @@ void main() {
     expect(storage.data['balsm.offline.local_id'], 'off-1');
     verifyNever(() => offline.markOnline());
     expect(events.whereType<UserSignedIn>(), isEmpty);
+    // The rows moved before the files failed; they are moved back, so the
+    // offline account still sees its data until the retry.
+    expect(await owners(db), ['off-1']);
+  });
+
+  test('retry after a failed file move moves rows and files to the server id', () async {
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    when(() => signIn.goOnline(
+            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId'),),)
+        .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
+    when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
+    var fail = true;
+    when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {
+      if (fail) throw StateError('target owner already has files');
+    });
+
+    expect((await controller.verify(email: 'a@b.co', code: '123456')).isFailure, isTrue);
+    expect(await owners(db), ['off-1']);
+
+    fail = false;
+    final second = await controller.verify(email: 'a@b.co', code: '654321');
+    await flush();
+
+    expect(second.value, GoOnlineOutcome.online);
+    expect(await owners(db), ['srv-9']);
+    verify(() => files.rekeyOwnerFiles(from: 'off-1', to: 'srv-9')).called(2);
   });
 
   test('SetPassword failure keeps plaintext for retry; user is still online', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
     when(() => signIn.setPassword(password: any(named: 'password')))
         .thenAnswer((_) async => AppResult.failure(const NetworkFailure()));
 
@@ -236,24 +277,35 @@ void main() {
 
   test('a throw while handing over the password still leaves the disclosure re-send flagged', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
     // A keychain error reading the plaintext back.
     when(() => offline.pendingCredentials()).thenThrow(Exception('keychain'));
 
     await expectLater(controller.verify(email: 'a@b.co', code: '123456'), throwsException);
 
     verify(() => offline.markOnline()).called(1);
-    expect(storage.data['balsm.offline.disclosure_pending'], 'true',
-        reason: 'the launch-time retry must still re-send the disclosure acceptance');
+    expect(
+      storage.data['balsm.offline.disclosure_pending'],
+      'true',
+      reason: 'the launch-time retry must still re-send the disclosure acceptance',
+    );
   });
 
   test('existing account: sets pending merge, no re-key, no sign-in event', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(const GoOnlineExistingAccount('srv-1')));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineExistingAccount('srv-1')));
 
     final r = await controller.verify(email: 'a@b.co', code: '123456');
     await flush();
@@ -271,9 +323,13 @@ void main() {
 
   test('a failed disclosure resync is flagged, and retried at launch', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
     when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
     when(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version')))
         .thenAnswer((_) async => false);
@@ -301,9 +357,13 @@ void main() {
 
   test('verify failure surfaces the failure and changes nothing', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.failure(const NetworkFailure('bad code')));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.failure(const NetworkFailure('bad code')));
 
     final r = await controller.verify(email: 'a@b.co', code: '000000');
     await flush();
@@ -316,9 +376,13 @@ void main() {
   test('lockout is a failure and records when it ends', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
     final until = DateTime.now().toUtc().add(const Duration(minutes: 5));
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
-        .thenAnswer((_) async => AppResult.success(GoOnlineLockout(LockedOut(until: until, identifier: 'x'))));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(GoOnlineLockout(LockedOut(until: until, identifier: 'x'))));
 
     final r = await controller.verify(email: 'a@b.co', code: '000000');
 
@@ -510,8 +574,12 @@ void main() {
       await seedPendingMerge(localId: 'off-1', target: 'srv-1');
       final leftAtFlagClear = <String>[];
       when(() => offline.setPendingMerge(false)).thenAnswer((_) async {
-        leftAtFlagClear.addAll(storage.data.keys.where((k) =>
-            k == 'balsm.pending_merge_target' || k == 'balsm.offline.local_id' || k == 'balsm.pending_merge_choice'));
+        leftAtFlagClear.addAll(
+          storage.data.keys.where(
+            (k) =>
+                k == 'balsm.pending_merge_target' || k == 'balsm.offline.local_id' || k == 'balsm.pending_merge_choice',
+          ),
+        );
       });
       await controller.merge();
       expect(leftAtFlagClear, isEmpty);

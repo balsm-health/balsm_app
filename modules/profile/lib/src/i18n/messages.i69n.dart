@@ -14,6 +14,26 @@ class Messages implements i69n.I69nMessageBundle {
   SeverityMessages get severity => SeverityMessages(this);
   String get conditions => "Conditions";
   String get contacts => "Emergency contacts";
+  String get loadError => "Could not load profile";
+  String get noAllergies => "No allergies added";
+  String get controlled => "Controlled";
+  String get remove => "Remove";
+  String get chronicConditions => "Chronic Conditions";
+  String get noConditions => "No conditions added";
+  String get noContacts => "No emergency contacts added";
+  String get primary => "Primary";
+  String get addShort => "Add";
+  String get selectBloodType => "Select blood type";
+  String get unknown => "Unknown";
+  String get allergen => "Allergen";
+  String get severityLabel => "Severity";
+  String get controlledSubstance => "Controlled substance";
+  String get addCondition => "Add Condition";
+  String get condition => "Condition";
+  String get addContact => "Add Emergency Contact";
+  String get name => "Name";
+  String get phone => "Phone";
+  String get relationOptional => "Relation (optional)";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -32,6 +52,46 @@ class Messages implements i69n.I69nMessageBundle {
         return conditions;
       case 'contacts':
         return contacts;
+      case 'loadError':
+        return loadError;
+      case 'noAllergies':
+        return noAllergies;
+      case 'controlled':
+        return controlled;
+      case 'remove':
+        return remove;
+      case 'chronicConditions':
+        return chronicConditions;
+      case 'noConditions':
+        return noConditions;
+      case 'noContacts':
+        return noContacts;
+      case 'primary':
+        return primary;
+      case 'addShort':
+        return addShort;
+      case 'selectBloodType':
+        return selectBloodType;
+      case 'unknown':
+        return unknown;
+      case 'allergen':
+        return allergen;
+      case 'severityLabel':
+        return severityLabel;
+      case 'controlledSubstance':
+        return controlledSubstance;
+      case 'addCondition':
+        return addCondition;
+      case 'condition':
+        return condition;
+      case 'addContact':
+        return addContact;
+      case 'name':
+        return name;
+      case 'phone':
+        return phone;
+      case 'relationOptional':
+        return relationOptional;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

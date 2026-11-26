@@ -14,6 +14,19 @@ class Messages_ar extends Messages {
   OtpMessages_ar get otp => OtpMessages_ar(this);
   SocialMessages_ar get social => SocialMessages_ar(this);
   LockoutMessages_ar get lockout => LockoutMessages_ar(this);
+  String errorLockedFor(int seconds) => "الحساب مقفل مؤقتًا. حاول مجددًا بعد $seconds ثانية.";
+  String get errorInvalidRequest => "الطلب غير صالح. يرجى التحقق من البيانات المدخلة.";
+  String get errorUnauthorized => "يلزم تسجيل الدخول. يرجى تسجيل الدخول مجددًا.";
+  String get errorForbidden => "تم رفض الوصول.";
+  String get errorNotFound => "لم يتم العثور على المطلوب.";
+  String get errorConflict => "حدث تعارض. ربما يكون هذا الحساب موجودًا بالفعل.";
+  String get errorValidation => "فشل التحقق. يرجى مراجعة البيانات المدخلة.";
+  String get errorLocked => "الحساب مقفل مؤقتًا. يرجى المحاولة لاحقًا.";
+  String get errorRateLimited => "طلبات كثيرة جدًا. يرجى الانتظار قبل المحاولة مجددًا.";
+  String get errorServer => "حدث خطأ في الخادم. يرجى المحاولة لاحقًا.";
+  String get errorOtpExpired => "انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد.";
+  String get errorOtpInvalid => "رمز التحقق غير صحيح.";
+  String get errorUnexpected => "حدث خطأ غير متوقع. يرجى المحاولة مجددًا.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -30,6 +43,32 @@ class Messages_ar extends Messages {
         return social;
       case 'lockout':
         return lockout;
+      case 'errorLockedFor':
+        return errorLockedFor;
+      case 'errorInvalidRequest':
+        return errorInvalidRequest;
+      case 'errorUnauthorized':
+        return errorUnauthorized;
+      case 'errorForbidden':
+        return errorForbidden;
+      case 'errorNotFound':
+        return errorNotFound;
+      case 'errorConflict':
+        return errorConflict;
+      case 'errorValidation':
+        return errorValidation;
+      case 'errorLocked':
+        return errorLocked;
+      case 'errorRateLimited':
+        return errorRateLimited;
+      case 'errorServer':
+        return errorServer;
+      case 'errorOtpExpired':
+        return errorOtpExpired;
+      case 'errorOtpInvalid':
+        return errorOtpInvalid;
+      case 'errorUnexpected':
+        return errorUnexpected;
       default:
         return super[key];
     }

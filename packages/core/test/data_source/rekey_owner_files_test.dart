@@ -33,7 +33,7 @@ void main() {
   });
 
   tearDown(() async {
-    if (await root.exists()) await root.delete(recursive: true);
+    if (root.existsSync()) await root.delete(recursive: true);
   });
 
   test('moves the partition and the file key to the new owner; files stay readable', () async {
@@ -43,8 +43,8 @@ void main() {
 
     await store.rekeyOwnerFiles(from: 'off-1', to: 'srv-9');
 
-    expect(await Directory('${root.path}/off-1').exists(), isFalse);
-    expect(await File('${root.path}/srv-9/r1.pdf.enc').exists(), isTrue);
+    expect(Directory('${root.path}/off-1').existsSync(), isFalse);
+    expect(File('${root.path}/srv-9/r1.pdf.enc').existsSync(), isTrue);
     expect(keychain.data['balsm.file_key.srv-9'], key);
     expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
 
@@ -56,14 +56,14 @@ void main() {
     await store.save('r1.pdf', payload);
     await store.rekeyOwnerFiles(from: 'off-1', to: 'srv-9');
     await store.rekeyOwnerFiles(from: 'off-1', to: 'srv-9');
-    expect(await File('${root.path}/srv-9/r1.pdf.enc').exists(), isTrue);
+    expect(File('${root.path}/srv-9/r1.pdf.enc').existsSync(), isTrue);
     expect(keychain.data.containsKey('balsm.file_key.srv-9'), isTrue);
   });
 
   test('nothing stored yet is a no-op', () async {
     await store.rekeyOwnerFiles(from: 'off-1', to: 'srv-9');
     expect(keychain.data, isEmpty);
-    expect(await Directory('${root.path}/srv-9').exists(), isFalse);
+    expect(Directory('${root.path}/srv-9').existsSync(), isFalse);
   });
 
   test('throws when the target owner already has a file key', () async {
@@ -71,7 +71,7 @@ void main() {
     keychain.data['balsm.file_key.srv-9'] = 'other-key';
     await expectLater(store.rekeyOwnerFiles(from: 'off-1', to: 'srv-9'), throwsStateError);
     // Nothing moved.
-    expect(await File('${root.path}/off-1/r1.pdf.enc').exists(), isTrue);
+    expect(File('${root.path}/off-1/r1.pdf.enc').existsSync(), isTrue);
     expect(keychain.data['balsm.file_key.srv-9'], 'other-key');
   });
 
@@ -79,7 +79,7 @@ void main() {
     await store.save('r1.pdf', payload);
     keychain.data['balsm.file_key.srv-9'] = keychain.data['balsm.file_key.off-1']!;
     await store.rekeyOwnerFiles(from: 'off-1', to: 'srv-9');
-    expect(await File('${root.path}/srv-9/r1.pdf.enc').exists(), isTrue);
+    expect(File('${root.path}/srv-9/r1.pdf.enc').existsSync(), isTrue);
     expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
   });
 
@@ -106,7 +106,7 @@ void mergeAndDelete() {
   });
 
   tearDown(() async {
-    if (await root.exists()) await root.delete(recursive: true);
+    if (root.existsSync()) await root.delete(recursive: true);
   });
 
   group('mergeOwnerFiles', () {
@@ -116,7 +116,7 @@ void mergeAndDelete() {
       await store.mergeOwnerFiles(from: 'off-1', to: 'srv-1');
       expect(keychain.data['balsm.file_key.srv-1'], key);
       expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
-      expect(await Directory('${root.path}/off-1').exists(), isFalse);
+      expect(Directory('${root.path}/off-1').existsSync(), isFalse);
       active = const UserId.value('srv-1');
       expect(await store.read(path), a);
     });
@@ -130,7 +130,7 @@ void mergeAndDelete() {
 
       expect(keychain.data['balsm.file_key.srv-1'], srvKey, reason: 'the target keeps its own key');
       expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
-      expect(await Directory('${root.path}/off-1').exists(), isFalse);
+      expect(Directory('${root.path}/off-1').existsSync(), isFalse);
       active = const UserId.value('srv-1');
       expect(await store.read(offPath), a);
       expect(await store.read(srvPath), b);
@@ -165,7 +165,7 @@ void mergeAndDelete() {
       active = const UserId.value('srv-1');
       expect(await store.read('good.pdf.enc'), b);
       expect(await store.exists('bad.pdf.enc'), isFalse);
-      expect(await Directory('${root.path}/off-1').exists(), isFalse);
+      expect(Directory('${root.path}/off-1').existsSync(), isFalse);
       expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
     });
 
@@ -183,7 +183,7 @@ void mergeAndDelete() {
       await store.deleteOwnerFiles(owner: 'off-1');
       await store.deleteOwnerFiles(owner: 'off-1');
 
-      expect(await Directory('${root.path}/off-1').exists(), isFalse);
+      expect(Directory('${root.path}/off-1').existsSync(), isFalse);
       expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
       expect(keychain.data.containsKey('balsm.file_key.srv-1'), isTrue);
       expect(await store.read('s1.pdf.enc', scope: const UserId.value('srv-1')), b);

@@ -6,7 +6,6 @@ import 'package:medications/medications.dart';
 import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
-import '../tokens.dart';
 import 'select_field.dart';
 
 /// One medication as typed into a form (prescriptions.jsx `MedRow` +
@@ -15,7 +14,63 @@ import 'select_field.dart';
 /// Shared by Add medication and Add prescription, so a med typed into either
 /// lands in the Meds tab's daily list the same way. On-device PHI only.
 class MedPlanDraft {
-  MedPlanDraft();
+  MedPlanDraft() : _from = null;
+
+  /// A draft filled from [med], for Edit medication (prescriptions.jsx
+  /// `AddMedSheet` with `initial`). [toMedication] then saves under the same
+  /// id and keeps the start date, and a schedule or duration the patient left
+  /// untouched is kept exactly as stored — even one the form cannot express.
+  MedPlanDraft.fromMedication(Medication med) : _from = med {
+    final cfg = med.scheduleConfig;
+    final first = cfg.times.firstOrNull ?? morningTime;
+    name.text = med.name;
+    dose.text = med.doseAmount ?? '';
+    notes.text = med.notes ?? '';
+    evening = (int.tryParse(first.split(':').first) ?? 8) >= 12;
+    times = [first];
+    switch (med.scheduleType) {
+      case _ when cfg.frequencyNote != null:
+        freqType = 'other';
+        freqOther.text = cfg.frequencyNote!;
+      case ScheduleType.once:
+        freqType = 'once';
+      case ScheduleType.everyHours:
+        freqType = 'every_x';
+        freqUnit = 'hours';
+        freqN.text = '${cfg.interval ?? 1}';
+      case ScheduleType.everyDays:
+        freqType = 'every_x';
+        freqUnit = 'days';
+        freqN.text = '${cfg.interval ?? 1}';
+      case ScheduleType.daily || ScheduleType.weekly || ScheduleType.custom:
+        freqType = 'per_day';
+        freqN.text = '${cfg.times.length.clamp(1, 12)}';
+        if (cfg.times.length > 1) times = [...cfg.times];
+    }
+    switch (cfg.durationKind) {
+      case DurationKind.period when med.endDate != null:
+        durType = 'period';
+        durUnit = 'days';
+        durN.text = '${DateUtils.dateOnly(med.endDate!).difference(DateUtils.dateOnly(med.startDate)).inDays}';
+      case DurationKind.untilEmpty:
+        durType = 'until_empty';
+      case DurationKind.other:
+        durType = 'other';
+        durOther.text = cfg.durationNote ?? '';
+      case _:
+        durType = 'ongoing';
+    }
+    _seededSchedule = _scheduleKey;
+    _seededDuration = _durationKey;
+  }
+
+  /// The medication being edited; null when adding.
+  final Medication? _from;
+  String? _seededSchedule;
+  String? _seededDuration;
+
+  String get _scheduleKey => [freqType, freqN.text, freqUnit, freqOther.text, evening, ...times].join('|');
+  String get _durationKey => [durType, durN.text, durUnit, durOther.text].join('|');
 
   final name = TextEditingController();
   final dose = TextEditingController();
@@ -79,7 +134,8 @@ class MedPlanDraft {
   /// The scheduled medication. It starts at midnight today, so a dose due
   /// earlier today is listed as Due rather than silently skipped.
   Medication toMedication(UserId userId, {DateTime? now}) {
-    final today = DateUtils.dateOnly(now ?? DateTime.now());
+    final from = _from;
+    final today = from?.startDate ?? DateUtils.dateOnly(now ?? DateTime.now());
     final text = freqOther.text.trim();
     final (type, times, interval) = switch (freqType) {
       'once' => (ScheduleType.once, [_halfOfDay], null),
@@ -91,26 +147,34 @@ class MedPlanDraft {
     final count = int.tryParse(durN.text) ?? 0;
     final period = durType == 'period' && count > 0;
     final durText = durOther.text.trim();
+    final keepSchedule = from != null && _scheduleKey == _seededSchedule;
+    final keepDuration = from != null && _durationKey == _seededDuration;
+    final cfg = from?.scheduleConfig;
     return Medication(
-      id: MedicationId.uuid(),
-      userId: userId,
+      id: from?.id ?? MedicationId.uuid(),
+      userId: from?.userId ?? userId,
       name: name.text.trim(),
       doseAmount: dose.text.trim().isEmpty ? null : dose.text.trim(),
-      scheduleType: type,
+      scheduleType: keepSchedule ? from.scheduleType : type,
       scheduleConfig: ScheduleConfig(
-        times: times,
-        interval: interval,
-        frequencyNote: freqType == 'other' && text.isNotEmpty ? text : null,
-        durationKind: switch (durType) {
-          'period' when period => DurationKind.period,
-          'until_empty' => DurationKind.untilEmpty,
-          'other' => DurationKind.other,
-          _ => DurationKind.ongoing,
-        },
-        durationNote: durType == 'other' && durText.isNotEmpty ? durText : null,
+        times: keepSchedule ? cfg!.times : times,
+        days: keepSchedule ? cfg!.days : null,
+        interval: keepSchedule ? cfg!.interval : interval,
+        frequencyNote: keepSchedule ? cfg!.frequencyNote : (freqType == 'other' && text.isNotEmpty ? text : null),
+        durationKind: keepDuration
+            ? cfg!.durationKind
+            : switch (durType) {
+                'period' when period => DurationKind.period,
+                'until_empty' => DurationKind.untilEmpty,
+                'other' => DurationKind.other,
+                _ => DurationKind.ongoing,
+              },
+        durationNote: keepDuration ? cfg!.durationNote : (durType == 'other' && durText.isNotEmpty ? durText : null),
       ),
       startDate: today,
-      endDate: period ? periodEnd(today, count, PeriodUnit.values.byName(durUnit)) : null,
+      endDate:
+          keepDuration ? from.endDate : (period ? periodEnd(today, count, PeriodUnit.values.byName(durUnit)) : null),
+      isControlled: from?.isControlled ?? false,
       notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
     );
   }
@@ -146,7 +210,7 @@ enum MedTiming { halfOfDay, times, firstDose }
 /// it's taken. [onChanged] rebuilds the owner (its Save button depends on the
 /// name).
 class MedPlanCard extends StatelessWidget {
-  const MedPlanCard({super.key, required this.draft, required this.onChanged, this.onRemove});
+  const MedPlanCard({required this.draft, required this.onChanged, super.key, this.onRemove});
   final MedPlanDraft draft;
   final VoidCallback onChanged;
 
@@ -167,108 +231,117 @@ class MedPlanCard extends StatelessWidget {
     return PCard(
       margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(14),
-      child: Stack(children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _Input(controller: d.name, hint: m.rx_med_name_ph, onChanged: onChanged),
-          const SizedBox(height: 12),
-          _Input(controller: d.dose, hint: m.rx_med_dose_ph, onChanged: onChanged),
-          const SizedBox(height: 12),
-          _Input(controller: d.notes, hint: m.rx_med_desc_ph, onChanged: onChanged, lines: 2),
-          const SizedBox(height: 12),
-          _FieldLabel(m.rx_frequency),
-          Row(children: [
-            Expanded(
-              child: SelectField<String>(
-                value: d.freqType,
-                items: [
-                  ('once', m.freq_once),
-                  ('per_day', m.freq_per_day),
-                  ('every_x', m.freq_every_x),
-                  ('other', m.freq_other),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Input(controller: d.name, hint: m.rx_med_name_ph, onChanged: onChanged),
+              const SizedBox(height: 12),
+              _Input(controller: d.dose, hint: m.rx_med_dose_ph, onChanged: onChanged),
+              const SizedBox(height: 12),
+              _Input(controller: d.notes, hint: m.rx_med_desc_ph, onChanged: onChanged, lines: 2),
+              const SizedBox(height: 12),
+              _FieldLabel(m.rx_frequency),
+              Row(
+                children: [
+                  Expanded(
+                    child: SelectField<String>(
+                      value: d.freqType,
+                      items: [
+                        ('once', m.freq_once),
+                        ('per_day', m.freq_per_day),
+                        ('every_x', m.freq_every_x),
+                        ('other', m.freq_other),
+                      ],
+                      onChanged: (v) => _set(() => d.freqType = v),
+                    ),
+                  ),
+                  if (d.freqType == 'per_day' || d.freqType == 'every_x') ...[
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 64,
+                      child: _Input(controller: d.freqN, number: true, onChanged: () => _set(() {})),
+                    ),
+                  ],
+                  if (d.freqType == 'every_x') ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SelectField<String>(
+                        value: d.freqUnit,
+                        items: [('hours', m.unit_hours), ('days', m.unit_days)],
+                        onChanged: (v) => _set(() => d.freqUnit = v),
+                      ),
+                    ),
+                  ],
                 ],
-                onChanged: (v) => _set(() => d.freqType = v),
               ),
-            ),
-            if (d.freqType == 'per_day' || d.freqType == 'every_x') ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 64,
-                child: _Input(controller: d.freqN, number: true, onChanged: () => _set(() {})),
+              if (d.freqType == 'other') ...[
+                const SizedBox(height: 8),
+                _Input(controller: d.freqOther, hint: m.freq_other_ph(s.gender), onChanged: onChanged),
+              ],
+              const SizedBox(height: 12),
+              _FieldLabel(m.rx_duration),
+              SelectField<String>(
+                value: d.durType,
+                items: [
+                  ('period', m.dur_period),
+                  ('until_empty', m.dur_until_empty),
+                  ('ongoing', m.dur_ongoing),
+                  ('other', m.dur_other),
+                ],
+                onChanged: (v) => _set(() => d.durType = v),
               ),
-            ],
-            if (d.freqType == 'every_x') ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: SelectField<String>(
-                  value: d.freqUnit,
-                  items: [('hours', m.unit_hours), ('days', m.unit_days)],
-                  onChanged: (v) => _set(() => d.freqUnit = v),
+              if (d.durType == 'period') ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 64,
+                      child: _Input(controller: d.durN, hint: '1', number: true, onChanged: onChanged),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SelectField<String>(
+                        value: d.durUnit,
+                        items: [('days', m.unit_days), ('weeks', m.unit_weeks), ('months', m.unit_months)],
+                        onChanged: (v) => _set(() => d.durUnit = v),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+              ],
+              if (d.durType == 'other') ...[
+                const SizedBox(height: 8),
+                _Input(controller: d.durOther, hint: m.dur_other_ph(s.gender), onChanged: onChanged),
+              ],
+              const SizedBox(height: 14),
+              _Timing(draft: d, onChanged: onChanged),
             ],
-          ]),
-          if (d.freqType == 'other') ...[
-            const SizedBox(height: 8),
-            _Input(controller: d.freqOther, hint: m.freq_other_ph(s.gender), onChanged: onChanged),
-          ],
-          const SizedBox(height: 12),
-          _FieldLabel(m.rx_duration),
-          SelectField<String>(
-            value: d.durType,
-            items: [
-              ('period', m.dur_period),
-              ('until_empty', m.dur_until_empty),
-              ('ongoing', m.dur_ongoing),
-              ('other', m.dur_other),
-            ],
-            onChanged: (v) => _set(() => d.durType = v),
           ),
-          if (d.durType == 'period') ...[
-            const SizedBox(height: 8),
-            Row(children: [
-              SizedBox(
-                width: 64,
-                child: _Input(controller: d.durN, hint: '1', number: true, onChanged: onChanged),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: SelectField<String>(
-                  value: d.durUnit,
-                  items: [('days', m.unit_days), ('weeks', m.unit_weeks), ('months', m.unit_months)],
-                  onChanged: (v) => _set(() => d.durUnit = v),
-                ),
-              ),
-            ]),
-          ],
-          if (d.durType == 'other') ...[
-            const SizedBox(height: 8),
-            _Input(controller: d.durOther, hint: m.dur_other_ph(s.gender), onChanged: onChanged),
-          ],
-          const SizedBox(height: 14),
-          _Timing(draft: d, onChanged: onChanged),
-        ]),
-        if (onRemove != null)
-          PositionedDirectional(
-            top: 0,
-            end: 0,
-            child: Material(
-              color: T.ink50,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onRemove,
-                child: SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Semantics(
-                    label: s.strings.common.a11y_close,
-                    child: const Icon(LucideIcons.x, size: 13, color: T.fg3),
+          if (onRemove != null)
+            PositionedDirectional(
+              top: 0,
+              end: 0,
+              child: Material(
+                color: AppColors.ink50,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onRemove,
+                  child: SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: Semantics(
+                      label: s.strings.common.a11y_close,
+                      child: const Icon(LucideIcons.x, size: 13, color: AppColors.textTertiary),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -298,41 +371,53 @@ class _Timing extends StatelessWidget {
     final s = AppScope.of(context);
     final m = s.strings.meds;
     return switch (draft.timing) {
-      MedTiming.halfOfDay => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _FieldLabel(m.med_when, strong: true),
-          Row(children: [
-            for (final (evening, icon, label) in [
-              (false, LucideIcons.sunrise, m.morning),
-              (true, LucideIcons.moon, m.evening),
-            ]) ...[
-              if (evening) const SizedBox(width: 8),
-              Expanded(
-                child: _Choice(
-                  selected: draft.evening == evening,
-                  icon: icon,
-                  label: label,
-                  onTap: () {
-                    draft.evening = evening;
-                    onChanged();
-                  },
-                ),
-              ),
-            ],
-          ]),
-        ]),
-      MedTiming.times || MedTiming.firstDose => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _FieldLabel(draft.timing == MedTiming.times ? m.med_dose_times : m.med_first_dose, strong: true),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (var i = 0; i < draft.times.length; i++)
-              _Choice(
-                selected: true,
-                icon: LucideIcons.clock,
-                label: draft.times[i],
-                numeric: true,
-                onTap: () => _pick(context, i),
-              ),
-          ]),
-        ]),
+      MedTiming.halfOfDay => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FieldLabel(m.med_when, strong: true),
+            Row(
+              children: [
+                for (final (evening, icon, label) in [
+                  (false, LucideIcons.sunrise, m.morning),
+                  (true, LucideIcons.moon, m.evening),
+                ]) ...[
+                  if (evening) const SizedBox(width: 8),
+                  Expanded(
+                    child: _Choice(
+                      selected: draft.evening == evening,
+                      icon: icon,
+                      label: label,
+                      onTap: () {
+                        draft.evening = evening;
+                        onChanged();
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      MedTiming.times || MedTiming.firstDose => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FieldLabel(draft.timing == MedTiming.times ? m.med_dose_times : m.med_first_dose, strong: true),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < draft.times.length; i++)
+                  _Choice(
+                    selected: true,
+                    icon: LucideIcons.clock,
+                    label: draft.times[i],
+                    numeric: true,
+                    onTap: () => _pick(context, i),
+                  ),
+              ],
+            ),
+          ],
+        ),
     };
   }
 }
@@ -355,7 +440,7 @@ class _Choice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final fg = selected ? s.accent.d : T.fg2;
+    final fg = selected ? s.accent.d : AppColors.textSecondary;
     return Semantics(
       button: true,
       selected: selected,
@@ -368,20 +453,24 @@ class _Choice extends StatelessWidget {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: selected ? s.accent.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
+            color: selected ? s.accent.bg : AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: selected ? s.accent.main : AppColors.border, width: 1.5),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, size: 16, color: fg),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: numeric
-                  ? Typo.num(size: FS.sm, weight: FontWeight.w600, color: fg)
-                  : Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: fg),
-            ),
-          ]),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: numeric
+                    ? Typo.num(size: FontSizes.bodySm, color: fg)
+                    : Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: fg),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -401,15 +490,17 @@ class _FieldLabel extends StatelessWidget {
       child: Text(
         text,
         style: strong
-            ? Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)
-            : Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3),
+            ? Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary)
+            : Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
       ),
     );
   }
 }
 
-OutlineInputBorder _border(Color color) =>
-    OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: color, width: 1.5));
+OutlineInputBorder _border(Color color) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      borderSide: BorderSide(color: color, width: 1.5),
+    );
 
 class _Input extends StatelessWidget {
   const _Input({required this.controller, required this.onChanged, this.hint, this.lines = 1, this.number = false});
@@ -429,15 +520,15 @@ class _Input extends StatelessWidget {
       keyboardType: number ? TextInputType.number : TextInputType.text,
       textAlign: number ? TextAlign.center : TextAlign.start,
       onChanged: (_) => onChanged(),
-      style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
+      style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.subhead),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: _border(T.border),
-        enabledBorder: _border(T.border),
+        border: _border(AppColors.border),
+        enabledBorder: _border(AppColors.border),
         focusedBorder: _border(s.accent.main),
       ),
     );

@@ -3,7 +3,21 @@ sealed class AppFailure {
   final String message;
 
   @override
-  String toString() => '$runtimeType: $message';
+  String toString() {
+    // Named per subtype: `runtimeType` is mangled in minified web builds.
+    final name = switch (this) {
+      ValidationFailure() => 'ValidationFailure',
+      NotFoundFailure() => 'NotFoundFailure',
+      ConflictFailure() => 'ConflictFailure',
+      UnauthorizedFailure() => 'UnauthorizedFailure',
+      NetworkFailure() => 'NetworkFailure',
+      StorageFailure() => 'StorageFailure',
+      AgeGateFailure() => 'AgeGateFailure',
+      GeofenceFailure() => 'GeofenceFailure',
+      OfflineFailure() => 'OfflineFailure',
+    };
+    return '$name: $message';
+  }
 }
 
 final class ValidationFailure extends AppFailure {

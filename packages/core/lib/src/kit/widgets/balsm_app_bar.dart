@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 enum BalsmAppBarVariant { withAvatar, titleOnly, withBackButton }
 
@@ -17,17 +17,17 @@ class BalsmAppBar extends StatelessWidget {
 
   const BalsmAppBar.withAvatar({
     super.key,
-    required this.leading, // avatar widget
+    required this.leading, // avatar widget, super.key,, super.key,, super.key,, super.key,, super.key,, super.key,
     this.title,
     this.trailing,
     this.onBack,
   }) : variant = BalsmAppBarVariant.withAvatar;
 
   const BalsmAppBar.withBack({
+    required this.onBack,
     super.key,
     this.title,
     this.trailing,
-    required this.onBack,
   })  : variant = BalsmAppBarVariant.withBackButton,
         leading = null;
 
@@ -48,24 +48,25 @@ class BalsmAppBar extends StatelessWidget {
             _buildLeading(context),
             const SizedBox(width: 12),
             Expanded(
-              child: title != null
-                  ? Text(
-                      title!,
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 21,
-                        letterSpacing: -0.01 * 21,
-                        color: BalsmColors.fg1,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : const SizedBox.shrink(),
+              child: switch (title) {
+                final title? => Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontWeight: FontWeight.w700,
+                      fontSize: FontSizes.heading,
+                      letterSpacing: -0.01 * 21,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                _ => const SizedBox.shrink()
+              },
             ),
-            if (trailing != null) ...[
+            if (trailing case final trailing?) ...[
               const SizedBox(width: 8),
-              trailing!,
+              trailing,
             ],
           ],
         ),
@@ -91,21 +92,17 @@ class _BackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: BalsmColors.ink50,
-          borderRadius: BorderRadius.circular(BalsmRadius.pill),
-          border: Border.all(color: BalsmColors.border),
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(color: AppColors.border),
         ),
-        child: Transform.scale(
-          scaleX: isRtl ? -1 : 1,
-          child: const Icon(Icons.arrow_back, size: 20, color: BalsmColors.fg2),
-        ),
+        child: const Icon(Icons.arrow_back, size: 20, color: AppColors.textSecondary),
       ),
     );
   }

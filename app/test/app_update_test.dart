@@ -33,18 +33,22 @@ UpdateCopy copyFor(PatientAppState s, AppBrand brand) {
 void main() {
   group('UpdateGate', () {
     const notes = [
-      ReleaseNote(version: '1.4.0', items: [
-        ReleaseNoteItem(title: 'Smarter dose reminders', body: 'Even <b>offline</b>.'),
-        ReleaseNoteItem(title: 'Fixes and polish'),
-      ]),
+      ReleaseNote(
+        version: '1.4.0',
+        items: [
+          ReleaseNoteItem(title: 'Smarter dose reminders', body: 'Even <b>offline</b>.'),
+          ReleaseNoteItem(title: 'Fixes and polish'),
+        ],
+      ),
       ReleaseNote(version: '1.3.0', items: [ReleaseNoteItem(title: 'Security fix')]),
     ];
     const optional = AppUpdateInfo(
-        status: UpdateStatus.available,
-        installed: '1.2.0',
-        latest: '1.4.0',
-        notes: notes,
-        notesUrl: 'https://app.balsm.health/whats-new?brand=balsm&from=1.2.0');
+      status: UpdateStatus.available,
+      installed: '1.2.0',
+      latest: '1.4.0',
+      notes: notes,
+      notesUrl: 'https://app.balsm.health/whats-new?brand=balsm&from=1.2.0',
+    );
     const forced = AppUpdateInfo(status: UpdateStatus.required, installed: '1.2.0', latest: '1.4.0', notes: notes);
 
     late UpdateCopy copy;
@@ -65,21 +69,27 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-      await tester.pumpWidget(AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (context, child) => UpdateGate(
-            brand: brand,
-            lang: state.lang.value,
-            look: UpdateLook(
-                rtl: state.rtl, accent: state.accent, copy: copy, mark: const SizedBox(width: 52, height: 52)),
-            cached: (_) async => AppUpdateInfo.none,
-            check: (_) async => info,
-            child: child!,
+      await tester.pumpWidget(
+        AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (context, child) => UpdateGate(
+              brand: brand,
+              lang: state.lang.value,
+              look: UpdateLook(
+                rtl: state.rtl,
+                accent: state.accent,
+                copy: copy,
+                mark: const SizedBox(width: 52, height: 52),
+              ),
+              cached: (_) async => AppUpdateInfo.none,
+              check: (_) async => info,
+              child: child!,
+            ),
+            home: const Scaffold(body: Center(child: Text('app'))),
           ),
-          home: const Scaffold(body: Center(child: Text('app'))),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       return state;
     }
@@ -93,24 +103,30 @@ void main() {
     testWidgets('asks for release notes in the app language', (tester) async {
       String? asked;
       final state = PatientAppState()..setLang(LanguageCode.ar);
-      await tester.pumpWidget(AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (context, child) => UpdateGate(
-            brand: AppBrand.balsm,
-            lang: state.lang.value,
-            look: UpdateLook(
-                rtl: true, accent: state.accent, copy: copyFor(state, AppBrand.balsm), mark: const SizedBox()),
-            cached: (_) async => AppUpdateInfo.none,
-            check: (lang) async {
-              asked = lang;
-              return AppUpdateInfo.none;
-            },
-            child: child!,
+      await tester.pumpWidget(
+        AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (context, child) => UpdateGate(
+              brand: AppBrand.balsm,
+              lang: state.lang.value,
+              look: UpdateLook(
+                rtl: true,
+                accent: state.accent,
+                copy: copyFor(state, AppBrand.balsm),
+                mark: const SizedBox(),
+              ),
+              cached: (_) async => AppUpdateInfo.none,
+              check: (lang) async {
+                asked = lang;
+                return AppUpdateInfo.none;
+              },
+              child: child!,
+            ),
+            home: const Scaffold(),
           ),
-          home: const Scaffold(),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       expect(asked, 'ar');
     });
@@ -173,21 +189,27 @@ void main() {
       // has since been withdrawn. First on launch, then while the block is up.
       var live = forced;
       final state = PatientAppState();
-      await tester.pumpWidget(AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (context, child) => UpdateGate(
-            brand: AppBrand.balsm,
-            lang: state.lang.value,
-            look: UpdateLook(
-                rtl: false, accent: state.accent, copy: copyFor(state, AppBrand.balsm), mark: const SizedBox()),
-            cached: (_) async => forced,
-            check: (_) async => live,
-            child: child!,
+      await tester.pumpWidget(
+        AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (context, child) => UpdateGate(
+              brand: AppBrand.balsm,
+              lang: state.lang.value,
+              look: UpdateLook(
+                rtl: false,
+                accent: state.accent,
+                copy: copyFor(state, AppBrand.balsm),
+                mark: const SizedBox(),
+              ),
+              cached: (_) async => forced,
+              check: (_) async => live,
+              child: child!,
+            ),
+            home: const Scaffold(body: Center(child: Text('app'))),
           ),
-          home: const Scaffold(body: Center(child: Text('app'))),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       expect(find.byType(UpdateSheet), findsOne);
 
@@ -206,14 +228,24 @@ void main() {
     });
 
     testWidgets('long notes scroll and the button stays reachable on a small phone', (tester) async {
-      final long = AppUpdateInfo(status: UpdateStatus.required, installed: '1.0.0', latest: '1.9.0', notes: [
-        for (var i = 9; i > 0; i--)
-          ReleaseNote(version: '1.$i.0', items: [
-            for (var k = 0; k < 5; k++)
-              ReleaseNoteItem(
-                  title: 'Change $k of release $i', body: 'A fairly long description of what changed here.'),
-          ]),
-      ]);
+      final long = AppUpdateInfo(
+        status: UpdateStatus.required,
+        installed: '1.0.0',
+        latest: '1.9.0',
+        notes: [
+          for (var i = 9; i > 0; i--)
+            ReleaseNote(
+              version: '1.$i.0',
+              items: [
+                for (var k = 0; k < 5; k++)
+                  ReleaseNoteItem(
+                    title: 'Change $k of release $i',
+                    body: 'A fairly long description of what changed here.',
+                  ),
+              ],
+            ),
+        ],
+      );
       await pump(tester, long, size: const Size(320, 568));
       expect(tester.takeException(), isNull);
       expect(find.text(copy.updateNow).hitTestable(), findsOne);

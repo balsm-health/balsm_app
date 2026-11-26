@@ -13,13 +13,17 @@ class CoreMustNotDependOnModule extends DartLintRule {
     'sessions',
     'account',
     'deletion',
-    'geofence_block'
+    'geofence_block',
+    'family',
+    'family_link',
+    'pregnancy',
+    'vaccinations'
   ];
   static const _code = LintCode(
       name: 'core_must_not_depend_on_module', problemMessage: 'core package must not depend on module packages.');
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     if (!resolver.path.contains('/packages/core/')) return;
     context.registry.addImportDirective((node) {
       final uri = node.uri.stringValue ?? '';

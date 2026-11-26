@@ -1,11 +1,15 @@
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/resolve_emergency_qr_token_use_case.dart';
 import '../../domain/aggregates/profile_qr_payload.dart';
-import '../../i18n/strings.dart';
+import '../i18n/i18n.dart';
+
+// The patient's name, the largest line on the resolve card.
+const _nameFontSize = 24.0;
 
 /// Public, no-auth landing screen reached by scanning an emergency QR.
 ///
@@ -13,7 +17,7 @@ import '../../i18n/strings.dart';
 /// route is reachable without authentication.
 ///
 /// The AES key is read from the URL fragment (`#k=...`) on web via
-/// [Uri.base.fragment]; on mobile the deeplink router forwards it as a query
+/// `Uri.base.fragment`; on mobile the deeplink router forwards it as a query
 /// parameter / route extra (`key`). The fragment is never sent to the server.
 /// The scanned token plus the AES key that decrypts it.
 ///
@@ -39,7 +43,8 @@ class EmergencyQrRequest {
 /// autoDispose: the decrypted payload is somebody's identity (PHI) on a
 /// public, unauthenticated screen. It must not outlive the route that shows
 /// it, and the next scan must hit the network rather than a warm cache.
-final emergencyQrSnapshotProvider = FutureProvider.autoDispose.family<AppResult<ResolvedProfileQr>, EmergencyQrRequest>(
+final FutureProviderFamily<AppResult<ResolvedProfileQr>, EmergencyQrRequest> emergencyQrSnapshotProvider =
+    FutureProvider.autoDispose.family<AppResult<ResolvedProfileQr>, EmergencyQrRequest>(
   (ref, request) => ref.watch(resolveEmergencyQrTokenUseCaseProvider).call(
         tokenId: request.tokenId,
         keyBase64Url: request.keyBase64Url,
@@ -48,8 +53,8 @@ final emergencyQrSnapshotProvider = FutureProvider.autoDispose.family<AppResult<
 
 class PublicEmergencyResolveScreen extends ConsumerWidget {
   const PublicEmergencyResolveScreen({
-    super.key,
     required this.tokenId,
+    super.key,
     this.keyOverride,
   });
 
@@ -78,10 +83,11 @@ class PublicEmergencyResolveScreen extends ConsumerWidget {
     // rebuilds — which is what the initState-cached Future was working around.
     final request = EmergencyQrRequest(tokenId: tokenId, keyBase64Url: _readFragmentKey());
     final result = ref.watch(emergencyQrSnapshotProvider(request));
+    final m = ref.watch(emergencyCardStringsProvider);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: const Text('Emergency Card'),
+        title: Text(m.title),
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
@@ -89,9 +95,12 @@ class PublicEmergencyResolveScreen extends ConsumerWidget {
           loading: () => const BalsmLoadingIndicator(),
           // A thrown error is still "card unavailable" to a bystander; the
           // reason belongs in telemetry, not on a stranger's screen.
-          error: (_, __) => _UnavailableView(message: emergencyCardStrings.current.unavailable),
+          error: (_, __) => _UnavailableView(message: m.unavailable),
           data: (value) => value.fold(
-            (resolved) => resolved.payload == null ? const _LegacyView() : _ResolvedView(payload: resolved.payload!),
+            (resolved) => switch (resolved.payload) {
+              final payloadValue? => _ResolvedView(payload: payloadValue),
+              _ => const _LegacyView()
+            },
             (failure) => _UnavailableView(message: failure.message),
           ),
         ),
@@ -100,34 +109,35 @@ class PublicEmergencyResolveScreen extends ConsumerWidget {
   }
 }
 
-class _UnavailableView extends StatelessWidget {
+class _UnavailableView extends ConsumerWidget {
   const _UnavailableView({required this.message});
   final String message;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(emergencyCardStringsProvider);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.qr_code_2_outlined, size: 56, color: BalsmColors.ink400),
+            const Icon(Icons.qr_code_2_outlined, size: 56, color: AppColors.ink400),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: FontSizes.subhead,
                 fontWeight: FontWeight.w700,
-                color: BalsmColors.fg1,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'This emergency QR is no longer available.',
+            Text(
+              m.qrUnavailable,
               textAlign: TextAlign.center,
-              style: TextStyle(color: BalsmColors.fg2),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -136,40 +146,41 @@ class _UnavailableView extends StatelessWidget {
   }
 }
 
-class _ResolvedView extends StatelessWidget {
+class _ResolvedView extends ConsumerWidget {
   const _ResolvedView({required this.payload});
   final ProfileQrPayload payload;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(emergencyCardStringsProvider);
     // Identity-only payload (spec v2.0 schema v1). Print-friendly + RTL-aware.
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const Text(
-          'Balsm Profile',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        Text(
+          m.profileHeading,
+          style: const TextStyle(fontSize: FontSizes.headline, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 24),
-        if (payload.name != null && payload.name!.isNotEmpty) ...[
-          const _Label('Name'),
+        if (payload.name case final name? when payload.name!.isNotEmpty) ...[
+          _Label(m.fieldName),
           const SizedBox(height: 6),
           Text(
-            payload.name!,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: BalsmColors.fg1),
+            name,
+            style: const TextStyle(fontSize: _nameFontSize, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 24),
         ],
-        if (payload.dateOfBirth != null) ...[
-          const _Label('Date of birth'),
+        if (payload.dateOfBirth case final dateOfBirth?) ...[
+          _Label(m.fieldDateOfBirth),
           const SizedBox(height: 6),
-          Text(payload.dateOfBirth!, style: const TextStyle(fontSize: 18, color: BalsmColors.fg1)),
+          Text(dateOfBirth, style: const TextStyle(fontSize: FontSizes.subhead, color: AppColors.textPrimary)),
           const SizedBox(height: 24),
         ],
-        if (payload.gender != null) ...[
-          const _Label('Gender'),
+        if (payload.gender case final gender?) ...[
+          _Label(m.fieldGender),
           const SizedBox(height: 6),
-          Text(payload.gender!, style: const TextStyle(fontSize: 18, color: BalsmColors.fg1)),
+          Text(gender, style: const TextStyle(fontSize: FontSizes.subhead, color: AppColors.textPrimary)),
         ],
       ],
     );
@@ -178,29 +189,34 @@ class _ResolvedView extends StatelessWidget {
 
 /// A pre-v2.0 ciphertext decrypted, but carries no versioned payload: show a
 /// refresh hint, never guess at its contents.
-class _LegacyView extends StatelessWidget {
+class _LegacyView extends ConsumerWidget {
   const _LegacyView();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(emergencyCardStringsProvider);
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.qr_code_2_outlined, size: 56, color: BalsmColors.ink400),
-            SizedBox(height: 16),
+            const Icon(Icons.qr_code_2_outlined, size: 56, color: AppColors.ink400),
+            const SizedBox(height: 16),
             Text(
-              'This code needs a refresh',
+              m.needsRefresh,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: BalsmColors.fg1),
+              style: const TextStyle(
+                fontSize: FontSizes.subhead,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Ask the owner to open their Balsm app once — the code updates itself.',
+              m.needsRefreshBody,
               textAlign: TextAlign.center,
-              style: TextStyle(color: BalsmColors.fg2),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -217,9 +233,9 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: FontSizes.bodySm,
           fontWeight: FontWeight.w700,
-          color: BalsmColors.fg3,
+          color: AppColors.textTertiary,
           letterSpacing: 0.4,
         ),
       );

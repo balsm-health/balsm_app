@@ -1,0 +1,4 @@
+tags:
+  # Golden-image tests whose baselines are not committed (see
+  # test/kit/balsm_kit_golden_test.dart). CI excludes them.
+  golden:

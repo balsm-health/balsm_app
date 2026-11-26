@@ -12,30 +12,17 @@ class CareEntityResponse {
   const CareEntityResponse({
     required this.id,
     required this.type,
+    required this.lat,
+    required this.lng,
     this.nameEn,
     this.nameAr,
     this.addressEn,
     this.addressAr,
-    required this.lat,
-    required this.lng,
     this.hours,
     this.phone,
     this.distanceKm,
     this.rating,
   });
-
-  final String id;
-  final String type; // hospital | clinic | pharmacy | lab | scan | store
-  final String? nameEn;
-  final String? nameAr;
-  final String? addressEn;
-  final String? addressAr;
-  final double lat;
-  final double lng;
-  final String? hours;
-  final String? phone;
-  final double? distanceKm;
-  final double? rating;
 
   factory CareEntityResponse.fromJson(Map<String, dynamic> json) => CareEntityResponse(
         id: json['id'] as String,
@@ -51,6 +38,19 @@ class CareEntityResponse {
         distanceKm: (json['distance_km'] as num?)?.toDouble(),
         rating: (json['rating'] as num?)?.toDouble(),
       );
+
+  final String id;
+  final String type; // hospital | clinic | pharmacy | lab | scan | store
+  final String? nameEn;
+  final String? nameAr;
+  final String? addressEn;
+  final String? addressAr;
+  final double lat;
+  final double lng;
+  final String? hours;
+  final String? phone;
+  final double? distanceKm;
+  final double? rating;
 }
 
 /// One map pin from `GET /care/pins`.
@@ -66,17 +66,17 @@ class CarePinResponse {
     required this.lng,
   });
 
-  final String id;
-  final String type;
-  final double lat;
-  final double lng;
-
   factory CarePinResponse.fromJson(Map<String, dynamic> json) => CarePinResponse(
         id: json['id'] as String,
         type: json['type'] as String,
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
       );
+
+  final String id;
+  final String type;
+  final double lat;
+  final double lng;
 }
 
 /// One downloadable artifact (basemap or places) from `GET /care/packs`.
@@ -91,6 +91,14 @@ class MapPackArtifactResponse {
     this.count,
   });
 
+  factory MapPackArtifactResponse.fromJson(Map<String, dynamic> json) => MapPackArtifactResponse(
+        version: json['version'] as String,
+        sizeBytes: (json['size_bytes'] as num).toInt(),
+        sha256: json['sha256'] as String,
+        url: json['url'] as String,
+        count: (json['count'] as num?)?.toInt(),
+      );
+
   /// YYYYMMDD.
   final String version;
   final int sizeBytes;
@@ -99,14 +107,6 @@ class MapPackArtifactResponse {
 
   /// Places only — null for a basemap.
   final int? count;
-
-  factory MapPackArtifactResponse.fromJson(Map<String, dynamic> json) => MapPackArtifactResponse(
-        version: json['version'] as String,
-        sizeBytes: (json['size_bytes'] as num).toInt(),
-        sha256: json['sha256'] as String,
-        url: json['url'] as String,
-        count: (json['count'] as num?)?.toInt(),
-      );
 }
 
 /// One governorate's offline pack from `GET /care/packs`. `name` comes back
@@ -120,6 +120,14 @@ class MapPackResponse {
     required this.places,
   });
 
+  factory MapPackResponse.fromJson(Map<String, dynamic> json) => MapPackResponse(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        bounds: (json['bounds'] as List).map((e) => (e as num).toDouble()).toList(growable: false),
+        basemap: MapPackArtifactResponse.fromJson(json['basemap'] as Map<String, dynamic>),
+        places: MapPackArtifactResponse.fromJson(json['places'] as Map<String, dynamic>),
+      );
+
   /// Stable governorate slug ("cairo").
   final String id;
   final String name;
@@ -128,12 +136,4 @@ class MapPackResponse {
   final List<double> bounds;
   final MapPackArtifactResponse basemap;
   final MapPackArtifactResponse places;
-
-  factory MapPackResponse.fromJson(Map<String, dynamic> json) => MapPackResponse(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        bounds: (json['bounds'] as List).map((e) => (e as num).toDouble()).toList(growable: false),
-        basemap: MapPackArtifactResponse.fromJson(json['basemap'] as Map<String, dynamic>),
-        places: MapPackArtifactResponse.fromJson(json['places'] as Map<String, dynamic>),
-      );
 }

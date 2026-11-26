@@ -1,0 +1,1 @@
+A gender you change in Personal details now applies across the app as soon as you save it, so Arabic text addresses you correctly and the body map shows the right figure without reopening that screen. ([#158](https://github.com/balsm-health/balsm_app/issues/158))

@@ -4,7 +4,7 @@ import 'tokens.dart';
 
 /// The app's single [ThemeData].
 ///
-/// Almost nothing in the app reads it: the screens are drawn from the [T]
+/// Almost nothing in the app reads it: the screens are drawn from the `T`
 /// tokens, and the kit widgets carry their own colours. What is left is the
 /// handful of surfaces Material builds for us — dropdown menus, popup menus —
 /// which have no Balsm widget to take their colour from and fall back to the
@@ -34,31 +34,31 @@ import 'tokens.dart';
 /// that lies.
 ThemeData balsmTheme() => ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: T.surface,
-      canvasColor: T.surface,
-      popupMenuTheme: const PopupMenuThemeData(color: T.surface, surfaceTintColor: Colors.transparent),
+      scaffoldBackgroundColor: AppColors.surface,
+      canvasColor: AppColors.surface,
+      popupMenuTheme: const PopupMenuThemeData(color: AppColors.surface, surfaceTintColor: Colors.transparent),
       dropdownMenuTheme: const DropdownMenuThemeData(
         menuStyle: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(T.surface),
+          backgroundColor: WidgetStatePropertyAll(AppColors.surface),
           surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
         ),
       ),
       menuTheme: const MenuThemeData(
         style: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(T.surface),
+          backgroundColor: WidgetStatePropertyAll(AppColors.surface),
           surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
         ),
       ),
       datePickerTheme: const DatePickerThemeData(
-        backgroundColor: T.surface,
-        headerBackgroundColor: T.surface,
-        headerForegroundColor: T.fg1,
+        backgroundColor: AppColors.surface,
+        headerBackgroundColor: AppColors.surface,
+        headerForegroundColor: AppColors.textPrimary,
         surfaceTintColor: Colors.transparent,
       ),
       // TimePickerThemeData carries no surfaceTintColor on this Flutter
       // version; backgroundColor is the whole dialog.
       timePickerTheme: const TimePickerThemeData(
-        backgroundColor: T.surface,
-        dialBackgroundColor: T.surfaceMuted,
+        backgroundColor: AppColors.surface,
+        dialBackgroundColor: AppColors.surfaceMuted,
       ),
     );

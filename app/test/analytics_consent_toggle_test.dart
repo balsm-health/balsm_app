@@ -1,9 +1,9 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/profile_subscreens.dart';
 import 'package:core/core.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Stands in for the PostHog backend: records what consent it was handed.
@@ -26,8 +26,13 @@ class _RecordingLogger implements AnalyticsLogger {
   void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {}
 
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {}
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {}
 
   @override
   void setUser(String? id) {}
@@ -68,17 +73,21 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        analyticsConsentProvider.overrideWith((ref) => consent),
-        replayConsentProvider.overrideWith((ref) => replay = ReplayConsent(enabled: false, prefs: TelemetryPrefs(kv))),
-        analyticsLoggerProvider.overrideWithValue(logger),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(home: PrivacyDataScreen(s: state)),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          analyticsConsentProvider.overrideWith((ref) => consent),
+          replayConsentProvider
+              .overrideWith((ref) => replay = ReplayConsent(enabled: false, prefs: TelemetryPrefs(kv))),
+          analyticsLoggerProvider.overrideWithValue(logger),
+        ],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(home: PrivacyDataScreen(s: state)),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (consent: consent, sink: sink, logger: logger, prefs: TelemetryPrefs(kv), state: state);
   }

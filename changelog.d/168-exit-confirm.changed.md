@@ -1,0 +1,1 @@
+On Android, pressing back on the last screen now asks "Exit Balsm?" before closing the app, so it is no longer closed by an accidental back press; Records, Trends and Prescriptions go back up to Home or Meds first. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 import '../value_objects/ids.dart';
 
 /// Aggregate root representing a patient's acceptance of a disclosure document.
 /// PHI-free: no health data stored.
+@immutable
 class DisclosureAcceptance {
   const DisclosureAcceptance({
     required this.disclosureId,
@@ -11,6 +14,15 @@ class DisclosureAcceptance {
     required this.preferredLanguageAtAccept,
     required this.acceptedAt,
   });
+
+  factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) => DisclosureAcceptance(
+        disclosureId: DisclosureId.value(json['disclosure_id'] as String),
+        version: json['version'] as String,
+        countryCodeAtAccept: json['country_code'] as String,
+        supervisoryAuthorityNameAtAccept: json['supervisory_authority'] as String,
+        preferredLanguageAtAccept: json['preferred_language'] as String,
+        acceptedAt: DateTime.parse(json['accepted_at'] as String),
+      );
 
   final DisclosureId disclosureId;
   final String version;
@@ -27,15 +39,6 @@ class DisclosureAcceptance {
         'preferred_language': preferredLanguageAtAccept,
         'accepted_at': acceptedAt.toIso8601String(),
       };
-
-  factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) => DisclosureAcceptance(
-        disclosureId: DisclosureId.value(json['disclosure_id'] as String),
-        version: json['version'] as String,
-        countryCodeAtAccept: json['country_code'] as String,
-        supervisoryAuthorityNameAtAccept: json['supervisory_authority'] as String,
-        preferredLanguageAtAccept: json['preferred_language'] as String,
-        acceptedAt: DateTime.parse(json['accepted_at'] as String),
-      );
 
   @override
   bool operator ==(Object other) =>

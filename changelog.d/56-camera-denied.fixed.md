@@ -1,0 +1,1 @@
+When camera or photo access is turned off, taking a photo, scanning a QR code and saving your QR code to Photos now say so and offer a Settings shortcut, instead of doing nothing or showing a generic error. ([#56](https://github.com/balsm-health/balsm_app/issues/56))

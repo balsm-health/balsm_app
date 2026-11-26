@@ -1,9 +1,10 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../domain/aggregates/medication.dart';
+import '../i18n/i18n.dart';
 import '../providers.dart';
 import 'schedule_format.dart';
 
@@ -15,25 +16,26 @@ class MedicationListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final medsAsync = ref.watch(medicationListProvider);
+    final m = ref.watch(medicationsStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       appBar: AppBar(
-        title: const Text('Medications'),
-        backgroundColor: BalsmColors.surface,
+        title: Text(m.listTitle),
+        backgroundColor: AppColors.surface,
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.goNamed('medications.add'),
-        backgroundColor: BalsmColors.hueBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.hueBlue,
+        foregroundColor: AppColors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Add'),
+        label: Text(m.addShort),
       ),
       body: medsAsync.when(
         loading: () => const BalsmLoadingIndicator(),
         error: (e, _) => BalsmErrorBanner(
-          message: 'Could not load medications.',
+          message: m.listLoadError,
           onRetry: () => ref.invalidate(medicationListProvider),
         ),
         data: (meds) {
@@ -49,12 +51,13 @@ class MedicationListScreen extends ConsumerWidget {
   }
 }
 
-class _MedicationTile extends StatelessWidget {
+class _MedicationTile extends ConsumerWidget {
   const _MedicationTile({required this.med});
   final Medication med;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
     final expired = med.isExpired();
     final tone = med.isControlled
         ? BalsmMedTone.controlled
@@ -64,7 +67,7 @@ class _MedicationTile extends StatelessWidget {
 
     return BalsmMedRow(
       name: med.name,
-      dose: _doseLine(med),
+      dose: _doseLine(m, med),
       tone: tone,
       onTap: () => context.goNamed(
         'medications.detail',
@@ -74,15 +77,15 @@ class _MedicationTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (med.isControlled) ...[
-            const BalsmPill(
-              label: 'Controlled',
+            BalsmPill(
+              label: m.controlled,
               variant: BalsmPillVariant.controlled,
               showDot: true,
             ),
             const SizedBox(width: 8),
           ],
           BalsmPill(
-            label: expired ? 'Inactive' : 'Active',
+            label: expired ? m.inactive : m.active,
             variant: expired ? BalsmPillVariant.neutral : BalsmPillVariant.success,
             showDot: true,
           ),
@@ -91,42 +94,45 @@ class _MedicationTile extends StatelessWidget {
     );
   }
 
-  String _doseLine(Medication med) {
+  String _doseLine(Messages m, Medication med) {
     final dose = med.doseAmount;
-    final schedule = formatSchedule(med.scheduleType, med.scheduleConfig);
+    final schedule = formatSchedule(m, med.scheduleType, med.scheduleConfig);
     if (dose == null || dose.isEmpty) return schedule;
     return '$dose · $schedule';
   }
 }
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.medication_outlined, size: 48, color: BalsmColors.ink400),
-              SizedBox(height: 16),
-              Text(
-                'No medications yet',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: BalsmColors.fg1,
-                ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.medication_outlined, size: 48, color: AppColors.ink400),
+            const SizedBox(height: 16),
+            Text(
+              m.list.empty,
+              style: const TextStyle(
+                fontSize: FontSizes.subheadSm,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
-              SizedBox(height: 8),
-              Text(
-                'Add your first medication to start tracking doses.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              m.listEmptyBody,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }

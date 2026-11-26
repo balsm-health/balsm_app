@@ -5,20 +5,23 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
 dependencies:
-  flutter:
-    sdk: flutter
-  core:
-    path: ../../packages/core
   balsm_api:
     path: ../../packages/balsm_api
-  flutter_riverpod: ^2.6.1
-  go_router: ^14.0.0
+  core:
+    path: ../../packages/core
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.1
+  go_router: ^18.1.4
   intl: ^0.20.0
 dev_dependencies:
-  custom_lint: ^0.8.0
   balsm_boundary_lint:
     path: ../../packages/balsm_boundary_lint
+  balsm_lints:
+    path: ../../packages/balsm_lints
+  custom_lint: ^0.8.0
+  drift: ^2.31.0
   flutter_test:
     sdk: flutter
-  mocktail: ^1.0.4
   golden_toolkit: ^0.15.0
+  mocktail: ^1.0.4

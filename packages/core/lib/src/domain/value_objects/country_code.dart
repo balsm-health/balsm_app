@@ -1,4 +1,3 @@
-// ignore_for_file: constant_identifier_names
 import 'currency_code.dart';
 import 'value_object.dart';
 
@@ -80,49 +79,110 @@ class CountryCode extends ValueObject {
   bool get isKnown => _meta != null;
 
   // ── Launch markets (full metadata: currency / timezone / emergency) ───────
-  static const egypt = CountryCode._('EG',
-      _CountryMeta('Egypt', 'Egyptian', '+20', currency: CurrencyCode.egp, timezone: 'Africa/Cairo', emergency: '123'));
+  static const egypt = CountryCode._(
+    'EG',
+    _CountryMeta('Egypt', 'Egyptian', '+20', currency: CurrencyCode.egp, timezone: 'Africa/Cairo', emergency: '123'),
+  );
   static const saudi_arabia = CountryCode._(
-      'SA',
-      _CountryMeta('Saudi Arabia', 'Saudi', '+966',
-          currency: CurrencyCode.sar, timezone: 'Asia/Riyadh', emergency: '997'));
+    'SA',
+    _CountryMeta(
+      'Saudi Arabia',
+      'Saudi',
+      '+966',
+      currency: CurrencyCode.sar,
+      timezone: 'Asia/Riyadh',
+      emergency: '997',
+    ),
+  );
   static const united_arab_emirates = CountryCode._(
-      'AE',
-      _CountryMeta('United Arab Emirates', 'Emirati', '+971',
-          currency: CurrencyCode.aed, timezone: 'Asia/Dubai', emergency: '998'));
-  static const qatar = CountryCode._('QA',
-      _CountryMeta('Qatar', 'Qatari', '+974', currency: CurrencyCode.qar, timezone: 'Asia/Qatar', emergency: '999'));
-  static const kuwait = CountryCode._('KW',
-      _CountryMeta('Kuwait', 'Kuwaiti', '+965', currency: CurrencyCode.kwd, timezone: 'Asia/Kuwait', emergency: '112'));
+    'AE',
+    _CountryMeta(
+      'United Arab Emirates',
+      'Emirati',
+      '+971',
+      currency: CurrencyCode.aed,
+      timezone: 'Asia/Dubai',
+      emergency: '998',
+    ),
+  );
+  static const qatar = CountryCode._(
+    'QA',
+    _CountryMeta('Qatar', 'Qatari', '+974', currency: CurrencyCode.qar, timezone: 'Asia/Qatar', emergency: '999'),
+  );
+  static const kuwait = CountryCode._(
+    'KW',
+    _CountryMeta('Kuwait', 'Kuwaiti', '+965', currency: CurrencyCode.kwd, timezone: 'Asia/Kuwait', emergency: '112'),
+  );
   static const bahrain = CountryCode._(
-      'BH',
-      _CountryMeta('Bahrain', 'Bahraini', '+973',
-          currency: CurrencyCode.bhd, timezone: 'Asia/Bahrain', emergency: '999'));
-  static const oman = CountryCode._('OM',
-      _CountryMeta('Oman', 'Omani', '+968', currency: CurrencyCode.omr, timezone: 'Asia/Muscat', emergency: '999'));
+    'BH',
+    _CountryMeta(
+      'Bahrain',
+      'Bahraini',
+      '+973',
+      currency: CurrencyCode.bhd,
+      timezone: 'Asia/Bahrain',
+      emergency: '999',
+    ),
+  );
+  static const oman = CountryCode._(
+    'OM',
+    _CountryMeta('Oman', 'Omani', '+968', currency: CurrencyCode.omr, timezone: 'Asia/Muscat', emergency: '999'),
+  );
   static const jordan = CountryCode._(
-      'JO',
-      _CountryMeta('Jordan', 'Jordanian', '+962',
-          currency: CurrencyCode.jod, timezone: 'Asia/Amman', emergency: '911'));
+    'JO',
+    _CountryMeta(
+      'Jordan',
+      'Jordanian',
+      '+962',
+      currency: CurrencyCode.jod,
+      timezone: 'Asia/Amman',
+      emergency: '911',
+    ),
+  );
   static const lebanon = CountryCode._(
-      'LB',
-      _CountryMeta('Lebanon', 'Lebanese', '+961',
-          currency: CurrencyCode.usd, timezone: 'Asia/Beirut', emergency: '140'));
+    'LB',
+    _CountryMeta(
+      'Lebanon',
+      'Lebanese',
+      '+961',
+      timezone: 'Asia/Beirut',
+      emergency: '140',
+    ),
+  );
   static const morocco = CountryCode._(
-      'MA',
-      _CountryMeta('Morocco', 'Moroccan', '+212',
-          currency: CurrencyCode.usd, timezone: 'Africa/Casablanca', emergency: '150'));
+    'MA',
+    _CountryMeta(
+      'Morocco',
+      'Moroccan',
+      '+212',
+      timezone: 'Africa/Casablanca',
+      emergency: '150',
+    ),
+  );
   static const united_states = CountryCode._(
-      'US',
-      _CountryMeta('United States', 'American', '+1',
-          currency: CurrencyCode.usd, timezone: 'America/New_York', emergency: '911'));
+    'US',
+    _CountryMeta(
+      'United States',
+      'American',
+      '+1',
+      timezone: 'America/New_York',
+      emergency: '911',
+    ),
+  );
   static const united_kingdom = CountryCode._(
-      'GB',
-      _CountryMeta('United Kingdom', 'British', '+44',
-          currency: CurrencyCode.gbp, timezone: 'Europe/London', emergency: '999'));
+    'GB',
+    _CountryMeta(
+      'United Kingdom',
+      'British',
+      '+44',
+      currency: CurrencyCode.gbp,
+      timezone: 'Europe/London',
+      emergency: '999',
+    ),
+  );
 
   /// The app's operating markets, in reference order.
-  static const supportedCountries = [
+  static const List<CountryCode> supportedCountries = [
     egypt,
     saudi_arabia,
     united_arab_emirates,
@@ -139,13 +199,13 @@ class CountryCode extends ValueObject {
 
   /// Back-compat alias for [supportedCountries] — existing callers use
   /// `CountryCode.known`.
-  static const known = supportedCountries;
+  static const List<CountryCode> known = supportedCountries;
 
   /// Every current ISO 3166-1 alpha-2 country exactly once: the launch markets
   /// above followed by all remaining countries and territories. Each entry
   /// carries an English name, demonym, and international dial code; non-market
   /// entries take neutral currency / timezone / emergency defaults.
-  static const all = [
+  static const List<CountryCode> all = [
     // ── Launch markets ───────────────────────────────────────────────────
     egypt,
     saudi_arabia,
@@ -400,9 +460,9 @@ class CountryCode extends ValueObject {
   ];
 
   /// Any citizenship is accepted for nationality selection — aliases [all].
-  static const supportedNationalities = all;
+  static const List<CountryCode> supportedNationalities = all;
 
-  /// Derived string index for the [CountryCode.new] factory, keyed off [all].
+  /// Derived string index for the `CountryCode.new` factory, keyed off [all].
   static final Map<String, CountryCode> _byCode = {
     for (final c in all) c.value: c,
   };

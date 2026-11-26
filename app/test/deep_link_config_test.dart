@@ -18,7 +18,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const host = 'app.balsm.health';
   const bundleId = 'app.balsm.health';
-  const teamId = '8F78S7D344';
+  const teamId = '56V9N23Y78';
+  // The team the app was transferred from. Builds signed by it stay installed
+  // until people update, so the file keeps naming it; drop it once those
+  // builds are gone.
+  const previousTeamId = '8F78S7D344';
 
   String read(String path) => File(path).readAsStringSync();
 
@@ -46,7 +50,7 @@ void main() {
 
   group('Android', () {
     final manifest = read('android/app/src/main/AndroidManifest.xml');
-    final prefixes = RegExp(r'android:pathPrefix="([^"]+)"').allMatches(manifest).map((m) => m.group(1)!).toList();
+    final prefixes = RegExp('android:pathPrefix="([^"]+)"').allMatches(manifest).map((m) => m.group(1)!).toList();
 
     test('the App Links filter is verified and bound to the app host', () {
       expect(manifest, contains('android:autoVerify="true"'));
@@ -68,8 +72,9 @@ void main() {
       expect(target['package_name'], bundleId);
     });
 
-    final fingerprints = ((jsonDecode(read('web/.well-known/assetlinks.json')) as List).single as Map)['target']
-        ['sha256_cert_fingerprints'] as List;
+    final signingTarget =
+        ((jsonDecode(read('web/.well-known/assetlinks.json')) as List).single as Map)['target'] as Map;
+    final fingerprints = signingTarget['sha256_cert_fingerprints'] as List;
     final placeholder = fingerprints.any((f) => '$f'.contains('PLACEHOLDER'));
     test(
       'assetlinks.json carries a real signing-key fingerprint',
@@ -97,8 +102,8 @@ void main() {
     bool matches(String pattern, String path) =>
         pattern.endsWith('*') ? path.startsWith(pattern.substring(0, pattern.length - 1)) : path == pattern;
 
-    test('the association file names this team and bundle id', () {
-      expect(detail['appIDs'], ['$teamId.$bundleId']);
+    test('the association file names this team (and the previous one) and bundle id', () {
+      expect(detail['appIDs'], ['$teamId.$bundleId', '$previousTeamId.$bundleId']);
     });
 
     test('every routable path opens the app, not Safari', () {
@@ -121,7 +126,7 @@ void main() {
     test('every Runner build configuration signs with the entitlements file', () {
       // Without CODE_SIGN_ENTITLEMENTS the file above is dead text: no build
       // ever carried applinks:, so https links always opened Safari.
-      final configs = RegExp(r'isa = XCBuildConfiguration;.*?name = ([^;]+);', dotAll: true)
+      final configs = RegExp('isa = XCBuildConfiguration;.*?name = ([^;]+);', dotAll: true)
           .allMatches(read('ios/Runner.xcodeproj/project.pbxproj'))
           .map((m) => m.group(0)!)
           .where((b) => b.contains('PRODUCT_BUNDLE_IDENTIFIER = app.balsm.health;'))

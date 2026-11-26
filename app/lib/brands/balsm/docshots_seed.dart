@@ -56,7 +56,7 @@ Future<void> seedDocshotsData(ProviderContainer container) async {
   // instead of skipping everything because one of them is already there.
   await _seedCareTeam(container, userId);
   await _seedHealthProfile(container, userId);
-  await _seedRecords(container, userId);
+  await _seedRecords(container, userId, profileId);
   await _seedCheckIns(container, profileId);
 
   final meds = container.read(medicationsDataSourceProvider);
@@ -103,13 +103,15 @@ Future<void> seedDocshotsData(ProviderContainer container) async {
             .subtract(Duration(days: day))
             .add(Duration(hours: int.parse(parts[0]), minutes: int.parse(parts[1])));
         final missed = day == 3 && time == '20:00' && name == 'Metformin';
-        await meds.insertDoseEvent(DoseEvent(
-          id: DoseEventId.uuid(),
-          medicationId: id,
-          scheduledAt: scheduledAt,
-          recordedAt: scheduledAt.add(const Duration(minutes: 4)),
-          outcome: missed ? DoseOutcome.missed : DoseOutcome.taken,
-        ));
+        await meds.insertDoseEvent(
+          DoseEvent(
+            id: DoseEventId.uuid(),
+            medicationId: id,
+            scheduledAt: scheduledAt,
+            recordedAt: scheduledAt.add(const Duration(minutes: 4)),
+            outcome: missed ? DoseOutcome.missed : DoseOutcome.taken,
+          ),
+        );
       }
     }
   }
@@ -241,9 +243,9 @@ Future<void> _seedHealthProfile(ProviderContainer container, UserId userId) asyn
 /// No `filePath`: these rows carry no attachment, because a fabricated scan
 /// image is exactly the kind of thing that escapes into places it should not.
 /// The list, the type chips and the counts are what a screenshot needs.
-Future<void> _seedRecords(ProviderContainer container, UserId userId) async {
+Future<void> _seedRecords(ProviderContainer container, UserId userId, HealthProfileId profileId) async {
   final records = container.read(recordsDataSourceProvider);
-  if ((await records.findAll(scope: userId)).isNotEmpty) return;
+  if ((await records.findAll(scope: profileId)).isNotEmpty) return;
 
   final today = DateTime.now();
   final vault = <(RecordType type, String title, String note, int daysAgo)>[
@@ -264,13 +266,11 @@ Future<void> _seedRecords(ProviderContainer container, UserId userId) async {
         userId: userId,
         type: type,
         title: title,
-        tags: const [],
-        source: RecordSource.self,
         resultNote: note,
         takenAt: takenAt,
         createdAt: takenAt,
       ),
-      scope: userId,
+      scope: profileId,
     );
   }
 

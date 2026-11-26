@@ -29,11 +29,19 @@ void main() {
     // One block, used by the card AND the pre-mint view — the card only
     // exists once a token is minted, so a lone call site means the sheet
     // identifies nobody until you generate.
-    expect(RegExp(r'\.\.\._identity\(\)').allMatches(s).length, 2,
-        reason: 'identity must render under the QR and before minting');
-    // The handle reads as a handle, not as the copyable URL.
-    expect(s, contains("Text('@\$handle'"));
-    expect(s, isNot(contains("balsm.health/@\$handle")), reason: 'the URL belongs to the link row');
+    expect(
+      RegExp(r'\.\.\._identity\(\)').allMatches(s).length,
+      2,
+      reason: 'identity must render under the QR and before minting',
+    );
+    // The handle reads as a handle, not as the copyable URL. Tolerates the
+    // formatter wrapping the call onto several lines.
+    expect(
+      RegExp(r"Text\(\s*'@\$handle'").hasMatch(s),
+      isTrue,
+      reason: 'the handle must render as a Text showing @handle',
+    );
+    expect(s, isNot(contains(r'balsm.health/@$handle')), reason: 'the URL belongs to the link row');
   });
 
   test('the sheet offers no TTL picker', () {

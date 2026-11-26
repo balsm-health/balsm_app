@@ -49,7 +49,7 @@ class BackupDebouncer with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
-    _sub?.cancel();
+    unawaited(_sub?.cancel());
   }
 }
 

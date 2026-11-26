@@ -70,7 +70,7 @@ class WebEncryptedFileStore implements UserFileStore {
 
   Future<List<String>> _recordKeys(String userId) async {
     final keys = await _idb.run<JSArray<JSAny?>>(_files, (s) => s.getAllKeys(Idb.prefixed('$userId/')));
-    return [for (final key in keys.toDart) (key as JSString).toDart];
+    return [for (final key in keys.toDart) (key! as JSString).toDart];
   }
 
   Future<void> _dropPartition(String userId) =>

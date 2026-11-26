@@ -5,9 +5,10 @@ import '../helpers/fake_http_adapter.dart';
 
 void main() {
   test('getSelf parses snake_case payload', () async {
-    final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"data": {"user_id": "u1", "handle": "hoss", "first_name": "Hossam", "last_name": "Eldin", '
-        '"display_name": "Hossam Eldin", "country_code": "EG", "preferred_language": "ar", "deletion_state": "ACTIVE"}}'));
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse('{"data": {"user_id": "u1", "handle": "hoss", "first_name": "Hossam", "last_name": "Eldin", '
+          '"display_name": "Hossam Eldin", "country_code": "EG", "preferred_language": "ar", "deletion_state": "ACTIVE"}}'),
+    );
     final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
     expect(adapter.requests.single.path, '/account/self');
     expect(res!.id, 'u1');
@@ -35,7 +36,8 @@ void main() {
 
   test('getSelf deletionState defaults to ACTIVE', () async {
     final adapter = FakeHttpAdapter(
-        (_) => jsonResponse('{"data": {"user_id": "u1", "country_code": "EG", "preferred_language": "en"}}'));
+      (_) => jsonResponse('{"data": {"user_id": "u1", "country_code": "EG", "preferred_language": "en"}}'),
+    );
     final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
     expect(res!.deletionState, 'ACTIVE');
   });

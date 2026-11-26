@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
@@ -44,7 +45,7 @@ const _kSocial = <({String label, String url, String glyph})>[
   (
     label: 'LinkedIn',
     url: 'https://www.linkedin.com/company/balsm-health',
-    glyph: '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/>'
+    glyph: '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/> '
         '<rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
   ),
   (
@@ -124,8 +125,22 @@ class _EcosystemSheetState extends State<_EcosystemSheet> {
     final e = s.strings.ecosystem;
 
     final parts = <({IconData icon, Color fg, Color bg, String head, String body, bool roadmap})>[
-      (icon: LucideIcons.smartphone, fg: T.hueBlue, bg: T.hueBlue50, head: e.eco_p1h, body: e.eco_p1b, roadmap: false),
-      (icon: LucideIcons.building2, fg: T.hueAqua, bg: T.hueAqua50, head: e.eco_p2h, body: e.eco_p2b, roadmap: true),
+      (
+        icon: LucideIcons.smartphone,
+        fg: AppColors.hueBlue,
+        bg: AppColors.hueBlue50,
+        head: e.eco_p1h,
+        body: e.eco_p1b,
+        roadmap: false
+      ),
+      (
+        icon: LucideIcons.building2,
+        fg: AppColors.hueAqua,
+        bg: AppColors.hueAqua50,
+        head: e.eco_p2h,
+        body: e.eco_p2b,
+        roadmap: true
+      ),
     ];
 
     final actions = <({IconData icon, String head, String body, VoidCallback? onTap, _RowAffordance kind})>[
@@ -142,7 +157,7 @@ class _EcosystemSheetState extends State<_EcosystemSheet> {
         body: e.eco_a2b,
         onTap: () {
           Navigator.of(context).pop();
-          showFeedbackSheet(context);
+          unawaited(showFeedbackSheet(context));
         },
         kind: _RowAffordance.chevron,
       ),
@@ -165,82 +180,106 @@ class _EcosystemSheetState extends State<_EcosystemSheet> {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),
-          child: Row(children: [
-            Expanded(child: Text(e.eco_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(
-                icon: LucideIcons.x,
-                semanticLabel: s.strings.common.a11y_close,
-                ghost: true,
-                iconSize: 18,
-                onTap: () => Navigator.of(context).pop()),
-          ]),
-        ),
-        const Divider(height: 1, color: T.ink100),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 10, 20, sheetBottomInset(context, base: 32)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              // Brand moment — all five hues.
-              Column(children: [
-                const BalsmFlower(size: 54),
-                const SizedBox(height: 12),
-                Text(e.eco_hero, textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl).copyWith(height: 1.3)),
-                const SizedBox(height: 8),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 280),
-                  child: Text(e.eco_sub, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(e.eco_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
                 ),
-              ]),
-              const SizedBox(height: 18),
-              for (final p in parts) ...[
-                _PartRow(icon: p.icon, fg: p.fg, bg: p.bg, head: p.head, body: p.body, roadmap: p.roadmap),
-                const SizedBox(height: 10),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 18,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
               ],
-              const SizedBox(height: 14),
-              Text(e.eco_help_t, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, fontSize: FS.md)),
-              const SizedBox(height: 4),
-              Text(e.eco_help_sub, style: Typo.meta(ar: s.rtl)),
-              const SizedBox(height: 12),
-              PCard(
-                child: Column(children: [
-                  for (final (i, a) in actions.indexed)
-                    _ActionRow(
-                      icon: a.icon,
-                      head: a.head,
-                      body: a.body,
-                      onTap: a.onTap,
-                      kind: a.kind,
-                      first: i == 0,
-                      copied: _copied,
-                    ),
-                ]),
-              ),
-              const SizedBox(height: 24),
-              Text(e.eco_follow_t,
-                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, fontSize: FS.md)),
-              const SizedBox(height: 4),
-              Text(e.eco_follow_sub, style: Typo.meta(ar: s.rtl)),
-              const SizedBox(height: 12),
-              const _SocialGrid(),
-              const SizedBox(height: 20),
-              Text(
-                e.eco_tagline,
-                textAlign: TextAlign.center,
-                style: Typo.eyebrow(T.fg3, ar: s.rtl),
-              ),
-            ]),
+            ),
           ),
-        ),
-      ]),
+          const Divider(height: 1, color: AppColors.ink100),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 10, 20, sheetBottomInset(context, base: 32)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Brand moment — all five hues.
+                  Column(
+                    children: [
+                      const BalsmFlower(size: 54),
+                      const SizedBox(height: 12),
+                      Text(
+                        e.eco_hero,
+                        textAlign: TextAlign.center,
+                        style: Typo.heading(ar: s.rtl).copyWith(height: 1.3),
+                      ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        child: Text(e.eco_sub, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  for (final p in parts) ...[
+                    _PartRow(icon: p.icon, fg: p.fg, bg: p.bg, head: p.head, body: p.body, roadmap: p.roadmap),
+                    const SizedBox(height: 10),
+                  ],
+                  const SizedBox(height: 14),
+                  Text(
+                    e.eco_help_t,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, fontSize: FontSizes.body),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(e.eco_help_sub, style: Typo.meta(ar: s.rtl)),
+                  const SizedBox(height: 12),
+                  PCard(
+                    child: Column(
+                      children: [
+                        for (final (i, a) in actions.indexed)
+                          _ActionRow(
+                            icon: a.icon,
+                            head: a.head,
+                            body: a.body,
+                            onTap: a.onTap,
+                            kind: a.kind,
+                            first: i == 0,
+                            copied: _copied,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    e.eco_follow_t,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, fontSize: FontSizes.body),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(e.eco_follow_sub, style: Typo.meta(ar: s.rtl)),
+                  const SizedBox(height: 12),
+                  const _SocialGrid(),
+                  const SizedBox(height: 20),
+                  Text(
+                    e.eco_tagline,
+                    textAlign: TextAlign.center,
+                    style: Typo.eyebrow(AppColors.textTertiary, ar: s.rtl),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -269,28 +308,44 @@ class _PartRow extends StatelessWidget {
       // Was `var(--bg2)` — an undefined token that resolved to nothing. The
       // design now names the tint outright as `var(--balsm-ink-50)`, which
       // confirms the blank was an authoring slip rather than a white row.
-      decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IconSquare(icon, bg: bg, fg: fg),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
-              Text(head, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              if (roadmap)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-                  child: Text(s.strings.common.roadmap,
-                      style: Typo.meta(ar: s.rtl)
-                          .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.4)),
+      decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.md)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconSquare(icon, bg: bg, fg: fg),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  children: [
+                    Text(
+                      head,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                    if (roadmap)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration:
+                            BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.pill)),
+                        child: Text(
+                          s.strings.common.roadmap,
+                          style: Typo.meta(ar: s.rtl)
+                              .copyWith(fontSize: FontSizes.eyebrow, fontWeight: FontWeight.w700, letterSpacing: 0.4),
+                        ),
+                      ),
+                  ],
                 ),
-            ]),
-            const SizedBox(height: 2),
-            Text(body, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
-          ]),
-        ),
-      ]),
+                const SizedBox(height: 2),
+                Text(body, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -323,64 +378,79 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final row = Container(
-      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: AppColors.ink100))),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IconSquare(icon, bg: s.accent.bg, fg: s.accent.d),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(head, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            const SizedBox(height: 2),
-            Text(body, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
-            if (kind == _RowAffordance.share) ...[
-              const SizedBox(height: 6),
-              // The URL is Latin either way, so it stays LTR in Arabic.
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: Align(
-                  alignment: s.rtl ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(copied ? LucideIcons.check : LucideIcons.link,
-                        size: 12, color: copied ? T.success : s.accent.d),
-                    const SizedBox(width: 5),
-                    // A long URL at a large text scale must ellipsize, not
-                    // push the row past the card edge.
-                    Flexible(
-                      child: Text(
-                        copied ? s.strings.ecosystem.eco_link_copied : _kDownloadLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Typo.meta(ar: s.rtl).copyWith(
-                          fontSize: FS.xs,
-                          fontWeight: FontWeight.w700,
-                          color: copied ? T.success : s.accent.d,
-                        ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconSquare(icon, bg: s.accent.bg, fg: s.accent.d),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  head,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(body, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
+                if (kind == _RowAffordance.share) ...[
+                  const SizedBox(height: 6),
+                  // The URL is Latin either way, so it stays LTR in Arabic.
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            copied ? LucideIcons.check : LucideIcons.link,
+                            size: 12,
+                            color: copied ? AppColors.success : s.accent.d,
+                          ),
+                          const SizedBox(width: 5),
+                          // A long URL at a large text scale must ellipsize, not
+                          // push the row past the card edge.
+                          Flexible(
+                            child: Text(
+                              copied ? s.strings.ecosystem.eco_link_copied : _kDownloadLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Typo.meta(ar: s.rtl).copyWith(
+                                fontSize: FontSizes.meta,
+                                fontWeight: FontWeight.w700,
+                                color: copied ? AppColors.success : s.accent.d,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ]),
-                ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Each destination gets the mark that matches where it goes.
+          switch (kind) {
+            _RowAffordance.chevron => Padding(
+                padding: const EdgeInsetsDirectional.only(start: 8),
+                child: Chevron(rtl: s.rtl),
               ),
-            ],
-          ]),
-        ),
-        // Each destination gets the mark that matches where it goes.
-        switch (kind) {
-          _RowAffordance.chevron => Padding(
-              padding: const EdgeInsetsDirectional.only(start: 8),
-              child: Chevron(rtl: s.rtl),
-            ),
-          _RowAffordance.external => const Padding(
-              padding: EdgeInsetsDirectional.only(start: 8),
-              child: Icon(LucideIcons.externalLink, size: 16, color: T.fg3),
-            ),
-          _RowAffordance.share => const Padding(
-              padding: EdgeInsetsDirectional.only(start: 8),
-              child: Icon(LucideIcons.share, size: 16, color: T.fg3),
-            ),
-          _RowAffordance.none => const SizedBox.shrink(),
-        },
-      ]),
+            _RowAffordance.external => const Padding(
+                padding: EdgeInsetsDirectional.only(start: 8),
+                child: Icon(LucideIcons.externalLink, size: 16, color: AppColors.textTertiary),
+              ),
+            _RowAffordance.share => const Padding(
+                padding: EdgeInsetsDirectional.only(start: 8),
+                child: Icon(LucideIcons.share, size: 16, color: AppColors.textTertiary),
+              ),
+            _RowAffordance.none => const SizedBox.shrink(),
+          },
+        ],
+      ),
     );
     return onTap == null ? row : PressHighlight(onTap: onTap, child: row);
   }
@@ -393,16 +463,20 @@ class _SocialGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      const gap = 8.0;
-      final tile = (c.maxWidth - gap * (_kSocial.length - 1)) / _kSocial.length;
-      return Row(children: [
-        for (final (i, x) in _kSocial.indexed) ...[
-          if (i > 0) const SizedBox(width: gap),
-          SizedBox(width: tile, child: _SocialTile(label: x.label, url: x.url, glyph: x.glyph)),
-        ],
-      ]);
-    });
+    return LayoutBuilder(
+      builder: (context, c) {
+        const gap = 8.0;
+        final tile = (c.maxWidth - gap * (_kSocial.length - 1)) / _kSocial.length;
+        return Row(
+          children: [
+            for (final (i, x) in _kSocial.indexed) ...[
+              if (i > 0) const SizedBox(width: gap),
+              SizedBox(width: tile, child: _SocialTile(label: x.label, url: x.url, glyph: x.glyph)),
+            ],
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -424,14 +498,14 @@ class _SocialTile extends StatelessWidget {
           onTap: () => _openExternal(url),
           child: Container(
             height: 44,
-            decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+            decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.md)),
             alignment: Alignment.center,
             child: SvgPicture.string(
               '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" '
               'stroke="#000" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">$glyph</svg>',
               width: 20,
               height: 20,
-              colorFilter: const ColorFilter.mode(T.fg2, BlendMode.srcIn),
+              colorFilter: const ColorFilter.mode(AppColors.textSecondary, BlendMode.srcIn),
             ),
           ),
         ),

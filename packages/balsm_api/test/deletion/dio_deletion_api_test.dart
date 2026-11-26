@@ -5,8 +5,11 @@ import '../helpers/fake_http_adapter.dart';
 
 void main() {
   test('requestIntake POSTs and parses grace_until as UTC', () async {
-    final adapter = FakeHttpAdapter((_) =>
-        jsonResponse('{"data": {"grace_until": "2026-07-30T00:00:00+02:00", "deletion_state": "DELETION_REQUESTED"}}'));
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse(
+        '{"data": {"grace_until": "2026-07-30T00:00:00+02:00", "deletion_state": "DELETION_REQUESTED"}}',
+      ),
+    );
     final api = DioDeletionApi(net: fakeNet(adapter));
 
     final res = await api.requestIntake();

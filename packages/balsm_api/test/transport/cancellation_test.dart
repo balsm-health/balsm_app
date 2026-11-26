@@ -11,10 +11,12 @@ void main() {
   });
 
   test('fromDioException maps a cancel to code "cancelled" / isCancelled', () {
-    final e = ApiException.fromDioException(DioException(
-      requestOptions: RequestOptions(path: '/x'),
-      type: DioExceptionType.cancel,
-    ));
+    final e = ApiException.fromDioException(
+      DioException(
+        requestOptions: RequestOptions(path: '/x'),
+        type: DioExceptionType.cancel,
+      ),
+    );
     expect(e.code, 'cancelled');
     expect(e.isCancelled, isTrue);
     expect(e.statusCode, isNull);

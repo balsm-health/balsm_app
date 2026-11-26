@@ -12,6 +12,7 @@ class CareProvider {
     required this.healthProfileId,
     required this.type,
     required this.name,
+    required this.createdAt,
     this.specialty,
     this.phone,
     this.phone2,
@@ -20,7 +21,6 @@ class CareProvider {
     this.address,
     this.mapUrl,
     this.notes,
-    required this.createdAt,
   });
 
   final CareProviderId id;

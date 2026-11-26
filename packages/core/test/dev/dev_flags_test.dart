@@ -23,7 +23,7 @@ void main() {
   });
 
   test('flags default to off', () {
-    final c = ProviderContainer();
+    final c = ProviderContainer(retry: noProviderRetry);
     addTearDown(c.dispose);
 
     expect(c.read(devFlagProvider(kFlagMapNoZoomFloor)), isFalse);
@@ -32,7 +32,7 @@ void main() {
   test('toggling a flag is visible to the code that reads it', () async {
     // Flags were persist-only; a toggle that stayed inside the panel would make
     // this feature do nothing. The store is shared for exactly this reason.
-    final c = ProviderContainer();
+    final c = ProviderContainer(retry: noProviderRetry);
     addTearDown(c.dispose);
 
     final store = c.read(devConfigStoreProvider);
@@ -46,7 +46,7 @@ void main() {
   });
 
   test('a flag survives a reload, so it holds across a restart', () async {
-    final c = ProviderContainer();
+    final c = ProviderContainer(retry: noProviderRetry);
     addTearDown(c.dispose);
 
     final store = c.read(devConfigStoreProvider);

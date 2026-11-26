@@ -13,8 +13,7 @@ void main() {
   });
 
   test('baseUrl setter re-points the shared Dio instance', () {
-    final client = BalsmApiClient.create(baseUrl: 'https://a.example');
-    client.baseUrl = 'https://b.example';
+    final client = BalsmApiClient.create(baseUrl: 'https://a.example')..baseUrl = 'https://b.example';
     expect(client.dio.options.baseUrl, 'https://b.example');
   });
 }

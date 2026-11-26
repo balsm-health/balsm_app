@@ -21,7 +21,7 @@ class DevHostInterceptor extends Interceptor {
   /// did not change or the lookup found nothing.
   final Future<String?> Function() rediscover;
 
-  /// Sends [options] again, against whatever base URL the client now holds.
+  /// Sends `options` again, against whatever base URL the client now holds.
   final Future<Response<dynamic>> Function(RequestOptions options) retry;
 
   /// Guards against a storm: a screen that fires six requests at once must
@@ -54,7 +54,7 @@ class DevHostInterceptor extends Interceptor {
       handler.resolve(await retry(options));
     } on DioException catch (e) {
       handler.next(e);
-    } catch (_) {
+    } on Object catch (_) {
       handler.next(err);
     }
   }

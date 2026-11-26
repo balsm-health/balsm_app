@@ -6,7 +6,7 @@ import 'backup_key_derivation.dart';
 /// Serializes and AES-256-GCM encrypts the on-device backup snapshot.
 ///
 /// Blob layout (all single-byte lengths; values are small and fixed):
-/// ```
+/// ```text
 /// magic "BLSM" (4) | version (1) | saltLen (1) | salt | nonceLen (1) | nonce
 ///                 | macLen (1) | mac | ciphertext…
 /// ```
@@ -31,16 +31,16 @@ class BackupCodec {
   }) async {
     final key = await deriveKey(recoverySecret, salt);
     final box = await _algo.encrypt(data, secretKey: SecretKey(key));
-    final out = BytesBuilder();
-    out.add(_magic);
-    out.addByte(_version);
-    out.addByte(salt.length);
-    out.add(salt);
-    out.addByte(box.nonce.length);
-    out.add(box.nonce);
-    out.addByte(box.mac.bytes.length);
-    out.add(box.mac.bytes);
-    out.add(box.cipherText);
+    final out = BytesBuilder()
+      ..add(_magic)
+      ..addByte(_version)
+      ..addByte(salt.length)
+      ..add(salt)
+      ..addByte(box.nonce.length)
+      ..add(box.nonce)
+      ..addByte(box.mac.bytes.length)
+      ..add(box.mac.bytes)
+      ..add(box.cipherText);
     return out.toBytes();
   }
 

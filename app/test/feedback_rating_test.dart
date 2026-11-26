@@ -1,6 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/feedback_sheet.dart';
-import 'package:app/balsm_app/tokens.dart';
 import 'package:app/balsm_app/widgets/balsm_mark.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,16 +22,20 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Scaffold(
-            body: Builder(builder: (c) => TextButton(onPressed: () => showFeedbackSheet(c), child: const Text('open'))),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Scaffold(
+              body:
+                  Builder(builder: (c) => TextButton(onPressed: () => showFeedbackSheet(c), child: const Text('open'))),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     return state;
@@ -45,7 +48,7 @@ void main() {
     final s = await pump(tester);
     expect(find.text(s.strings.feedback.fb_rate_q(Gender.other)), findsOne);
     // All five marks wear the flat ink wash.
-    const ink = ColorFilter.mode(T.ink200, BlendMode.srcIn);
+    const ink = ColorFilter.mode(AppColors.ink200, BlendMode.srcIn);
     expect(markFilters(tester).where((f) => f == ink).length, 5);
   });
 
@@ -58,7 +61,7 @@ void main() {
 
     // A lit mark drops the filter entirely and paints the brand's five hues;
     // only the two still-unlit ones keep the flat ink wash.
-    const ink = ColorFilter.mode(T.ink200, BlendMode.srcIn);
+    const ink = ColorFilter.mode(AppColors.ink200, BlendMode.srcIn);
     final filters = markFilters(tester).toList();
     expect(filters.length, 2, reason: 'three lit marks are unfiltered');
     expect(filters.every((f) => f == ink), isTrue, reason: 'the unlit two stay flat ink');

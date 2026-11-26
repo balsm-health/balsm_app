@@ -1,10 +1,11 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/cancel_deletion_use_case.dart';
+import '../i18n/i18n.dart';
 
 /// Shown after a user logs into an account that is pending deletion.
 ///
@@ -42,46 +43,46 @@ class _PostDeletionLoginScreenState extends ConsumerState<PostDeletionLoginScree
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(deletionStringsProvider);
     final grace = widget.graceUntil;
-    final dateText = grace != null ? DateFormat.yMMMMd().format(grace.toLocal()) : 'soon';
+    final dateText = grace != null ? DateFormat.yMMMMd().format(grace.toLocal()) : m.soon;
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BalsmAppBar.withBack(
-              title: 'Welcome back',
+              title: m.welcomeBack,
               onBack: () => context.pop(),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: BalsmColors.warningBg,
-                      borderRadius: BorderRadius.circular(BalsmRadius.lg),
+                      color: AppColors.warningBackground,
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
                       border: Border.all(
-                        color: BalsmColors.warning.withAlpha(80),
+                        color: AppColors.warning.withAlpha(80),
                       ),
                     ),
                     child: Row(
                       children: [
                         const Icon(
                           Icons.schedule_outlined,
-                          color: BalsmColors.warning,
+                          color: AppColors.warning,
                           size: 22,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Your account is scheduled for deletion on '
-                            '$dateText.',
+                            m.scheduledOn(dateText),
                             style: const TextStyle(
-                              fontSize: 14,
-                              color: BalsmColors.fg2,
+                              fontSize: FontSizes.description,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -89,22 +90,21 @@ class _PostDeletionLoginScreenState extends ConsumerState<PostDeletionLoginScree
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Changed your mind? You can cancel the deletion and keep '
-                    'your account.',
-                    style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
+                  Text(
+                    m.changedMind,
+                    style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
                   ),
-                  if (_error != null) ...[
+                  if (_error case final error?) ...[
                     const SizedBox(height: 20),
-                    BalsmErrorBanner(message: _error!, onRetry: _cancel),
+                    BalsmErrorBanner(message: error, onRetry: _cancel),
                   ],
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
               child: BalsmButton(
-                label: 'Cancel deletion',
+                label: m.publicCancelAction,
                 loading: _submitting,
                 onPressed: _submitting ? null : _cancel,
               ),

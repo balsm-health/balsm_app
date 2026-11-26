@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/ports/care_providers_data_source.dart';
 import '../../domain/entities/care_provider.dart';
+import '../../domain/value_objects/care_provider_file.dart';
 import '../../domain/value_objects/care_provider_type.dart';
 import '../../domain/value_objects/ids.dart';
-import '../../domain/value_objects/care_provider_file.dart';
 
 /// Drift-backed [CareProvidersDataSource]. Raw SQL against the PHI schema in
 /// core's `_phiSchema`, like every other on-device PHI store here.
@@ -157,7 +157,7 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
     );
     // Local write already happened — the queue is a mirror, never a gate (ADR-11).
     final user = _activeUser?.call();
-    if (user != null) {
+    if (user != null && await _mirrors(profileId)) {
       await _outbox?.enqueue(
         entity: _entity,
         entityId: key.value,
@@ -168,6 +168,23 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
     }
   }
 
+  /// The profile that owns [key], or null when there is no such row.
+  Future<HealthProfileId?> _ownerOf(CareProviderId key) async {
+    final rows = await _db.customSelect(
+      'SELECT health_profile_id FROM care_provider WHERE id = ?',
+      variables: [Variable.withString(key.value)],
+    ).get();
+    final id = rows.isEmpty ? null : rows.first.readNullable<String>('health_profile_id');
+    return id == null ? null : HealthProfileId.value(id);
+  }
+
+  /// Care-team cloud sync is account-level, so only the account holder's own
+  /// providers are mirrored; a family member's doctors stay on this phone. An
+  /// unknown owner (the row is already gone) keeps the old behaviour: the
+  /// delete is queued.
+  Future<bool> _mirrors(HealthProfileId? profileId) async =>
+      profileId == null || await _db.isSelfHealthProfile(profileId);
+
   @override
   Future<void> putBulk(Map<CareProviderId, CareProvider> values, {HealthProfileId? scope}) async {
     for (final e in values.entries) {
@@ -177,13 +194,15 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
 
   @override
   Future<void> delete(CareProviderId key, {HealthProfileId? scope}) async {
+    // Read the owner first: the row is gone after the DELETE.
+    final owner = await _ownerOf(key);
     await _db.customUpdate(
       'DELETE FROM care_provider WHERE id = ?',
       variables: [Variable.withString(key.value)],
       updateKind: UpdateKind.delete,
     );
     final user = _activeUser?.call();
-    if (user != null) {
+    if (user != null && await _mirrors(owner)) {
       await _outbox?.enqueue(
         entity: _entity,
         entityId: key.value,
@@ -276,7 +295,7 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
     await _db.customInsert(
       'INSERT INTO care_provider_file (id, care_provider_id, path, kind, created_at) '
       'SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS ('
-      'SELECT 1 FROM care_provider_file WHERE care_provider_id = ? AND path = ?)',
+      ' SELECT 1 FROM care_provider_file WHERE care_provider_id = ? AND path = ?)',
       variables: [
         Variable.withString(CareProviderId.uuid().value),
         Variable.withString(providerId.value),

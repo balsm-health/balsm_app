@@ -1,10 +1,10 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/widgets/body_map.dart';
 import 'package:core/core.dart' show Gender;
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:self_report/self_report.dart';
 
 /// The anatomy plate must never be clipped.

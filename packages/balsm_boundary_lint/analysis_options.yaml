@@ -1,0 +1,4 @@
+# Not on balsm_lints: this package pins analyzer ^6.11-era APIs for
+# custom_lint and is excluded from CI analysis (see .github/workflows/ci.yml).
+formatter:
+  page_width: 120

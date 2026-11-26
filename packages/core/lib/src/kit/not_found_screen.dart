@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '_tokens.dart';
+
+import '../localization/core_messages.dart';
 import 'status_screen.dart';
+import 'tokens.dart';
 
 /// Localized 404 / unknown-route screen. Used as the `go_router` errorBuilder
 /// target. RTL-aware via the ambient [Directionality].
@@ -20,13 +22,14 @@ class NotFoundScreen extends StatelessWidget {
     );
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
+    } on Object catch (_) {
       // Best-effort; nothing sensitive to surface.
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final m = coreMessagesOf(context);
     return Scaffold(
       body: Center(
         child: Padding(
@@ -34,22 +37,22 @@ class NotFoundScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 56, color: BalsmColors.ink400),
+              const Icon(Icons.error_outline, size: 56, color: AppColors.ink400),
               const SizedBox(height: 16),
               Text(
-                'Page not found',
+                m.notfound.title,
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Text(
-                'The page you are looking for does not exist.',
+              Text(
+                m.notfound.body,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: BalsmColors.ink600),
+                style: const TextStyle(color: AppColors.ink600),
               ),
               if (onGoHome != null) ...[
                 const SizedBox(height: 24),
-                FilledButton(onPressed: onGoHome, child: const Text('Go home')),
+                FilledButton(onPressed: onGoHome, child: Text(m.notfound.go_home)),
               ],
               // G6 / SC-011a: a hard-blocking screen must expose a no-auth
               // support channel + the public status page in ≤2 taps.
@@ -61,7 +64,7 @@ class NotFoundScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.public, size: 18),
-                label: const Text('Service status'),
+                label: Text(m.status.title),
               ),
               TextButton.icon(
                 onPressed: _emailSupport,
