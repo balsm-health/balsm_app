@@ -155,6 +155,14 @@ jobs:
       - name: Translation completeness
         working-directory: app
         run: flutter test ../test/i18n --exclude-tags e2e
+      # Blocking, unlike the coverage run below: a store update that crashes on
+      # open, drops rows or settings, or signs patients out must fail the PR.
+      - name: App update — database
+        working-directory: packages/core
+        run: flutter test test/upgrade
+      - name: App update — settings and session
+        working-directory: app
+        run: flutter test test/upgrade
 
   build-web:
     name: Build web
