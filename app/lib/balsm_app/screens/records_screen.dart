@@ -96,13 +96,15 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
     if (sel == null || sel.isEmpty || userId == null) return;
     final doomed = shown.where((r) => sel.contains(r.id.value)).toList();
     final confirmed = await _confirmDelete(doomed.length);
-    if (!confirmed) return;
+    // Riverpod 3 throws on a disposed ConsumerState's ref.
+    if (!confirmed || !mounted) return;
     final deleteRecord = ref.read(deleteRecordDocumentUseCaseProvider);
     for (final r in doomed) {
       await deleteRecord.call(r, scope: userId);
     }
+    if (!mounted) return;
     ref.invalidate(recordListProvider);
-    if (mounted) _exitSelection();
+    _exitSelection();
   }
 
   /// Deleting PHI in bulk is irreversible, so it asks first — the design's

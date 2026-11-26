@@ -52,11 +52,19 @@ class DayRecordsScreen extends ConsumerStatefulWidget {
 typedef _Key = (CheckInId, CheckInMetric);
 
 class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with DeleteKit<DayRecordsScreen, _Key> {
-  late List<CheckIn> _shown = widget.checkIns;
-
-  /// The day on screen — kept apart from [_shown], which an edit can empty
-  /// by moving its only reading to another day.
+  /// The day on screen — kept apart from the check-ins shown, which an edit
+  /// can empty by moving its only reading to another day.
   late final DateTime _day = widget.checkIns.first.recordedAt.toLocal();
+
+  /// Whose check-ins these are; the screen follows that profile's live store.
+  late final HealthProfileId _owner = widget.checkIns.first.healthProfileId;
+
+  /// The day's check-ins as stored now: an edit or a delete shows once the
+  /// store has it. The route's snapshot stands in until the store answers.
+  List<CheckIn> _dayOf(AsyncValue<List<CheckIn>> stored) => switch (stored.value) {
+        final all? => checkInsOnDay(all, _day),
+        null => widget.checkIns,
+      };
 
   // Read once up front: a store still running when the screen closes must
   // not reach for ref.
@@ -110,13 +118,13 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
   }
 
   /// Opens the quick-log form on [r] (one [symptom] of it, for a symptoms
-  /// reading) and shows the stored edit. A reading moved to another day
-  /// leaves this one.
+  /// reading). The stored edit reaches the screen through the store; a
+  /// reading moved to another day leaves this one.
   Future<void> _edit(_Reading r, {SymptomId? symptom}) async {
     final photo = await _photoOf(r.checkIn);
     if (!mounted) return;
     final d = r.metric == CheckInMetric.symptoms ? null : _dayLabel();
-    final stored = await showEditReading(
+    await showEditReading(
       context,
       checkIn: r.checkIn,
       metric: r.metric,
@@ -124,16 +132,6 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
       photoBytes: photo,
       onDelete: d == null ? null : () => _ask([r], day: d),
     );
-    if (stored == null || !mounted) return;
-    bool sameDay(DateTime t) {
-      final l = t.toLocal();
-      return l.year == _day.year && l.month == _day.month && l.day == _day.day;
-    }
-
-    setState(() {
-      _shown = _shown.map((ci) => ci.id == stored.id ? stored : ci).where((ci) => sameDay(ci.recordedAt)).toList()
-        ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
-    });
   }
 
   String _dayLabel() => '${_day.day} ${checkInMonthShort(AppScope.of(context), _day)}';
@@ -151,19 +149,19 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
         body: one != null ? c.rec_del_body_one(day, one.time) : c.rec_del_body_n(day),
         done: what,
         onConfirmed: () {
+          if (!mounted) return;
           // One store per check-in touched, however many of its readings went.
           final gone = <CheckInId, List<CheckInMetric>>{};
           for (final r in readings) {
             (gone[r.checkIn.id] ??= []).add(r.metric);
           }
-          final shown = [
-            for (final ci in _shown)
-              if (gone[ci.id] case final metrics?) metrics.fold(ci, (x, m) => x.without(m)) else ci,
-          ];
-          for (final edited in shown.where((ci) => gone.containsKey(ci.id))) {
-            _saving = _saving.then((_) => _persist(edited));
+          // From the check-ins as stored now, so an earlier delete still holds.
+          for (final ci in _dayOf(ref.read(profileCheckInsProvider(_owner)))) {
+            if (gone[ci.id] case final metrics?) {
+              final edited = metrics.fold(ci, (x, m) => x.without(m));
+              _saving = _saving.then((_) => _persist(edited));
+            }
           }
-          setState(() => _shown = shown);
         },
       ),
     );
@@ -253,13 +251,14 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final shown = _dayOf(ref.watch(profileCheckInsProvider(_owner)));
     final c = s.strings.checkin;
     final day = _dayLabel();
     final localizations = MaterialLocalizations.of(context);
     String timeOf(CheckIn ci) => localizations.formatTimeOfDay(TimeOfDay.fromDateTime(ci.recordedAt.toLocal()));
 
     final moods = [
-      for (final ci in _shown)
+      for (final ci in shown)
         if (ci.mood case final mood?)
           _Reading(
             checkIn: ci,
@@ -273,9 +272,9 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
             bg: AppColors.ink50,
           ),
     ];
-    final rows = [for (final ci in _shown) ..._metricRows(s, ci, timeOf(ci))];
+    final rows = [for (final ci in shown) ..._metricRows(s, ci, timeOf(ci))];
     final symptoms = [
-      for (final ci in _shown)
+      for (final ci in shown)
         if (ci.symptoms.isNotEmpty)
           _Reading(
             checkIn: ci,
@@ -290,7 +289,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
           ),
     ];
     final all = [...moods, ...rows, ...symptoms];
-    final empty = _shown.every((ci) => ci.isEmpty);
+    final empty = shown.every((ci) => ci.isEmpty);
 
     void ask(List<_Reading> rs) => _ask(rs, day: day);
 
@@ -488,7 +487,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
                               ),
                             ),
                           ),
-                        for (final ci in _shown) ...[
+                        for (final ci in shown) ...[
                           // Where it hurt — the body map as the patient marked it.
                           if (ci.painSites.isNotEmpty)
                             PCard(
@@ -741,4 +740,14 @@ class _EmptyDay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The check-ins of [all] recorded on [day] (local time), oldest first.
+List<CheckIn> checkInsOnDay(Iterable<CheckIn> all, DateTime day) {
+  bool sameDay(CheckIn ci) {
+    final l = ci.recordedAt.toLocal();
+    return l.year == day.year && l.month == day.month && l.day == day.day;
+  }
+
+  return all.where(sameDay).toList()..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
 }

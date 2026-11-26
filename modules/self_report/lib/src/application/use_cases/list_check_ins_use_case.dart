@@ -26,7 +26,8 @@ final listCheckInsUseCaseProvider = Provider<ListCheckInsUseCase>(
 );
 
 /// Reactive check-in history for the active profile (empty when signed out).
-final checkInHistoryProvider = StreamProvider<List<CheckIn>>((ref) {
+/// Auto-disposing: the decrypted history leaves memory with its last screen.
+final StreamProvider<List<CheckIn>> checkInHistoryProvider = StreamProvider.autoDispose<List<CheckIn>>((ref) {
   final profileId = ref.watch(currentProfileIdProvider);
   if (profileId == null) return Stream.value(const <CheckIn>[]);
   return ref.watch(listCheckInsUseCaseProvider).watch();

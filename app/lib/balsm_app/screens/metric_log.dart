@@ -19,6 +19,8 @@ import '../widgets/photo_attach.dart';
 import 'checkin_shared.dart';
 import 'metric_drafts.dart';
 
+export 'metric_drafts.dart' show MetricLogCapture;
+
 // Fits the swatch label on one line under its 44pt swatch.
 const _swatchLabelFontSize = 10.5;
 // The live reading, the largest figure in the app.
@@ -34,63 +36,6 @@ enum MetricLogHost {
   /// [MetricLog.onChanged] fires on every edit.
   embedded,
 }
-
-/// What a metric template currently holds. PHI — never log these values.
-@immutable
-class MetricLogCapture {
-  const MetricLogCapture({
-    this.summary = '',
-    this.note,
-    this.mood,
-    this.painLevel = PainLevel.none,
-    this.painSites = const {},
-    this.symptoms = const {},
-    this.symptomDetails = const {},
-    this.vitals = Vitals.empty,
-    this.when,
-    this.photoBytes,
-  });
-
-  final String summary;
-  final String? note;
-  final Mood? mood;
-  final PainLevel painLevel;
-  final Set<PainSite> painSites;
-  final Set<SymptomId> symptoms;
-
-  /// Per-symptom observations (`quicklog.jsx` QuickSymptomDetail). Sparse.
-  final Map<SymptomId, SymptomDetail> symptomDetails;
-
-  final Vitals vitals;
-  final DateTime? when;
-
-  /// Local preview bytes for a note photo. Never log these.
-  final List<int>? photoBytes;
-
-  @override
-  bool operator ==(Object other) =>
-      other is MetricLogCapture &&
-      other.summary == summary &&
-      other.note == note &&
-      other.mood == mood &&
-      other.painLevel == painLevel &&
-      other.vitals == vitals &&
-      _sameSet(other.painSites, painSites) &&
-      _sameSet(other.symptoms, symptoms);
-
-  @override
-  int get hashCode => Object.hash(
-        summary,
-        note,
-        mood,
-        painLevel,
-        vitals,
-        Object.hashAllUnordered(painSites),
-        Object.hashAllUnordered(symptoms),
-      );
-}
-
-bool _sameSet<E>(Set<E> a, Set<E> b) => a.length == b.length && a.containsAll(b);
 
 typedef MetricLogSave = void Function(MetricLogCapture capture);
 typedef MetricLogChanged = void Function(MetricLogCapture capture, {required bool valid});
@@ -265,14 +210,6 @@ class MetricLog extends StatelessWidget {
   }
 }
 
-/// Symptoms the design pairs with the body map (`loc: true`). Derived from the
-/// catalog so the screen and the domain cannot disagree — they did while
-/// tingling and itching were missing from [SymptomId] entirely.
-final Set<String> _locatedSymptomIds = {
-  for (final s in SymptomId.catalog)
-    if (s.hasLocation) s.id,
-};
-
 mixin _MetricLogState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   PatientAppState get s;
   MetricLogHost get host;
@@ -294,6 +231,10 @@ mixin _MetricLogState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   /// The key every draft provider of this form is read with.
   DraftKey get draftKey => (form: _form, initial: initial?.vitals);
+
+  /// The key the mood, pain and symptom drafts are read with: the whole
+  /// stored entry, not only its vitals.
+  late final CaptureDraftKey captureKey = (form: _form, initial: initial);
 
   // Built once: the photo in it has identity equality, so a fresh one per read
   // would be a different provider every time.
@@ -575,19 +516,25 @@ class _MoodLogState extends ConsumerState<_MoodLog> with _MetricLogState {
   @override
   late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  late int mood = widget.initial?.mood?.score ?? 0;
+  @override
+  ProviderListenable<Object?> get draft => moodDraftProvider(captureKey);
+
+  MoodDraft get _mood => ref.read(moodDraftProvider(captureKey));
 
   @override
-  bool get valid => mood > 0;
+  bool get valid => _mood.valid;
 
   @override
-  MetricLogCapture get capture => MetricLogCapture(
-        summary: mood > 0 ? moodLabel(s, mood, subject: widget.subject) : '',
-        note: _trimmedNote(noteCtrl),
-        mood: mood > 0 ? Mood(mood) : null,
-        when: when,
-        photoBytes: photo?.bytes,
-      );
+  MetricLogCapture get capture {
+    final mood = _mood;
+    return MetricLogCapture(
+      summary: mood.valid ? moodLabel(s, mood.score, subject: widget.subject) : '',
+      note: _trimmedNote(noteCtrl),
+      mood: mood.mood,
+      when: when,
+      photoBytes: photo?.bytes,
+    );
+  }
 
   @override
   void dispose() {
@@ -596,29 +543,29 @@ class _MoodLogState extends ConsumerState<_MoodLog> with _MetricLogState {
   }
 
   @override
-  Widget build(BuildContext context) => chrome(
-        // Gaps between the cells, not padding inside them: padding on one
-        // side left the first four 10dp narrower than the last.
-        child: Row(
-          children: [
-            for (var i = 0; i < 5; i++) ...[
-              if (i > 0) const SizedBox(width: 10),
-              Expanded(
-                child: MoodCell(
-                  lv: i + 1,
-                  selected: mood == i + 1,
-                  s: s,
-                  subject: widget.subject,
-                  onTap: () => setState(() {
-                    mood = i + 1;
-                    emit();
-                  }),
-                ),
+  Widget build(BuildContext context) {
+    final score = ref.watch(moodDraftProvider(captureKey)).score;
+    return chrome(
+      // Gaps between the cells, not padding inside them: padding on one
+      // side left the first four 10dp narrower than the last.
+      child: Row(
+        children: [
+          for (var i = 0; i < 5; i++) ...[
+            if (i > 0) const SizedBox(width: 10),
+            Expanded(
+              child: MoodCell(
+                lv: i + 1,
+                selected: score == i + 1,
+                s: s,
+                subject: widget.subject,
+                onTap: () => ref.read(moodDraftProvider(captureKey).notifier).pick(i + 1),
               ),
-            ],
+            ),
           ],
-        ),
-      );
+        ],
+      ),
+    );
+  }
 }
 
 // ── Blood pressure ───────────────────────────────────────────
@@ -1289,22 +1236,26 @@ class _PainLogState extends ConsumerState<_PainLog> with _MetricLogState {
   @override
   late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  late double pain = (widget.initial?.painLevel.value ?? 0).toDouble();
-  late final Set<PainSite> locations = {...?widget.initial?.painSites};
+  @override
+  ProviderListenable<Object?> get draft => painDraftProvider(captureKey);
+
+  PainDraft get _pain => ref.read(painDraftProvider(captureKey));
+  PainDraftNotifier get _painNotifier => ref.read(painDraftProvider(captureKey).notifier);
 
   @override
-  bool get valid => pain > 0 || locations.isNotEmpty;
+  bool get valid => _pain.valid;
 
   @override
   MetricLogCapture get capture {
-    final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
+    final pain = _pain;
+    final where = pain.sites.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
     return MetricLogCapture(
       summary: where.isEmpty
-          ? s.strings.checkin.pain_n('${pain.round()}')
-          : s.strings.checkin.pain_n_where('${pain.round()}', where),
+          ? s.strings.checkin.pain_n('${pain.level}')
+          : s.strings.checkin.pain_n_where('${pain.level}', where),
       note: _trimmedNote(noteCtrl),
-      painLevel: PainLevel(pain.round()),
-      painSites: locations,
+      painLevel: PainLevel(pain.level),
+      painSites: pain.sites,
       when: when,
       photoBytes: photo?.bytes,
     );
@@ -1319,7 +1270,8 @@ class _PainLogState extends ConsumerState<_PainLog> with _MetricLogState {
   @override
   Widget build(BuildContext context) {
     final ar = s.rtl;
-    final info = painInfo(s, pain.round());
+    final pain = ref.watch(painDraftProvider(captureKey));
+    final info = painInfo(s, pain.level);
     return chrome(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1328,7 +1280,7 @@ class _PainLogState extends ConsumerState<_PainLog> with _MetricLogState {
             child: Column(
               children: [
                 Text(
-                  '${pain.round()}',
+                  '${pain.level}',
                   style: Typo.display(ar: s.rtl)
                       .copyWith(fontSize: _liveReadingFontSize, fontWeight: FontWeight.w800, color: info.color),
                 ),
@@ -1340,12 +1292,9 @@ class _PainLogState extends ConsumerState<_PainLog> with _MetricLogState {
             ),
           ),
           PainSlider(
-            value: pain,
+            value: pain.level.toDouble(),
             knobColor: info.color,
-            onChanged: (v) => setState(() {
-              pain = v;
-              emit();
-            }),
+            onChanged: (v) => _painNotifier.setLevel(v.round()),
           ),
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -1354,15 +1303,7 @@ class _PainLogState extends ConsumerState<_PainLog> with _MetricLogState {
               style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
             ),
           ),
-          _CurrentProfileBodyMap(
-            s: s,
-            selected: locations,
-            onToggle: (site) => setState(() {
-              if (!canToggleSite(locations, site)) return;
-              locations.contains(site) ? locations.remove(site) : locations.add(site);
-              emit();
-            }),
-          ),
+          _CurrentProfileBodyMap(s: s, selected: pain.sites, onToggle: _painNotifier.toggleSite),
         ],
       ),
     );
@@ -1412,30 +1353,31 @@ class _SymptomsLogState extends ConsumerState<_SymptomsLog> with _MetricLogState
   @override
   late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  final Set<SymptomId> symptoms = {};
-  bool noSymptoms = false;
-  final Set<PainSite> locations = {};
+  @override
+  ProviderListenable<Object?> get draft => symptomsDraftProvider(captureKey);
+
+  SymptomsDraft get _draft => ref.read(symptomsDraftProvider(captureKey));
+  SymptomsDraftNotifier get _notifier => ref.read(symptomsDraftProvider(captureKey).notifier);
 
   /// `SymptomPicker` is `multi` in the full check-in and single-select in the
   /// one-metric quick log — the design passes `multi={false}` only there.
   bool get _multi => host == MetricLogHost.embedded;
 
-  bool get _showMap => symptoms.any((id) => _locatedSymptomIds.contains(id.id));
-
   @override
-  bool get valid => symptoms.isNotEmpty || noSymptoms;
+  bool get valid => _draft.valid;
 
   @override
   MetricLogCapture get capture {
-    final label = noSymptoms
+    final d = _draft;
+    final label = d.none
         ? s.strings.checkin.s_none
-        : symptoms.map((id) => symptomLabel(s, id)).join(s.strings.checkin.list_sep);
-    final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
+        : d.symptoms.map((id) => symptomLabel(s, id)).join(s.strings.checkin.list_sep);
+    final where = d.sites.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
     return MetricLogCapture(
       summary: where.isEmpty ? label : s.strings.checkin.labeled_where(label, where),
       note: _trimmedNote(noteCtrl),
-      symptoms: Set.unmodifiable(symptoms),
-      painSites: locations,
+      symptoms: d.symptoms,
+      painSites: d.sites,
       when: when,
       photoBytes: photo?.bytes,
     );
@@ -1447,21 +1389,10 @@ class _SymptomsLogState extends ConsumerState<_SymptomsLog> with _MetricLogState
     super.dispose();
   }
 
-  void _select(SymptomId id) => setState(() {
-        noSymptoms = false;
-        if (symptoms.contains(id)) {
-          symptoms.remove(id);
-        } else {
-          if (!_multi) symptoms.clear();
-          symptoms.add(id);
-        }
-        if (!_showMap) locations.clear();
-        emit();
-      });
-
   @override
   Widget build(BuildContext context) {
     final ar = s.rtl;
+    final d = ref.watch(symptomsDraftProvider(captureKey));
     return chrome(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1475,33 +1406,26 @@ class _SymptomsLogState extends ConsumerState<_SymptomsLog> with _MetricLogState
               ...symptomIcons.map(
                 (e) => BCheck(
                   label: symptomLabel(s, e.$1),
-                  checked: symptoms.contains(e.$1),
+                  checked: d.symptoms.contains(e.$1),
                   icon: e.$2,
                   radio: !_multi,
                   accent: s.accent,
                   ar: ar,
-                  onTap: () => _select(e.$1),
+                  onTap: () => _notifier.select(e.$1, multi: _multi),
                 ),
               ),
               BCheck(
                 label: s.strings.checkin.s_none,
-                checked: noSymptoms,
+                checked: d.none,
                 icon: LucideIcons.checkCircle2,
                 radio: !_multi,
                 accent: s.accent,
                 ar: ar,
-                onTap: () => setState(() {
-                  noSymptoms = !noSymptoms;
-                  if (noSymptoms) {
-                    symptoms.clear();
-                    locations.clear();
-                  }
-                  emit();
-                }),
+                onTap: _notifier.toggleNone,
               ),
             ],
           ),
-          if (_showMap) ...[
+          if (d.showMap) ...[
             Padding(
               padding: const EdgeInsets.only(top: 16, bottom: 8),
               child: Text(
@@ -1509,15 +1433,7 @@ class _SymptomsLogState extends ConsumerState<_SymptomsLog> with _MetricLogState
                 style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
               ),
             ),
-            _CurrentProfileBodyMap(
-              s: s,
-              selected: locations,
-              onToggle: (site) => setState(() {
-                if (!canToggleSite(locations, site)) return;
-                locations.contains(site) ? locations.remove(site) : locations.add(site);
-                emit();
-              }),
-            ),
+            _CurrentProfileBodyMap(s: s, selected: d.sites, onToggle: _notifier.toggleSite),
           ],
         ],
       ),
@@ -1570,18 +1486,21 @@ class _OneSymptomLogState extends ConsumerState<_OneSymptomLog> with _MetricLogS
   @override
   late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  late final Set<PainSite> locations = {...?widget.initial?.painSites};
+  @override
+  ProviderListenable<Object?> get draft => oneSymptomDraftProvider(_key);
 
-  /// Only urine and stool carry one (`SymptomId.hasDetail`).
-  late SymptomDetail detail = widget.initial?.symptomDetails[widget.symptom] ?? const SymptomDetail();
+  late final OneSymptomKey _key = (form: _form, initial: widget.initial, symptom: widget.symptom);
 
-  bool get _showMap => _locatedSymptomIds.contains(widget.symptom.id);
+  OneSymptomDraft get _draft => ref.read(oneSymptomDraftProvider(_key));
+  OneSymptomDraftNotifier get _notifier => ref.read(oneSymptomDraftProvider(_key).notifier);
+
+  bool get _showMap => widget.symptom.hasLocation;
 
   @override
   bool get valid => true;
 
   /// The design appends what was observed to the saved summary line.
-  String _detailSuffix() {
+  String _detailSuffix(SymptomDetail detail) {
     final c = s.strings.checkin;
     final parts = [
       if (detail.urineColor case final colour?) urineColorLabel(s, colour),
@@ -1593,16 +1512,17 @@ class _OneSymptomLogState extends ConsumerState<_OneSymptomLog> with _MetricLogS
 
   @override
   MetricLogCapture get capture {
+    final d = _draft;
     final label = symptomLabel(s, widget.symptom);
-    final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
+    final where = d.sites.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
     final base = where.isEmpty ? label : s.strings.checkin.labeled_where(label, where);
     return MetricLogCapture(
-      summary: '$base${_detailSuffix()}',
+      summary: '$base${_detailSuffix(d.detail)}',
       note: _trimmedNote(noteCtrl),
       symptoms: {widget.symptom},
       // An untouched detail is not an observation, so it is not stored.
-      symptomDetails: detail.isEmpty ? const {} : {widget.symptom: detail},
-      painSites: locations,
+      symptomDetails: d.detail.isEmpty ? const {} : {widget.symptom: d.detail},
+      painSites: d.sites,
       when: when,
       photoBytes: photo?.bytes,
     );
@@ -1617,6 +1537,7 @@ class _OneSymptomLogState extends ConsumerState<_OneSymptomLog> with _MetricLogS
   @override
   Widget build(BuildContext context) {
     final hasDetail = widget.symptom.hasDetail;
+    final d = ref.watch(oneSymptomDraftProvider(_key));
     if (!_showMap && !hasDetail) return chrome(child: const SizedBox.shrink());
     final ar = s.rtl;
     return chrome(
@@ -1631,26 +1552,10 @@ class _OneSymptomLogState extends ConsumerState<_OneSymptomLog> with _MetricLogS
                 style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
               ),
             ),
-            _CurrentProfileBodyMap(
-              s: s,
-              selected: locations,
-              onToggle: (site) => setState(() {
-                if (!canToggleSite(locations, site)) return;
-                locations.contains(site) ? locations.remove(site) : locations.add(site);
-                emit();
-              }),
-            ),
+            _CurrentProfileBodyMap(s: s, selected: d.sites, onToggle: _notifier.toggleSite),
           ],
           if (hasDetail)
-            _SymptomDetailCard(
-              s: s,
-              symptom: widget.symptom,
-              detail: detail,
-              onChanged: (d) => setState(() {
-                detail = d;
-                emit();
-              }),
-            ),
+            _SymptomDetailCard(s: s, symptom: widget.symptom, detail: d.detail, onChanged: _notifier.setDetail),
         ],
       ),
     );

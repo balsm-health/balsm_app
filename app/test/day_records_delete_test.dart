@@ -13,16 +13,18 @@ import 'package:self_report/self_report.dart';
 /// swiping it, or with Select; each asks first, then stores at once.
 ///
 /// The readings are invented by the test; nothing here is real patient data.
-class _Recorder implements UpdateCheckInUseCase {
+///
+/// The screen shows the day from the live store, so every store goes through
+/// to a real (in-memory) one; the recorder also keeps what was asked for.
+class _Recorder extends UpdateCheckInUseCase {
+  _Recorder(CheckInsDataSource dao) : super(dao: dao);
+
   final stored = <CheckIn>[];
 
   @override
-  CheckInsDataSource get dao => throw UnimplementedError();
-
-  @override
-  Future<bool> call(CheckIn edited) async {
+  Future<bool> call(CheckIn edited) {
     stored.add(edited);
-    return !edited.isEmpty;
+    return super.call(edited);
   }
 }
 
@@ -38,11 +40,15 @@ void main() {
   );
 
   Future<(_Recorder, PatientAppState)> pump(WidgetTester tester, List<CheckIn> checkIns, {bool ar = false}) async {
-    final recorder = _Recorder();
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
+    final ds = DriftCheckInsDataSource(db, () => const HealthProfileId.value('hp-1'));
+    for (final ci in checkIns) {
+      await ds.put(ci.id, ci);
+    }
+    final recorder = _Recorder(ds);
     tester.view.physicalSize = const Size(390, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -55,7 +61,9 @@ void main() {
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
+          checkInsDataSourceProvider.overrideWithValue(ds),
           updateCheckInUseCaseProvider.overrideWithValue(recorder),
+          currentUserIdProvider.overrideWithValue(const UserId.value('user-1')),
         ],
         child: AppScope(
           state: state,
@@ -219,6 +227,42 @@ void main() {
       expect(recorder.stored.single.reportsPain, isFalse);
       expect(value('131/84'), findsOne);
       expect(value('118/76'), findsOne);
+    });
+  });
+
+  group('the day follows the store', () {
+    testWidgets('a reading stored while the screen is open shows up', (tester) async {
+      final (recorder, _) = await pump(tester, [bpOnly]);
+      final later = CheckIn(
+        id: const CheckInId.value('chk-2'),
+        healthProfileId: const HealthProfileId.value('hp-1'),
+        recordedAt: DateTime.utc(2026, 7, 24, 10),
+        painLevel: PainLevel.none,
+        painSites: const {},
+        symptoms: const {},
+        vitals: const Vitals(systolic: 125, diastolic: 82),
+      );
+      await recorder.dao.put(later.id, later);
+      await tester.pumpAndSettle();
+      expect(value('125/82'), findsOne);
+      expect(value('118/76'), findsOne);
+    });
+
+    test('only that day, oldest first', () {
+      CheckIn at(String id, DateTime t) => CheckIn(
+            id: CheckInId.value(id),
+            healthProfileId: const HealthProfileId.value('hp-1'),
+            recordedAt: t,
+            painLevel: PainLevel.none,
+            painSites: const {},
+            symptoms: const {},
+            vitals: Vitals.empty,
+          );
+      final shown = checkInsOnDay(
+        [at('pm', DateTime(2026, 7, 24, 20)), at('next', DateTime(2026, 7, 25, 8)), at('am', DateTime(2026, 7, 24, 7))],
+        DateTime(2026, 7, 24),
+      );
+      expect(shown.map((c) => c.id.value), ['am', 'pm']);
     });
   });
 }

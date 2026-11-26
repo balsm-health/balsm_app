@@ -17,6 +17,7 @@ import '../maintenance/maintenance_guard.dart';
 import '../responsive.dart';
 import '../routes.dart';
 import '../vault/vault_blob.dart';
+import 'check_in_draft.dart';
 import 'checkin_shared.dart';
 import 'metric_log.dart';
 import 'quick_log.dart' show MemberLogBanner;
@@ -91,20 +92,19 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   late bool submitted = widget.debugShowSummary;
   bool saving = false;
 
-  /// Medication adherence marks captured in the meds step, keyed by med id:
-  /// '' | 'taken' | 'skipped'.
-  final Map<String, String> medMarks = {};
+  /// This check-in's [checkInDraftProvider] key: every step's capture, the
+  /// skipped steps and the medication marks live there.
+  final Object _form = Object();
 
-  final Map<String, MetricLogCapture> _captures = {};
-  final Map<String, bool> _valid = {};
-
-  /// Steps the patient marked "I didn't measure this today" (`SkipRow`). A
-  /// skipped step contributes nothing to the check-in and never blocks Next.
-  final Set<String> _skipped = {};
+  CheckInDraft get _draft => ref.read(checkInDraftProvider(_form));
+  CheckInDraftNotifier get _drafts => ref.read(checkInDraftProvider(_form).notifier);
 
   // Refreshed each build from the reactive providers.
   List<Medication> _meds = const [];
   List<String> _steps = const [];
+
+  /// Steps marked "I didn't measure this today", from the draft.
+  Set<String> _skipped = const {};
 
   PatientAppState get s => widget.s;
 
@@ -138,12 +138,6 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   String get cur => (step >= 0 && step < _steps.length) ? _steps[step] : '';
 
-  bool get canNext {
-    if (cur == kMedsCheckInStepId) return true;
-    if (_skipped.contains(cur)) return true;
-    return _valid[cur] == true;
-  }
-
   /// Measurements the patient may simply not have taken today. The design
   /// offers `SkipRow` under blood pressure and glucose; weight is the same
   /// class of reading.
@@ -154,14 +148,8 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     CheckInMetric.spo2,
   };
 
-  void _toggleSkip(String id) => setState(() {
-        if (_skipped.remove(id)) return;
-        _skipped.add(id);
-        // Anything already typed is discarded — a skipped reading must not
-        // reach the check-in or the summary.
-        _captures.remove(id);
-        _valid.remove(id);
-      });
+  /// Anything already typed is discarded ([CheckInDraft.toggleSkip]).
+  void _toggleSkip(String id) => _drafts.toggleSkip(id);
 
   void next() {
     if (step < _steps.length - 1) {
@@ -176,15 +164,12 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     if (step > 0) {
       setState(() => step--);
       _trackStep();
-    } else if (_hasInput) {
+    } else if (_draft.hasInput) {
       unawaited(_confirmLeave());
     } else {
       Navigator.pop(context);
     }
   }
-
-  /// Anything entered so far that leaving would throw away.
-  bool get _hasInput => _captures.isNotEmpty || medMarks.values.any((v) => v.isNotEmpty);
 
   /// Leaving with entries asks first, as quick log does: Back used to drop a
   /// half-done check-in without a word.
@@ -234,33 +219,8 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     if (leave == true && mounted) Navigator.pop(context);
   }
 
-  void _onCapture(String id, MetricLogCapture capture, {required bool valid}) {
-    if (_skipped.contains(id)) return;
-    setState(() {
-      _captures[id] = capture;
-      _valid[id] = valid;
-    });
-  }
-
-  Vitals _mergedVitals() {
-    var out = Vitals.empty;
-    for (final id in _steps) {
-      final v = _captures[id]?.vitals;
-      if (v == null || v.isEmpty) continue;
-      out = Vitals(
-        systolic: v.systolic ?? out.systolic,
-        diastolic: v.diastolic ?? out.diastolic,
-        heartRate: v.heartRate ?? out.heartRate,
-        temperature: v.temperature ?? out.temperature,
-        weightKg: v.weightKg ?? out.weightKg,
-        spo2: v.spo2 ?? out.spo2,
-        glucoseFasting: v.glucoseFasting ?? out.glucoseFasting,
-        glucosePostMeal: v.glucosePostMeal ?? out.glucosePostMeal,
-        glucoseRandom: v.glucoseRandom ?? out.glucoseRandom,
-      );
-    }
-    return out;
-  }
+  void _onCapture(String id, MetricLogCapture capture, {required bool valid}) =>
+      _drafts.capture(id, capture, valid: valid);
 
   /// Persists the check-in on-device and records med marks as real dose events.
   /// Never logs the captured PHI.
@@ -268,6 +228,13 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     if (saving) return;
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
+    // Read up front: once the profile resolves, the check-in is stored even if
+    // the flow closes on the way, and a closed flow cannot reach for ref.
+    final draft = _draft;
+    final steps = _steps;
+    final save = ref.read(saveCheckInUseCaseProvider);
+    final recordDose = ref.read(recordDoseOutcomeUseCaseProvider);
+    final meds = ref.read(medicationListProvider).value ?? const <Medication>[];
     setState(() => saving = true);
     // `canFinish` already gates this button on the reactive
     // currentProfileIdProvider, but that read is a snapshot of whatever
@@ -275,35 +242,14 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     // rather than re-reading the snapshot, so a signed-in tap never drops
     // the check-in if the ensure-profile future is still in flight.
     final profileId = await ref.read(activeProfileProvider.future);
-    if (profileId == null) {
-      if (mounted) setState(() => saving = false);
-      return;
-    }
     if (!mounted) return;
-
-    Mood? mood;
-    var painLevel = PainLevel.none;
-    final painSites = <PainSite>{};
-    final symptoms = <SymptomId>{};
-    final symptomDetails = <SymptomId, SymptomDetail>{};
-    final notes = <String>[];
-
-    for (final id in _steps) {
-      if (id == kMedsCheckInStepId) continue;
-      final c = _captures[id];
-      if (c == null) continue;
-      mood ??= c.mood;
-      if (c.painLevel.value > painLevel.value) painLevel = c.painLevel;
-      painSites.addAll(c.painSites);
-      symptoms.addAll(c.symptoms);
-      symptomDetails.addAll(c.symptomDetails);
-      final n = c.note?.trim();
-      if (n != null && n.isNotEmpty) notes.add(n);
+    if (profileId == null) {
+      setState(() => saving = false);
+      return;
     }
 
     String? photoRecordId;
-    final photo = _captures.values.map((c) => c.photoBytes).whereType<List<int>>().firstOrNull;
-    if (photo != null) {
+    if (draft.photo case final photo?) {
       photoRecordId = await persistPhotoRecord(
         ref,
         bytes: Uint8List.fromList(photo),
@@ -311,30 +257,13 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       );
     }
 
-    final checkIn = CheckIn(
-      id: CheckInId.uuid(),
-      healthProfileId: profileId,
-      recordedAt: _captures.values.map((c) => c.when).whereType<DateTime>().firstOrNull ?? DateTime.now(),
-      mood: mood,
-      painLevel: painLevel,
-      painSites: painSites,
-      symptoms: symptoms,
-      symptomDetails: symptomDetails,
-      vitals: _mergedVitals(),
-      note: notes.isEmpty ? null : notes.join('\n'),
-      photoRecordId: photoRecordId,
-    );
-    await ref.read(saveCheckInUseCaseProvider).call(checkIn);
-
-    final meds = ref.read(medicationListProvider).value ?? const <Medication>[];
-    final recordDose = ref.read(recordDoseOutcomeUseCaseProvider);
     final now = DateTime.now();
+    await save.call(
+      draft.toCheckIn(id: CheckInId.uuid(), profile: profileId, steps: steps, now: now, photoRecordId: photoRecordId),
+    );
+
     for (final med in meds) {
-      final outcome = switch (medMarks[med.id.value]) {
-        'taken' => DoseOutcome.taken,
-        'skipped' => DoseOutcome.skipped,
-        _ => null,
-      };
+      final outcome = draft.medMarks[med.id.value];
       if (outcome == null) continue;
       await recordDose.call(
         medicationId: med.id,
@@ -384,17 +313,25 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       _trackStep();
     }
 
-    if (submitted) return _Summary(state: this);
+    if (submitted) return _Summary(state: this, draft: ref.watch(checkInDraftProvider(_form)));
 
+    // Only what this frame shows, so a keypress in a step does not rebuild the
+    // wizard; the watch also keeps the draft alive while the check-in is open.
+    final current = cur;
+    final view = ref.watch(
+      checkInDraftProvider(_form)
+          .select((d) => (canNext: d.canAdvance(current), hasInput: d.hasInput, skipped: d.skipped)),
+    );
+    _skipped = view.skipped;
     final isLast = step == _steps.length - 1;
     final profileId = ref.watch(currentProfileIdProvider);
     final canFinish = profileId != null && !saving;
-    final enabled = isLast ? (canFinish && canNext) : canNext;
+    final enabled = isLast ? (canFinish && view.canNext) : view.canNext;
 
     // Android Back behaves like the header button: a step back, and at the
     // first step a prompt when something was entered.
     return PopScope(
-      canPop: step == 0 && !_hasInput,
+      canPop: step == 0 && !view.hasInput,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) back();
       },
@@ -539,7 +476,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             _title(s.strings.checkin.m_q_med_t(m.shortName), s.strings.checkin.m_q_med_h(s.gender, m.shortName))
           else
             _title(s.strings.checkin.q_med_t(s.gender), s.strings.checkin.q_med_h(s.gender)),
-          ..._meds.map(_medCheck),
+          ..._meds.map((m) => _MedCheck(s: s, form: _form, medication: m)),
         ],
       );
     }
@@ -580,14 +517,28 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           ),
         ),
       );
+}
 
-  Widget _medCheck(Medication m) {
-    final st = medMarks[m.id.value] ?? '';
-    final taken = st == 'taken';
-    final skipped = st == 'skipped';
+/// One medication on the meds step: tap to mark it taken (again to clear),
+/// or "Skip" to mark it skipped. The mark lives in the check-in's draft.
+class _MedCheck extends ConsumerWidget {
+  const _MedCheck({required this.s, required this.form, required this.medication});
+  final PatientAppState s;
+
+  /// The check-in's [checkInDraftProvider] key.
+  final Object form;
+  final Medication medication;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = medication;
+    final mark = ref.watch(checkInDraftProvider(form).select((d) => d.medMarks[m.id.value]));
+    final taken = mark == DoseOutcome.taken;
+    final skipped = mark == DoseOutcome.skipped;
     final subtitle = m.doseAmount;
+    final drafts = ref.read(checkInDraftProvider(form).notifier);
     return GestureDetector(
-      onTap: () => setState(() => medMarks[m.id.value] = taken ? '' : 'taken'),
+      onTap: () => drafts.toggleTaken(m.id.value),
       child: AnimatedOpacity(
         duration: Motion.base,
         curve: Motion.easeOut,
@@ -635,7 +586,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 Pill(s.strings.meds.skipped, ar: s.rtl)
               else
                 GestureDetector(
-                  onTap: () => setState(() => medMarks[m.id.value] = 'skipped'),
+                  onTap: () => drafts.markSkipped(m.id.value),
                   child: Padding(
                     padding: const EdgeInsets.all(8),
                     child: Text(
@@ -654,12 +605,15 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
 // ── Summary ──────────────────────────────────────────────────
 class _Summary extends StatelessWidget {
-  const _Summary({required this.state});
+  const _Summary({required this.state, required this.draft});
   final _ReportFlowState state;
+
+  /// What the check-in held when it was stored.
+  final CheckInDraft draft;
   @override
   Widget build(BuildContext context) {
     final s = state.s;
-    final taken = state._meds.where((m) => state.medMarks[m.id.value] == 'taken').length;
+    final taken = state._meds.where((m) => draft.medMarks[m.id.value] == DoseOutcome.taken).length;
     final items = <(IconData, PillKind, String, String)>[
       for (final id in state._steps)
         if (id == kMedsCheckInStepId)
@@ -669,7 +623,7 @@ class _Summary extends StatelessWidget {
             s.strings.meds.meds_today,
             '$taken/${state._meds.length} ${s.strings.meds.meds_taken}'
           )
-        else if (state._captures[id] case final c? when c.summary.isNotEmpty)
+        else if (draft.captures[id] case final c? when c.summary.isNotEmpty)
           (
             _summaryIcon(id).$1,
             _summaryIcon(id).$2,

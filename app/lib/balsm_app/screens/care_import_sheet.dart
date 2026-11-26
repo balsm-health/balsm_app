@@ -9,6 +9,7 @@ import 'package:profile/profile.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
+import 'care_import_draft.dart';
 import 'care_team_screen.dart';
 
 /// Review sheet for contacts picked from the phone's address book
@@ -41,12 +42,11 @@ class CareImportSheet extends ConsumerStatefulWidget {
 }
 
 class _CareImportSheetState extends ConsumerState<CareImportSheet> {
-  /// Drafts the patient has picked so far, newest last.
-  final List<ImportedContact> _picked = [];
+  /// This sheet's [careImportProvider] key: the picked contacts and the ticks
+  /// live there.
+  final Object _form = Object();
 
-  /// Ids currently ticked. Everything picked starts ticked — the patient chose
-  /// it in the OS picker a moment ago.
-  final Set<String> _selected = {};
+  CareImportNotifier get _draft => ref.read(careImportProvider(_form).notifier);
 
   /// Which row has its type chips open.
   String? _typeOpen;
@@ -63,7 +63,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_openedOnce) {
+      if (!_openedOnce && mounted) {
         _openedOnce = true;
         unawaited(_pick());
       }
@@ -76,31 +76,13 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
     super.dispose();
   }
 
-  Future<void> _pick() async {
-    final picker = ref.read(contactPickerProvider);
-    final picked = await picker.pick();
-    if (picked == null || picked.isEmpty || !mounted) return;
-
-    setState(() {
-      for (final c in picked) {
-        // The OS lets the same contact be chosen twice; the sheet should not
-        // show it twice.
-        final key = contactPhoneKey(c.phones.isEmpty ? null : c.phones.first);
-        final already = _picked.any(
-          (p) => p.id == c.id || (key.isNotEmpty && contactPhoneKey(p.phones.isEmpty ? null : p.phones.first) == key),
-        );
-        if (already) continue;
-        _picked.add(c);
-        _selected.add(c.id);
-      }
-    });
-  }
+  Future<void> _pick() => _draft.pick();
 
   Future<void> _import(List<CareProvider> team) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null || _busy) return;
 
-    final chosen = _picked.where((c) => _selected.contains(c.id) && !c.isAlreadyOnTeam(team)).toList();
+    final chosen = ref.read(careImportProvider(_form)).chosen(team);
     if (chosen.isEmpty) return;
 
     setState(() => _busy = true);
@@ -115,29 +97,20 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
   }
 
   void _setType(ImportedContact c, CareProviderType type) {
-    setState(() {
-      final i = _picked.indexWhere((p) => p.id == c.id);
-      if (i != -1) _picked[i] = c.withType(type);
-      _typeOpen = null;
-    });
+    _draft.setType(c.id, type);
+    setState(() => _typeOpen = null);
   }
 
   /// Rows matching the search box, by name or number.
-  List<ImportedContact> _shown() {
+  List<ImportedContact> _shown(List<ImportedContact> picked) {
     final q = _search.text.trim().toLowerCase();
-    if (q.isEmpty) return _picked;
-    return _picked.where((c) => '${c.name} ${c.phones.join(' ')}'.toLowerCase().contains(q)).toList();
+    if (q.isEmpty) return picked;
+    return picked.where((c) => '${c.name} ${c.phones.join(' ')}'.toLowerCase().contains(q)).toList();
   }
 
   /// Ticks or clears every row the patient is still allowed to tick.
   void _toggleAll(List<ImportedContact> selectable, {required bool allOn}) {
-    setState(() {
-      if (allOn) {
-        _selected.removeAll(selectable.map((c) => c.id));
-      } else {
-        _selected.addAll(selectable.map((c) => c.id));
-      }
-    });
+    _draft.toggleAll(selectable.map((c) => c.id), allOn: allOn);
     unawaited(HapticFeedback.selectionClick());
   }
 
@@ -147,13 +120,16 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
     final c = s.strings.care;
     final team = ref.watch(careTeamProvider).value ?? const <CareProvider>[];
     final picker = ref.read(contactPickerProvider);
+    final draft = ref.watch(careImportProvider(_form));
+    final picked = draft.picked;
+    final selected = draft.selected;
 
-    final shown = _shown();
+    final shown = _shown(picked);
     // Rows the patient can still act on: anyone already on the team is shown as
     // such rather than offered again, so they are not part of "select all".
     final selectable = shown.where((p) => !p.isAlreadyOnTeam(team)).toList();
-    final allOn = selectable.isNotEmpty && selectable.every((p) => _selected.contains(p.id));
-    final count = _picked.where((p) => !p.isAlreadyOnTeam(team) && _selected.contains(p.id)).length;
+    final allOn = selectable.isNotEmpty && selectable.every((p) => selected.contains(p.id));
+    final count = draft.chosen(team).length;
 
     // A real material surface, not a decorated box: the search field is a
     // `TextField`, which asserts on a missing [Material] ancestor, and
@@ -204,7 +180,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
                     // The design puts "choose more contacts" above the list, not under
                     // it: reaching the picker again should not mean scrolling past
                     // everything already picked.
-                    if (picker.isAvailable && _picked.isNotEmpty) ...[
+                    if (picker.isAvailable && picked.isNotEmpty) ...[
                       PButton(
                         c.care_import_more,
                         icon: LucideIcons.contactRound,
@@ -216,13 +192,13 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
                       ),
                       const SizedBox(height: 14),
                     ],
-                    if (_picked.isEmpty)
+                    if (picked.isEmpty)
                       _EmptyPick(s: s, onPick: picker.isAvailable && !_busy ? _pick : null)
                     else ...[
                       // The prototype searches a full address book. Here it filters
                       // what the picker returned, which earns a box once the patient
                       // has picked a screenful.
-                      if (_picked.length >= 8) ...[
+                      if (picked.length >= 8) ...[
                         _SearchField(controller: _search, onChanged: () => setState(() {})),
                         const SizedBox(height: 12),
                       ],
@@ -258,12 +234,10 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
                           s: s,
                           contact: contact,
                           onTeam: contact.isAlreadyOnTeam(team),
-                          selected: _selected.contains(contact.id),
+                          selected: selected.contains(contact.id),
                           typeOpen: _typeOpen == contact.id,
                           onToggle: () {
-                            setState(() {
-                              _selected.contains(contact.id) ? _selected.remove(contact.id) : _selected.add(contact.id);
-                            });
+                            _draft.toggle(contact.id);
                             unawaited(HapticFeedback.selectionClick());
                           },
                           onTypeTap: () => setState(() => _typeOpen = _typeOpen == contact.id ? null : contact.id),

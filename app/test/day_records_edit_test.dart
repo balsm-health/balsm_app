@@ -52,6 +52,7 @@ void main() {
           appDatabaseProvider.overrideWithValue(db),
           userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
           checkInsDataSourceProvider.overrideWithValue(ds),
+          currentUserIdProvider.overrideWithValue(const UserId.value('user-1')),
         ],
         child: AppScope(
           state: state,
