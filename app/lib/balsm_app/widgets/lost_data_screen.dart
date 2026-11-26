@@ -70,66 +70,71 @@ class _LostDataScreenState extends State<LostDataScreen> {
     final body = _confirming ? strings.lost_confirm_b(app) : strings.lost_b(app);
     return Directionality(
       textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
-        backgroundColor: AppColors.white,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 380),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const BalsmFlower(size: 52),
-                    const SizedBox(height: 24),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: FontSizes.headline,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink900,
+      // The app's default accent (PatientAppState.accent): without a scope the
+      // buttons would fall back to blue and look like another app.
+      child: AccentScope(
+        accent: Accent.violet,
+        child: Scaffold(
+          backgroundColor: AppColors.white,
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 380),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const BalsmFlower(size: 52),
+                      const SizedBox(height: 24),
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: FontSizes.headline,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink900,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      body,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: FontSizes.bodyLg, height: 1.5, color: AppColors.ink600),
-                    ),
-                    const SizedBox(height: 28),
-                    if (!_confirming)
-                      PButton(
-                        strings.lost_start,
-                        block: true,
-                        large: true,
-                        ar: rtl,
-                        onTap: () => setState(() => _confirming = true),
-                      )
-                    else ...[
-                      PButton(
-                        strings.lost_confirm_yes,
-                        block: true,
-                        large: true,
-                        ar: rtl,
-                        variant: BtnVariant.danger,
-                        onTap: _busy ? null : _startFresh,
+                      const SizedBox(height: 12),
+                      Text(
+                        body,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: FontSizes.bodyLg, height: 1.5, color: AppColors.ink600),
                       ),
-                      const SizedBox(height: 8),
-                      PButton(
-                        strings.lost_cancel,
-                        block: true,
-                        large: true,
-                        ar: rtl,
-                        variant: BtnVariant.ghost,
-                        onTap: _busy ? null : () => setState(() => _confirming = false),
-                      ),
+                      const SizedBox(height: 28),
+                      if (!_confirming)
+                        PButton(
+                          strings.lost_start,
+                          block: true,
+                          large: true,
+                          ar: rtl,
+                          onTap: () => setState(() => _confirming = true),
+                        )
+                      else ...[
+                        PButton(
+                          strings.lost_confirm_yes,
+                          block: true,
+                          large: true,
+                          ar: rtl,
+                          variant: BtnVariant.danger,
+                          onTap: _busy ? null : _startFresh,
+                        ),
+                        const SizedBox(height: 8),
+                        PButton(
+                          strings.lost_cancel,
+                          block: true,
+                          large: true,
+                          ar: rtl,
+                          variant: BtnVariant.ghost,
+                          onTap: _busy ? null : () => setState(() => _confirming = false),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
