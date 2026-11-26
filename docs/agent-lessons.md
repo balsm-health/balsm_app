@@ -13,6 +13,14 @@ Format — one entry per lesson, newest first:
 
 ---
 
+### An agreed plan is a go, not a stopping point (2026-11-27)
+- **Mistake:** asked to replace data-bearing `setState` with Riverpod 3, I read the rules, classified all 486 calls,
+  agreed the scope and PR shape with the user, then stopped and handed back a TODO and three questions. When asked
+  "did we finish?", no call had been migrated.
+- **Rule:** once the user has agreed scope and shape, execute it to the end in the same session. Open questions that
+  have a safe default (keep existing behaviour, do not delete, do not add persistence) are decided by that default and
+  listed in the PR body, not blocking. Report "done" only with the counts before and after and the analyze/test output.
+
 ### Check the Riverpod 3 rules before touching a provider (2026-11-25)
 - **Mistake:** I fixed a failing record test as "a stale assertion" and wrote `await _ref.refresh(...)` with no disposed
   check, without first reading what Riverpod 3 changed. The user had to remind me the project is on Riverpod 3. The

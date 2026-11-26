@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'set_state_baseline.dart';
+
 /// Layering rules from CLAUDE.md, enforced instead of documented.
 ///
 /// These held when written. They are the kind of rule that rots silently — a
@@ -189,6 +191,47 @@ void main() {
     ];
     expect(offenders, isEmpty, reason: 'use SecureStorageWrapper.storage:\n${offenders.join('\n')}');
   });
+
+  test('setState stays at or below its baseline', () {
+    // CODING_STANDARDS §7 limits setState to view-local state, but nothing
+    // enforced it and ~500 calls crept in (agent-lessons 2026-11-22). Data goes
+    // into a Notifier; this ratchet keeps the backlog from growing back.
+    final call = RegExp(r'\bsetState\(');
+    final counts = <String, int>{
+      for (final dir in [
+        '${root.path}/app/lib',
+        '${root.path}/packages/core/lib',
+        for (final m in modules) '${root.path}/modules/$m/lib',
+      ])
+        for (final f in _dartFiles(dir))
+          if (call.allMatches(_stripCommentsAndImports(f.text)).length case final n when n > 0) f.rel(root): n,
+    };
+    final paths = {...counts.keys, ...setStateBaseline.keys};
+    final offenders = paths
+        .map((path) => _setStateOffence(path, counts[path] ?? 0, setStateBaseline[path] ?? 0))
+        .nonNulls
+        .toList();
+    expect(offenders, isEmpty, reason: offenders.join('\n'));
+  });
+}
+
+/// The message for one file whose `setState` count breaks the ratchet in
+/// `set_state_baseline.dart`, or null when [count] is acceptable for [baseline].
+String? _setStateOffence(String path, int count, int baseline) {
+  if (count > baseline && baseline == 0) {
+    return '$path adds $count setState: data belongs in a Notifier (CODING_STANDARDS §7)';
+  }
+  if (count > baseline) {
+    return '$path has $count setState, baseline $baseline: move the new state into a Notifier (§7)';
+  }
+  // Strict in both directions, so the headroom a migration frees cannot be
+  // spent again later without anyone noticing.
+  if (count < baseline) {
+    return count == 0
+        ? '$path has no setState left: remove it from set_state_baseline.dart'
+        : '$path has $count setState, baseline $baseline: lower it in set_state_baseline.dart';
+  }
+  return null;
 }
 
 /// Walks up from the test's working directory to the melos workspace root.
