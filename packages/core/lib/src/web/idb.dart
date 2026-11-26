@@ -26,7 +26,12 @@ class Idb {
         final request = web.window.indexedDB.open(name, 1);
         request.onupgradeneeded = ((web.Event _) {
           final db = request.result! as web.IDBDatabase;
-          stores.forEach(db.createObjectStore);
+          // A loop, not `stores.forEach(db.createObjectStore)`: dart2js and
+          // dart2wasm refuse a tear-off of a JS interop member.
+          // ignore: prefer_foreach
+          for (final store in stores) {
+            db.createObjectStore(store);
+          }
         }).toJS;
         return _await<web.IDBDatabase>(request);
       }();
