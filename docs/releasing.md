@@ -118,6 +118,54 @@ testers), and this change adds no HMS SDK. On those phones:
 Check the store listing does not promise Google sign-in or Drive backup to
 AppGallery users.
 
+## Releasing from a Mac
+
+When the pipeline cannot release (a runner outage, a broken job, a secret that
+will not load), `tool/release_local.sh` builds on your Mac and uploads to the
+same places as the store jobs, with the same checks and nothing submitted for
+review:
+
+```
+tool/release_local.sh alpha --build-number=61 --dry-run   # check config, print the plan
+tool/release_local.sh alpha --build-number=61             # all three stores
+tool/release_local.sh beta --build-number=62 --stores=play,huawei
+```
+
+- **Channel** sets the backend and destination exactly as in CI: alpha and
+  beta build against staging, production against prod (Play gets a draft).
+- **Build number** is required and must be above every build already
+  uploaded; the script reads Play's highest versionCode and refuses a lower
+  one. CI numbers builds with the run number, so after a local release with
+  N, a CI release with a run number of N or less is refused by Play: pick N
+  just above the latest Release run, or set the next CI run past it.
+- **Production** builds only a committed, clean commit tagged `v<version>`
+  (Promote makes the tag). Alpha and beta refuse uncommitted changes unless
+  `--allow-dirty`, for test builds.
+- **Outputs** go to `dist/local/`; `--skip-build` uploads what is there.
+
+Secrets are read from `~/.config/balsm/release.env` (or `$BALSM_RELEASE_ENV`),
+which must be mode 600 and outside the repo. It is `KEY=value` lines, never
+sourced; a value `keychain:<service>` comes from the login keychain and
+`file:<path>` from the first line of a file:
+
+| Key | What |
+|---|---|
+| `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID` | as the CI secrets of the same names |
+| `APPLE_DIST_CERT_P12`, `APPLE_DIST_CERT_PASSWORD` | path to the distribution `.p12`, and its password |
+| `APPSTORE_PROFILE` | path to the App Store `.mobileprovision` |
+| `ASC_PRIVATE_KEY_FILE` | path to `AuthKey_<id>.p8` |
+| `ANDROID_KEY_PROPERTIES` | an existing `key.properties` (keystore, alias, passwords); or `ANDROID_KEYSTORE`, `ANDROID_KEY_ALIAS`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD` |
+| `PLAY_SERVICE_ACCOUNT_JSON_FILE` | path to the Play service account's JSON key |
+| `HUAWEI_CLIENT_ID`, `HUAWEI_CLIENT_SECRET`, `HUAWEI_APP_ID` | as the CI secrets |
+| `SHARED_ENV_JSON_FILE` | server list, used when `app/env/shared.json` is missing |
+
+The script leaves nothing behind: the certificate goes into a temporary
+keychain it deletes, the profile is installed only for the build (unless it
+was already), and `app/android/key.properties` and
+`app/ios/signing/appstore.plist` are restored afterwards. Uploads go through
+`xcrun altool`, `tool/play_upload.sh` (Play Developer API, curl and openssl)
+and `tool/appgallery_upload.sh`.
+
 ## What is checked
 
 Promote checks before it tags, and `release.yml` checks again on every tag,
