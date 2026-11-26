@@ -18,7 +18,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const host = 'app.balsm.health';
   const bundleId = 'app.balsm.health';
-  const teamId = '8F78S7D344';
+  const teamId = '56V9N23Y78';
+  // The team the app was transferred from. Builds signed by it stay installed
+  // until people update, so the file keeps naming it; drop it once those
+  // builds are gone.
+  const previousTeamId = '8F78S7D344';
 
   String read(String path) => File(path).readAsStringSync();
 
@@ -98,8 +102,8 @@ void main() {
     bool matches(String pattern, String path) =>
         pattern.endsWith('*') ? path.startsWith(pattern.substring(0, pattern.length - 1)) : path == pattern;
 
-    test('the association file names this team and bundle id', () {
-      expect(detail['appIDs'], ['$teamId.$bundleId']);
+    test('the association file names this team (and the previous one) and bundle id', () {
+      expect(detail['appIDs'], ['$teamId.$bundleId', '$previousTeamId.$bundleId']);
     });
 
     test('every routable path opens the app, not Safari', () {

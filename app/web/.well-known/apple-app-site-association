@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["8F78S7D344.app.balsm.health"],
+        "appIDs": ["56V9N23Y78.app.balsm.health", "8F78S7D344.app.balsm.health"],
         "components": [
           { "/": "/t/*", "comment": "Profile QR (spec v2.0). Key rides in the #k= fragment." },
           { "/": "/emergency/*", "comment": "Profile QR, legacy alias" },
