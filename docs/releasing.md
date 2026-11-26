@@ -10,7 +10,7 @@ approves a tag, and production is that same commit tagged again.
 |---|---|---|---|
 | `v0.2.0-alpha.N` | alpha | staging | Firebase `alpha-testers` (internal team, QA) |
 | `v0.2.0-beta.N` | beta | staging | Firebase `beta-testers` (wider testers) |
-| `v0.2.0` | production | prod | Firebase `production`, the stores, app.balsm.health |
+| `v0.2.0` | production | prod | Firebase `production`, the stores (as drafts, see [Store uploads](#store-uploads)), app.balsm.health |
 
 `N` counts up from 1 for each version. The version in a tag is always the
 `version:` in `app/pubspec.yaml` at that commit, and only Promote raises it.
@@ -49,6 +49,73 @@ The production build is compiled again, not copied from the tested one: the
 backend URLs are fixed at build time, so the staging build QA had cannot go to
 the stores. The code is the same commit. Give the production build a short
 check before submitting it for store review.
+
+## Store uploads
+
+Every release tag also sends its build to the three stores, once the GitHub
+Release exists (every build of the tag succeeded). Nothing is submitted for
+review and no rollout starts on its own: a person finishes each upload in the
+store's console. Branch pushes and pull requests never upload.
+
+| Channel | App Store Connect | Google Play | Huawei AppGallery |
+|---|---|---|---|
+| alpha | TestFlight build | **internal testing**, released to the track | package on the version being edited |
+| beta | TestFlight build | **closed testing (`alpha` track)**, released to the track | package on the version being edited |
+| production | TestFlight build | **production, as a draft release** | package on the version being edited |
+
+Alpha and beta builds talk to the staging backend. Keep them to internal
+testers in each console; never promote one to production, which Promote
+builds again against prod.
+
+The jobs (`testflight`, `google-play`, `appgallery` in `release.yml`) run in
+the environments `store-ios`, `store-android` and `store-huawei`, which hold
+their secrets (`docs/ci-secrets.md`). A job whose secrets are missing warns
+and passes, as the signing steps do.
+
+**Production waits for a second approval.** Before any production upload,
+the `store-gate` job asks a reviewer of `release-production` again: Promote's
+approval let the tag be made, this one lets the finished builds reach the
+stores. It also covers a production tag pushed by hand, which never went
+through Promote.
+
+### What a person still does
+
+- **App Store Connect:** wait for the build to finish processing (an email
+  arrives), answer the export-compliance question if asked, and add it to a
+  TestFlight group. For production, add the build to the App Store version,
+  check the listing (`docs/store/listing-copy.md`) and submit for review.
+- **Google Play Console:** alpha and beta reach their testers on their own.
+  For production, open the draft release under Production, set the rollout
+  percentage, add release notes, and send it for review. While the app has
+  never been published, Play accepts only draft releases on every track: the
+  alpha and beta uploads fail until the first release is out, or until the
+  status in `release.yml` is changed to `draft` for that period.
+- **AppGallery Connect:** open the app, check the package on the version
+  information page, fill in what is new, and submit for review. AppGallery
+  has no testing tracks in this flow, so alpha and beta packages replace the
+  package on the draft version; only submit the production one.
+
+### Huawei: phones without Google services
+
+Huawei phones sold since 2019 have no Google Mobile Services (GMS). The app
+uses no Firebase or FCM SDK (Firebase is used only by CI to hand builds to
+testers), and this change adds no HMS SDK. On those phones:
+
+- **Sign in with Google does not work** (`google_sign_in` needs Play
+  services). Email sign-in and the offline account still work; Sign in with
+  Apple is iOS-only.
+- **Google Drive backup does not work**: it signs in through the same Google
+  account (`docs/google-drive-backup-setup.md`). The app stays "Local only".
+- **Location** (`geolocator`) falls back from the fused provider to Android's
+  own location manager: it works, but a first fix can be slower.
+- **QR scanning** (`mobile_scanner`) uses the ML Kit model bundled in the
+  app, which needs no Play services; check it on a Huawei device before the
+  first submission.
+- Local reminders, the encrypted on-device data, Sentry and PostHog do not
+  depend on Google services.
+
+Check the store listing does not promise Google sign-in or Drive backup to
+AppGallery users.
 
 ## What is checked
 
@@ -115,4 +182,10 @@ actors can still create, move or delete release tags.
   Promote create its tag (it uses the workflow's `GITHUB_TOKEN`). Everyone
   else then releases only through Promote; admins can still tag, move or
   delete by hand, so keep that list short.
+- **Store environments**: Settings → Environments → create `store-ios`,
+  `store-android` and `store-huawei`, add their secrets
+  (`docs/ci-secrets.md`), and under Deployment branches and tags allow only
+  tags matching `v*`. Production uploads already wait for
+  `release-production`; reviewers on a store environment would make alpha
+  and beta wait too.
 - Firebase tester groups and signing secrets: `docs/ci-secrets.md`.

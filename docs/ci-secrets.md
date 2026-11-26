@@ -88,6 +88,61 @@ Store Connect distribution cert + a matching profile whose bundle id is
 Create tester groups in the Firebase console named exactly: `alpha-testers`,
 `beta-testers`, `production`.
 
+## Store uploads (environment secrets)
+
+The store jobs in `release.yml` read their secrets from GitHub
+**environments**, not the repository: **Repo → Settings → Environments →
+New environment**, then add each secret under that environment. Each job
+warns and passes when its secrets are missing. What each upload does and what
+a person finishes in each console: `docs/releasing.md` → Store uploads.
+
+They reuse the repository-level `ANDROID_*` signing secrets above (the AAB
+and APK are built in the `android` job) and `SHARED_ENV_JSON`.
+
+### `store-ios` — App Store Connect / TestFlight
+
+| Secret | What | Where to create it |
+|---|---|---|
+| `APPLE_DIST_CERT_P12` | base64 of an **Apple Distribution** certificate + private key, exported as `.p12` (`base64 -i dist.p12 \| pbcopy`) | developer.apple.com → Certificates → + → Apple Distribution; install, then Keychain Access → export as `.p12` |
+| `APPLE_DIST_CERT_PASSWORD` | the `.p12` export password | chosen when exporting |
+| `APPSTORE_PROVISIONING_PROFILE` | base64 of an **App Store** provisioning profile for `app.balsm.health` signed with that certificate | developer.apple.com → Profiles → + → App Store Connect |
+| `APPLE_TEAM_ID` | 10-character Team ID (same value as the repository secret) | developer.apple.com → Membership details |
+| `ASC_KEY_ID` | App Store Connect API key id | App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys → + (role **App Manager**) |
+| `ASC_ISSUER_ID` | the issuer id shown above the key list | same page |
+| `ASC_PRIVATE_KEY` | the whole `AuthKey_<id>.p8` file, as text | downloaded once when the key is made |
+
+The job builds its own App Store IPA (`balsm ipa-appstore`), imports the
+certificate into a temporary keychain that it deletes afterwards, and uploads
+with `xcrun altool --upload-app` and the API key. altool ships with Xcode, so
+the runner needs no Ruby or fastlane; `notarytool` only notarises software
+distributed outside the store and cannot upload to App Store Connect. The app
+record must already exist in App Store Connect.
+
+### `store-android` — Google Play
+
+| Secret | What | Where to create it |
+|---|---|---|
+| `PLAY_SERVICE_ACCOUNT_JSON` | JSON key of a Google Cloud service account | Google Cloud console → IAM → Service accounts → create → Keys → Add key (JSON); then Play Console → Users and permissions → Invite the account's email with **Release to testing tracks** and **Release to production / manage releases** for this app |
+
+Uploaded with `r0adkll/upload-google-play` (pinned to a commit). Package
+`app.balsm.health`. Tracks: alpha → `internal`, beta → `alpha` (closed
+testing), production → `production` as a **draft**. Play App Signing must be
+on and the first AAB uploaded by hand once, so Play knows the upload key.
+
+### `store-huawei` — Huawei AppGallery
+
+| Secret | What | Where to create it |
+|---|---|---|
+| `HUAWEI_CLIENT_ID` | AppGallery Connect API client id | AppGallery Connect → Users and permissions → API key → Connect API → Create (project: N/A, role **App administrator**) |
+| `HUAWEI_CLIENT_SECRET` | that client's secret | shown with the client id |
+| `HUAWEI_APP_ID` | the app's numeric id | AppGallery Connect → My apps → the app → App information |
+
+Uploaded by `tool/appgallery_upload.sh` (bash, curl, python3): token → upload
+URL → upload → attach to the app. It never submits for review. Run
+`tool/appgallery_upload.sh --file <apk> --dry-run` to see the requests
+without network or secrets. The APK is signed with the same upload key as the
+Play build; the app record must exist in AppGallery Connect first.
+
 ## Channel → tag cheatsheet
 
 Release with the **Promote** workflow (Actions → Promote), which picks the tag
