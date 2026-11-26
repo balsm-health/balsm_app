@@ -68,15 +68,16 @@ testers in each console; never promote one to production, which Promote
 builds again against prod.
 
 The jobs (`testflight`, `google-play`, `appgallery` in `release.yml`) run in
-the environments `store-ios`, `store-android` and `store-huawei`, which hold
-their secrets (`docs/ci-secrets.md`). A job whose secrets are missing warns
-and passes, as the signing steps do.
+the `release-production` environment, which holds the store secrets
+(`docs/ci-secrets.md`): store signing is production. A job whose secrets are
+missing warns and passes, as the signing steps do.
 
-**Production waits for a second approval.** Before any production upload,
-the `store-gate` job asks a reviewer of `release-production` again: Promote's
-approval let the tag be made, this one lets the finished builds reach the
-stores. It also covers a production tag pushed by hand, which never went
-through Promote.
+**Every store upload waits for approval**, alpha and beta included: a
+reviewer of `release-production` approves the waiting store jobs of a run
+together (Review deployments). For production this is the second approval:
+Promote's let the tag be made, this one lets the finished builds reach the
+stores. It also covers a tag pushed by hand, which never went through
+Promote.
 
 ### What a person still does
 
@@ -182,10 +183,8 @@ actors can still create, move or delete release tags.
   Promote create its tag (it uses the workflow's `GITHUB_TOKEN`). Everyone
   else then releases only through Promote; admins can still tag, move or
   delete by hand, so keep that list short.
-- **Store environments**: Settings → Environments → create `store-ios`,
-  `store-android` and `store-huawei`, add their secrets
-  (`docs/ci-secrets.md`), and under Deployment branches and tags allow only
-  tags matching `v*`. Production uploads already wait for
-  `release-production`; reviewers on a store environment would make alpha
-  and beta wait too.
+- **Store secrets**: add them to `release-production`
+  (`docs/ci-secrets.md`), and under Deployment branches and tags allow tags
+  matching `v*` besides `main` and `release/*`; without the tag rule every
+  store job is refused.
 - Firebase tester groups and signing secrets: `docs/ci-secrets.md`.

@@ -90,16 +90,17 @@ Create tester groups in the Firebase console named exactly: `alpha-testers`,
 
 ## Store uploads (environment secrets)
 
-The store jobs in `release.yml` read their secrets from GitHub
-**environments**, not the repository: **Repo → Settings → Environments →
-New environment**, then add each secret under that environment. Each job
+The store jobs in `release.yml` read their secrets from the
+**`release-production` environment**, not the repository: **Repo → Settings →
+Environments → release-production**, then add each secret there. Store
+signing is production, so every upload waits for a reviewer. Each job
 warns and passes when its secrets are missing. What each upload does and what
 a person finishes in each console: `docs/releasing.md` → Store uploads.
 
 They reuse the repository-level `ANDROID_*` signing secrets above (the AAB
 and APK are built in the `android` job) and `SHARED_ENV_JSON`.
 
-### `store-ios` — App Store Connect / TestFlight
+### App Store Connect / TestFlight
 
 | Secret | What | Where to create it |
 |---|---|---|
@@ -118,7 +119,7 @@ the runner needs no Ruby or fastlane; `notarytool` only notarises software
 distributed outside the store and cannot upload to App Store Connect. The app
 record must already exist in App Store Connect.
 
-### `store-android` — Google Play
+### Google Play
 
 | Secret | What | Where to create it |
 |---|---|---|
@@ -129,7 +130,7 @@ Uploaded with `r0adkll/upload-google-play` (pinned to a commit). Package
 testing), production → `production` as a **draft**. Play App Signing must be
 on and the first AAB uploaded by hand once, so Play knows the upload key.
 
-### `store-huawei` — Huawei AppGallery
+### Huawei AppGallery
 
 | Secret | What | Where to create it |
 |---|---|---|

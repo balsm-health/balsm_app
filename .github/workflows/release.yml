@@ -626,28 +626,18 @@ jobs:
   # release (a draft for production), AppGallery gets a package on the version
   # being edited. A person finishes each in its console (docs/releasing.md).
   #
-  # Each store has its own environment (store-ios, store-android,
-  # store-huawei) holding its secrets. A job whose secrets are missing warns
-  # and passes, so a fork or an unconfigured repo still releases.
-  #
-  # Production uploads wait for a reviewer of release-production. Promote has
-  # already asked once, before tagging; this second approval covers a
-  # production tag pushed by hand (which Promote never saw) and lets the
-  # reviewer look at the finished builds before they reach the stores.
-  store-gate:
-    name: Approve production store uploads
-    needs: [setup, github-release]
-    if: github.ref_type == 'tag' && needs.setup.outputs.channel == 'production'
-    runs-on: ubuntu-latest
-    environment: release-production
-    permissions: {}
-    steps:
-      - run: echo "Production store uploads approved for ${{ needs.setup.outputs.tag }}."
+  # Store signing is production: every store job runs in the
+  # release-production environment, which holds the store secrets and waits
+  # for one of its reviewers before each upload, alpha and beta included. The
+  # reviewer sees the finished builds before they reach a store; a production
+  # tag pushed by hand (which Promote never saw) waits the same way. A job
+  # whose secrets are missing warns and passes, so a fork or an unconfigured
+  # repo still releases.
 
   # iOS → App Store Connect (TestFlight), every channel. Its own build: the
   # `ios` job exports an ad-hoc IPA (for Firebase) with the repo's ad-hoc
   # profile, and App Store Connect takes only an App Store-signed one, whose
-  # profile and secrets live in the store-ios environment.
+  # profile and secrets live in the release-production environment.
   #
   # Uploaded with `xcrun altool --upload-app` and an App Store Connect API key:
   # it ships with Xcode on the runner, so no Ruby or fastlane toolchain.
@@ -655,13 +645,12 @@ jobs:
   # deliver to App Store Connect.)
   testflight:
     name: App Store Connect / TestFlight (${{ needs.setup.outputs.channel }})
-    needs: [setup, github-release, store-gate]
+    needs: [setup, github-release]
     if: >-
       always() && github.ref_type == 'tag' && needs.setup.outputs.distribute == 'true'
       && needs.github-release.result == 'success'
-      && (needs.store-gate.result == 'success' || needs.store-gate.result == 'skipped')
     runs-on: macos-latest
-    environment: store-ios
+    environment: release-production
     permissions:
       contents: read
     concurrency:
@@ -675,7 +664,7 @@ jobs:
     steps:
       - name: Skip notice
         if: env.HAS_TESTFLIGHT != 'true'
-        run: echo "::warning::store-ios secrets are not all set — TestFlight upload skipped. See docs/ci-secrets.md."
+        run: echo "::warning::the iOS store secrets in release-production are not all set — TestFlight upload skipped. See docs/ci-secrets.md."
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         if: env.HAS_TESTFLIGHT == 'true'
         with:
@@ -805,13 +794,12 @@ jobs:
   #                and sends it for review in Play Console.
   google-play:
     name: Google Play (${{ needs.setup.outputs.channel }})
-    needs: [setup, android, github-release, store-gate]
+    needs: [setup, android, github-release]
     if: >-
       always() && github.ref_type == 'tag' && needs.setup.outputs.distribute == 'true'
       && needs.github-release.result == 'success'
-      && (needs.store-gate.result == 'success' || needs.store-gate.result == 'skipped')
     runs-on: ubuntu-latest
-    environment: store-android
+    environment: release-production
     permissions:
       contents: read
     concurrency:
@@ -825,7 +813,7 @@ jobs:
         if: env.HAS_PLAY != 'true' || env.SIGNED != 'true'
         run: |
           if [ "$HAS_PLAY" != true ]; then
-            echo "::warning::PLAY_SERVICE_ACCOUNT_JSON is not set in store-android — Google Play upload skipped. See docs/ci-secrets.md."
+            echo "::warning::PLAY_SERVICE_ACCOUNT_JSON is not set in release-production — Google Play upload skipped. See docs/ci-secrets.md."
           else
             echo "::warning::No signed app bundle (ANDROID_KEYSTORE_BASE64 is not set) — Google Play upload skipped. See docs/ci-secrets.md."
           fi
@@ -864,13 +852,12 @@ jobs:
   # on Google services that phones without GMS lack; see docs/releasing.md.
   appgallery:
     name: Huawei AppGallery (${{ needs.setup.outputs.channel }})
-    needs: [setup, android, github-release, store-gate]
+    needs: [setup, android, github-release]
     if: >-
       always() && github.ref_type == 'tag' && needs.setup.outputs.distribute == 'true'
       && needs.github-release.result == 'success'
-      && (needs.store-gate.result == 'success' || needs.store-gate.result == 'skipped')
     runs-on: ubuntu-latest
-    environment: store-huawei
+    environment: release-production
     permissions:
       contents: read
     concurrency:
@@ -884,7 +871,7 @@ jobs:
         if: env.HAS_HUAWEI != 'true' || env.SIGNED != 'true'
         run: |
           if [ "$HAS_HUAWEI" != true ]; then
-            echo "::warning::HUAWEI_CLIENT_ID / HUAWEI_CLIENT_SECRET / HUAWEI_APP_ID are not all set in store-huawei — AppGallery upload skipped. See docs/ci-secrets.md."
+            echo "::warning::HUAWEI_CLIENT_ID / HUAWEI_CLIENT_SECRET / HUAWEI_APP_ID are not all set in release-production — AppGallery upload skipped. See docs/ci-secrets.md."
           else
             echo "::warning::No signed APK (ANDROID_KEYSTORE_BASE64 is not set) — AppGallery upload skipped. See docs/ci-secrets.md."
           fi
