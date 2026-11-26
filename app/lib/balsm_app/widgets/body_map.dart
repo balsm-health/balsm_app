@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:account/account.dart';
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
@@ -27,6 +27,11 @@ final FutureProvider<Gender?> currentProfileGenderProvider = FutureProvider.auto
   if (ref.watch(currentUserIdProvider) == null) return null;
   return (await ref.watch(accountProfileUseCaseProvider).load())?.gender;
 });
+
+/// Artwork tap targets for one body asset, parsed once per asset and kept for
+/// the session (static artwork, no PHI).
+final FutureProviderFamily<BodyHitMap, String> bodyHitMapProvider =
+    FutureProvider.family<BodyHitMap, String>((ref, asset) => BodyHitMap.forAsset(asset));
 
 /// Recolors every path tagged `region-{BodyRegion.id}` / `region-{id}-{n}`.
 class _BodyRegionColorMapper extends ColorMapper {
@@ -65,7 +70,7 @@ class _BodyRegionColorMapper extends ColorMapper {
 
 /// Tappable anatomical body figure. Front/back + tissue chips; tap toggles a
 /// [PainSite] on the current tissue layer.
-class BodyMap extends StatefulWidget {
+class BodyMap extends ConsumerStatefulWidget {
   const BodyMap({
     required this.selected,
     required this.onToggle,
@@ -78,10 +83,10 @@ class BodyMap extends StatefulWidget {
   /// Skin layer uses the gendered silhouette; other layers are unisex.
   final Gender gender;
   @override
-  State<BodyMap> createState() => _BodyMapState();
+  ConsumerState<BodyMap> createState() => _BodyMapState();
 }
 
-class _BodyMapState extends State<BodyMap> {
+class _BodyMapState extends ConsumerState<BodyMap> {
   BodyView view = BodyView.front;
 
   /// Free choice while nothing is selected. Once the selection locks the
@@ -89,23 +94,6 @@ class _BodyMapState extends State<BodyMap> {
   /// later "Clear all" reopens the dropdown on the layer that was in use
   /// instead of resetting to skin.
   BodyTissue _tissue = BodyTissue.skin;
-
-  /// Artwork tap targets for the asset on screen. Empty until it parses, and
-  /// for any shape we could not map — [_catalogHit] covers both cases.
-  BodyHitMap _hits = BodyHitMap.empty;
-  String? _hitsAsset;
-
-  /// Parses [asset] on first use and caches it. No-op once loaded.
-  void _ensureHits(String asset) {
-    if (_hitsAsset == asset) return;
-    _hitsAsset = asset;
-    _hits = BodyHitMap.empty;
-    unawaited(
-      BodyHitMap.forAsset(asset).then((map) {
-        if (mounted && _hitsAsset == asset) setState(() => _hits = map);
-      }),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +108,9 @@ class _BodyMapState extends State<BodyMap> {
     final locked = lockedTissue != null;
     final regions = tissue.regions(view);
     final asset = _asset(tissue, view, widget.gender);
-    _ensureHits(asset);
+    // Artwork tap targets: empty until the asset parses, and for any shape we
+    // could not map — [_catalogHit] covers both cases.
+    final hits = ref.watch(bodyHitMapProvider(asset)).value ?? BodyHitMap.empty;
     final c = s.strings.checkin;
     final selectedOnTissue = widget.selected.where((site) => site.tissue == tissue).map((site) => site.region).toSet();
     return Column(
@@ -210,7 +200,7 @@ class _BodyMapState extends State<BodyMap> {
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTapDown: (details) {
-                      final region = _hitRegion(details.localPosition, constraints.biggest, regions, tissue);
+                      final region = _hitRegion(hits, details.localPosition, constraints.biggest, regions, tissue);
                       if (region == null) return;
                       final site = PainSite(region);
                       // One tissue per record: a tap that would add a different
@@ -240,22 +230,22 @@ class _BodyMapState extends State<BodyMap> {
   /// Tries the artwork the user actually tapped, then forgives a near miss by
   /// reaching for the closest artwork, then — only while the asset is still
   /// parsing — falls back to catalog positions.
-  BodyRegion? _hitRegion(Offset local, Size size, List<BodyRegion> regions, BodyTissue tissue) {
+  BodyRegion? _hitRegion(BodyHitMap hits, Offset local, Size size, List<BodyRegion> regions, BodyTissue tissue) {
     if (size.width <= 0 || size.height <= 0) return null;
     final point = Offset(local.dx / size.width * 200, local.dy / size.height * 384);
 
     // Assets draw more than a layer exposes — the organ plate paints the whole
     // silhouette, the skeleton plate keeps eyes and abdomen. A shape with no
     // region on this tissue is scenery; keep looking underneath it.
-    for (final id in _hits.regionsAt(point)) {
+    for (final id in hits.regionsAt(point)) {
       final region = BodyRegion.fromId(id, tissue);
       if (region != null) return region;
     }
-    for (final id in _hits.regionsNear(point)) {
+    for (final id in hits.regionsNear(point)) {
       final region = BodyRegion.fromId(id, tissue);
       if (region != null) return region;
     }
-    return _hits.isEmpty ? _catalogHit(point, regions) : null;
+    return hits.isEmpty ? _catalogHit(point, regions) : null;
   }
 
   /// Coarse stand-in for the frames before [BodyHitMap] finishes parsing:

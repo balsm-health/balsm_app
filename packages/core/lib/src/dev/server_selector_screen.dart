@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../config/flavor.dart';
@@ -11,9 +12,9 @@ import '../kit/tokens.dart';
 import '../network/balsm_api_controller.dart';
 import 'dev_config_store.dart';
 import 'dev_console_colors.dart';
+import 'dev_console_state.dart';
 import 'dev_diagnostics.dart';
 import 'dev_log_buffer.dart';
-import 'server_health.dart';
 import 'server_url.dart';
 
 // Developer console only.
@@ -37,7 +38,11 @@ const _kMono = 'monospace';
 /// server SWITCHING and log EXPORT are dev/staging only. In prod this renders
 /// read-only diagnostics with the switcher hidden (a mis-pointed prod build
 /// could leak PHI to the wrong backend).
-class ServerSelectorScreen extends StatefulWidget {
+///
+/// The connection check, the bug report's severity and screenshot choice, and
+/// the store / log changes it redraws on live in providers
+/// (`dev_console_state.dart`); the rest is view state of this screen.
+class ServerSelectorScreen extends ConsumerStatefulWidget {
   const ServerSelectorScreen({required this.controller, super.key, this.screenshot});
   final BalsmApiController controller;
 
@@ -46,15 +51,10 @@ class ServerSelectorScreen extends StatefulWidget {
   final Uint8List? screenshot;
 
   @override
-  State<ServerSelectorScreen> createState() => _ServerSelectorScreenState();
+  ConsumerState<ServerSelectorScreen> createState() => _ServerSelectorScreenState();
 }
 
-class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
-  // Connection check (design: Backend section, above the preset list).
-  _HealthState _health = _HealthState.idle;
-  String _healthMsg = '';
-  Map<String, Object?> _healthDetails = const {};
-
+class _ServerSelectorScreenState extends ConsumerState<ServerSelectorScreen> {
   final DevConfigStore _store = DevConfigStore.instance;
   final DevLogBuffer _buffer = DevLogBuffer.instance;
 
@@ -76,9 +76,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   // Bug tab
   final _bugTitleCtrl = TextEditingController();
   final _bugStepsCtrl = TextEditingController();
-  String _bugSeverity = 'medium';
   bool _reportCopied = false;
-  bool _attachShot = true;
   String? _bugSendStatus; // null | sending | sent | error
 
   /// Where requests go now — shown, probed and reported.
@@ -92,19 +90,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   @override
   void initState() {
     super.initState();
-    _store.addListener(_onChange);
-    _buffer.addListener(_onChange);
     unawaited(_store.load());
-  }
-
-  void _onChange() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _store.removeListener(_onChange);
-    _buffer.removeListener(_onChange);
     // Shared instance — outlives this screen, so it is not disposed here.
     _nameCtrl.dispose();
     _urlCtrl.dispose();
@@ -127,6 +117,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Redraw on any change to the saved envs, flags or logs.
+    ref.watch(devConsoleChangesProvider);
     final cfg = FlavorConfig.current;
     return Scaffold(
       backgroundColor: AppColors.cream50,
@@ -289,7 +281,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   List<Widget> _switcherBody(FlavorConfig cfg) => [
         const _Eyebrow('Backend'),
-        _healthRow(),
+        _HealthRow(baseUrl: _currentBaseUrl),
         ...cfg.servers.map(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -314,7 +306,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     );
     return [
       const _Eyebrow('Backend'),
-      _healthRow(),
+      _HealthRow(baseUrl: _currentBaseUrl),
       _presetCard(active, active: true),
       const SizedBox(height: 12),
       const _ReadOnlyNote(),
@@ -1041,6 +1033,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final canSend = cfg.serverSwitchingEnabled; // dev/staging only, like log export
     final shot = widget.screenshot;
     final size = MediaQuery.sizeOf(context);
+    final attachShot = ref.watch(bugReportDraftProvider.select((d) => d.attachShot));
     return [
       const _Eyebrow('Screenshot'),
       Container(
@@ -1068,7 +1061,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 ),
               )
             : Opacity(
-                opacity: _attachShot ? 1 : 0.35,
+                opacity: attachShot ? 1 : 0.35,
                 child: Image.memory(shot, height: 220, fit: BoxFit.contain, semanticLabel: 'App screenshot'),
               ),
       ),
@@ -1083,8 +1076,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               ),
             ),
             TextButton(
-              onPressed: () => setState(() => _attachShot = !_attachShot),
-              child: Text(_attachShot ? 'Remove' : 'Attach'),
+              onPressed: () => ref.read(bugReportDraftProvider.notifier).toggleAttachShot(),
+              child: Text(attachShot ? 'Remove' : 'Attach'),
             ),
           ],
         ),
@@ -1114,7 +1107,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             ['medium', 'Medium'],
             ['high', 'High'],
             ['critical', 'Critical'],
-          ].map((s) => Expanded(child: _sevButton(s[0], s[1]))),
+          ].map((s) => Expanded(child: _SeverityButton(id: s[0], label: s[1]))),
         ],
       ),
       const SizedBox(height: 16),
@@ -1137,7 +1130,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               Text('env       ${_activeLabel(cfg)} — $_currentBaseUrl'),
               Text('logs      ${_buffer.total} entries · ${_buffer.errorCount} errors'),
               Text('viewport  ${size.width.round()}×${size.height.round()}'),
-              Text('shot      ${shot == null ? 'none' : _attachShot ? 'attached' : 'removed'}'),
+              Text('shot      ${shot == null ? 'none' : attachShot ? 'attached' : 'removed'}'),
             ],
           ),
         ),
@@ -1191,183 +1184,6 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         ),
       );
 
-  Widget _sevButton(String id, String label) {
-    final on = _bugSeverity == id;
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 6),
-      child: GestureDetector(
-        onTap: () => setState(() => _bugSeverity = id),
-        child: Container(
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: on ? AppColors.textPrimary : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            border: Border.all(color: on ? AppColors.textPrimary : AppColors.border),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: FontSizes.meta,
-              fontWeight: FontWeight.w600,
-              color: on ? AppColors.white : AppColors.textTertiary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Connection check ────────────────────────────────────────────────────────
-  // Ports the design's Backend health row: a dark action button on the left and
-  // a live one-line status on the right. Checks the SELECTED base URL, which is
-  // usually not the one the app is currently pointed at — that is the whole
-  // point of checking before switching.
-  Widget _healthRow() => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppRadii.control),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                _healthButton(),
-                const SizedBox(width: 8),
-                Expanded(child: _healthStatus()),
-              ],
-            ),
-            if (_healthDetails.isNotEmpty) _healthDetailsList(),
-          ],
-        ),
-      );
-
-  // Every field the server put in its health body, in the order it sent them —
-  // the deployed version, readiness and the reason when it is not ready. Values
-  // are selectable so a version or timestamp can be pasted into a bug report.
-  Widget _healthDetailsList() {
-    const key = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textHint);
-    const value = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textSecondary);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final e in _healthDetails.entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(width: 120, child: Text(e.key, style: key)),
-                  Expanded(child: SelectableText(e.value == null ? '—' : '${e.value}', style: value)),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _healthButton() {
-    final checking = _health == _HealthState.checking;
-    return GestureDetector(
-      onTap: checking ? null : _runHealthCheck,
-      child: Opacity(
-        opacity: checking ? 0.6 : 1,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.ink800,
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (checking)
-                const SizedBox(
-                  width: 13,
-                  height: 13,
-                  child: CircularProgressIndicator(strokeWidth: 1.6, color: AppColors.cream100),
-                )
-              else
-                const Icon(Icons.monitor_heart_outlined, size: 13, color: AppColors.cream100),
-              const SizedBox(width: 6),
-              Text(
-                checking ? 'Checking…' : 'Check connection',
-                style: const TextStyle(
-                  fontFamily: _kMono,
-                  fontSize: FontSizes.eyebrow,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.cream100,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _healthStatus() {
-    const mono = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow);
-
-    // While checking, the design shows the URL under test rather than a
-    // placeholder — it is the one moment the developer wants it confirmed.
-    final (Color color, IconData? icon, String text) = switch (_health) {
-      _HealthState.idle => (AppColors.textHint, null, 'Not checked yet'),
-      _HealthState.checking => (AppColors.textHint, null, _currentBaseUrl),
-      _HealthState.ok => (AppColors.hueMintInk, Icons.check_circle_outline, _healthMsg),
-      _HealthState.fail => (AppColors.danger, Icons.cancel_outlined, _healthMsg),
-    };
-
-    return Row(
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
-        ],
-        Expanded(
-          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: mono.copyWith(color: color)),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _runHealthCheck() async {
-    setState(() {
-      _health = _HealthState.checking;
-      _healthMsg = '';
-      _healthDetails = const {};
-    });
-
-    final target = _currentBaseUrl;
-    final result = await const ServerHealthProbe().check(target);
-    if (!mounted) return;
-
-    setState(() {
-      switch (result) {
-        // A server that answers non-200 is reachable but unwell — worth telling
-        // apart from silence, so the status code is shown either way.
-        case ServerHealthy(:final statusCode, :final elapsed, :final isOk, :final version, :final details):
-          _health = isOk ? _HealthState.ok : _HealthState.fail;
-          _healthMsg = [
-            '$statusCode ${isOk ? 'OK' : 'Unhealthy'}',
-            if (version != null) 'v$version',
-            '${elapsed.inMilliseconds}ms',
-          ].join(' · ');
-          _healthDetails = details;
-        case ServerUnreachable(:final reason):
-          _health = _HealthState.fail;
-          _healthMsg = reason;
-      }
-    });
-  }
-
   // ── Actions ─────────────────────────────────────────────────────────────────
   void _onPresetTap(ServerPreset p) {
     if (_selectedBaseUrl == p.apiBaseUrl) return;
@@ -1379,14 +1195,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   }
 
   Future<void> _select(ServerPreset preset) async {
-    setState(() {
-      _loading = true;
-      // A result from the previous server would now be read as describing this
-      // one — "200 OK" next to a backend nobody has actually reached yet.
-      _health = _HealthState.idle;
-      _healthMsg = '';
-      _healthDetails = const {};
-    });
+    // A result from the previous server would now be read as describing this
+    // one — "200 OK" next to a backend nobody has actually reached yet.
+    ref.read(serverHealthProvider.notifier).reset();
+    setState(() => _loading = true);
     try {
       await widget.controller.reconfigure(preset);
     } on FormatException catch (e) {
@@ -1453,12 +1265,12 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       final ok = await DevDiagnostics.sendBugReport(
         title: _bugTitleCtrl.text,
         steps: _bugStepsCtrl.text,
-        severity: _bugSeverity,
+        severity: ref.read(bugReportDraftProvider).severity,
         entries: _buffer.entries,
         envLabel: _activeLabel(FlavorConfig.current),
         envUrl: _currentBaseUrl,
         viewport: '${size.width.round()}×${size.height.round()}',
-        screenshot: _attachShot ? widget.screenshot : null,
+        screenshot: ref.read(bugReportDraftProvider).attachShot ? widget.screenshot : null,
       );
       if (mounted) setState(() => _bugSendStatus = ok ? 'sent' : 'error');
     } on Object catch (_) {
@@ -1473,7 +1285,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final report = DevDiagnostics.buildBugReport(
       title: _bugTitleCtrl.text,
       steps: _bugStepsCtrl.text,
-      severity: _bugSeverity,
+      severity: ref.read(bugReportDraftProvider).severity,
       envLabel: _activeLabel(FlavorConfig.current),
       envUrl: _currentBaseUrl,
       entries: _buffer.entries,
@@ -1565,9 +1377,6 @@ class _EnvStyle {
   final Color fg;
   final bool isProd;
 }
-
-/// States of the Dev Config connection check, per the design.
-enum _HealthState { idle, checking, ok, fail }
 
 class _EnvChip extends StatelessWidget {
   const _EnvChip(this.label, this.es);
@@ -1917,4 +1726,191 @@ class _Eyebrow extends StatelessWidget {
           ),
         ),
       );
+}
+
+// ── Connection check ────────────────────────────────────────────────────────
+// Ports the design's Backend health row: a dark action button on the left and
+// a live one-line status on the right. Checks the SELECTED base URL, which is
+// usually not the one the app is currently pointed at — that is the whole
+// point of checking before switching.
+class _HealthRow extends ConsumerWidget {
+  const _HealthRow({required this.baseUrl});
+
+  /// Where requests go now — what the check probes.
+  final String baseUrl;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final health = ref.watch(serverHealthProvider);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _HealthButton(
+                checking: health.status == ServerHealthStatus.checking,
+                onCheck: () => ref.read(serverHealthProvider.notifier).check(baseUrl),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: _HealthStatusLine(health: health, baseUrl: baseUrl)),
+            ],
+          ),
+          if (health.details.isNotEmpty) _HealthDetails(health.details),
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthButton extends StatelessWidget {
+  const _HealthButton({required this.checking, required this.onCheck});
+  final bool checking;
+  final VoidCallback onCheck;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: checking ? null : onCheck,
+        child: Opacity(
+          opacity: checking ? 0.6 : 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.ink800,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (checking)
+                  const SizedBox(
+                    width: 13,
+                    height: 13,
+                    child: CircularProgressIndicator(strokeWidth: 1.6, color: AppColors.cream100),
+                  )
+                else
+                  const Icon(Icons.monitor_heart_outlined, size: 13, color: AppColors.cream100),
+                const SizedBox(width: 6),
+                Text(
+                  checking ? 'Checking…' : 'Check connection',
+                  style: const TextStyle(
+                    fontFamily: _kMono,
+                    fontSize: FontSizes.eyebrow,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.cream100,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _HealthStatusLine extends StatelessWidget {
+  const _HealthStatusLine({required this.health, required this.baseUrl});
+  final ServerHealthState health;
+  final String baseUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    const mono = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow);
+
+    // While checking, the design shows the URL under test rather than a
+    // placeholder — it is the one moment the developer wants it confirmed.
+    final (Color color, IconData? icon, String text) = switch (health.status) {
+      ServerHealthStatus.idle => (AppColors.textHint, null, 'Not checked yet'),
+      ServerHealthStatus.checking => (AppColors.textHint, null, baseUrl),
+      ServerHealthStatus.ok => (AppColors.hueMintInk, Icons.check_circle_outline, health.message),
+      ServerHealthStatus.fail => (AppColors.danger, Icons.cancel_outlined, health.message),
+    };
+
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+        ],
+        Expanded(
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: mono.copyWith(color: color)),
+        ),
+      ],
+    );
+  }
+}
+
+// Every field the server put in its health body, in the order it sent them —
+// the deployed version, readiness and the reason when it is not ready. Values
+// are selectable so a version or timestamp can be pasted into a bug report.
+class _HealthDetails extends StatelessWidget {
+  const _HealthDetails(this.details);
+  final Map<String, Object?> details;
+
+  @override
+  Widget build(BuildContext context) {
+    const key = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textHint);
+    const value = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textSecondary);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...details.entries.map(
+            (e) => Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 120, child: Text(e.key, style: key)),
+                  Expanded(child: SelectableText(e.value == null ? '—' : '${e.value}', style: value)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One severity choice on the Report bug tab.
+class _SeverityButton extends ConsumerWidget {
+  const _SeverityButton({required this.id, required this.label});
+  final String id;
+  final String label;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final on = ref.watch(bugReportDraftProvider.select((d) => d.severity == id));
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 6),
+      child: GestureDetector(
+        onTap: () => ref.read(bugReportDraftProvider.notifier).setSeverity(id),
+        child: Container(
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: on ? AppColors.textPrimary : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(color: on ? AppColors.textPrimary : AppColors.border),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: FontSizes.meta,
+              fontWeight: FontWeight.w600,
+              color: on ? AppColors.white : AppColors.textTertiary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

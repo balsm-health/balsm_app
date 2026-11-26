@@ -17,6 +17,7 @@ import 'package:profile/profile.dart';
 import '../update/update_gate.dart';
 import 'app_state.dart';
 import 'assets.dart';
+import 'database_tab_claim.dart';
 import 'deep_link_handler.dart';
 import 'deep_links.dart';
 import 'desktop_menu.dart';
@@ -28,6 +29,7 @@ import 'flags.dart';
 import 'kit.dart';
 import 'maintenance/maintenance_controller.dart';
 import 'maintenance/maintenance_widgets.dart';
+import 'maintenance_device_only.dart';
 import 'offline_banner.dart';
 import 'responsive.dart';
 import 'routes.dart';
@@ -145,9 +147,10 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   bool _publicDelete = false;
   bool _publicDeleteCancel = false;
 
-  /// Web only: another tab owns the on-device database, so this one shows
-  /// [OtherTabScreen] instead of an app that cannot read or write anything.
-  bool _otherTab = false;
+  /// Web only: this tab needs the on-device database (it is not a public
+  /// page), so it claims it through [databaseTabClaimProvider] and shows
+  /// [OtherTabScreen] when another tab holds it.
+  bool _needsDatabaseTab = false;
 
   @override
   void initState() {
@@ -168,13 +171,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
           break;
       }
       // The public pages never touch the database, so they stay usable.
-      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel) {
-        unawaited(
-          claimDatabaseTab().then((owned) {
-            if (!owned && mounted) setState(() => _otherTab = true);
-          }),
-        );
-      }
+      _needsDatabaseTab = _publicResolveJti == null && !_publicDelete && !_publicDeleteCancel;
     }
     LogBuffer.instance.install();
     // FR-509: care team reconciles with the cloud when the app comes back to
@@ -421,38 +418,6 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     });
   }
 
-  /// Chose "Use on this device only" on the pre-sign-in maintenance page.
-  bool _maintenanceDeviceOnly = false;
-
-  /// The full-screen maintenance page, when one applies (design app-mc.jsx):
-  /// a block covers the signed-in app; any maintenance covers sign-in and
-  /// account creation, until the patient picks "Use on this device only".
-  /// The walkthrough and the device-only unlock stay reachable — they never
-  /// touch the server. The public QR / deletion pages are never covered.
-  List<Widget> _maintenancePage(MaintenanceStatus m) {
-    final route = state.route;
-    if (route == AppRoutes.app) {
-      return [if (m.blocks) const Positioned.fill(child: MaintenanceScreen(signedIn: true))];
-    }
-    if (!m.pausesActions || route == AppRoutes.walkthrough || route == AppRoutes.unlock) return const [];
-    if (!m.blocks && _maintenanceDeviceOnly && state.authIntent == AuthIntent.deviceOnly) return const [];
-    return [
-      Positioned.fill(
-        child: AdaptiveFrame(
-          child: MaintenanceScreen(
-            signedIn: false,
-            onDeviceOnly: () {
-              setState(() => _maintenanceDeviceOnly = true);
-              state
-                ..setAuthIntent(AuthIntent.deviceOnly)
-                ..go(AppRoutes.phone);
-            },
-          ),
-        ),
-      ),
-    ];
-  }
-
   /// System back (Android) on a screen of the signed-in shell that sits above
   /// another: Records and Trends go up to Home, Prescriptions to Meds, as their
   /// own back buttons do. True when it handled the back; otherwise
@@ -474,7 +439,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // ref.watch rebuilds this subtree on every state notification — the
     // Riverpod equivalent of the old AnimatedBuilder(animation: state).
     ref.watch(patientAppStateProvider);
-    final maintenance = ref.watch(maintenanceProvider);
+    final otherTab = _needsDatabaseTab && ref.watch(databaseTabClaimProvider).value == false;
     // FR-509: reconcile on sign-in and on a dependant-profile switch. Firing on
     // the null -> non-null edge means a signed-out app never calls the API, and
     // a restored device pulls its roster as soon as the profile resolves.
@@ -529,7 +494,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                 state: state,
                 child: RepaintBoundary(
                   key: _captureKey,
-                  child: _otherTab
+                  child: otherTab
                       ? OtherTabScreen(state: state)
                       : ShakeToDevConfig(navigatorKey: _navKey, child: _UpdateGate(state, child!, prefs: _updatePrefs)),
                 ),
@@ -574,7 +539,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                           else
                             const AdaptiveFrame(child: AuthRouter()),
                           if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
-                            ..._maintenancePage(maintenance),
+                            Positioned.fill(child: _MaintenanceCover(state: state)),
                           if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
                             Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
                         ],
@@ -1243,6 +1208,44 @@ class _BootSplash extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The full-screen maintenance page, when one applies (design app-mc.jsx):
+/// a block covers the signed-in app; any maintenance covers sign-in and
+/// account creation, until the patient picks "Use on this device only".
+/// The walkthrough and the device-only unlock stay reachable — they never
+/// touch the server. The public QR / deletion pages are never covered.
+///
+/// Fills the shell's stack either way; with nothing to show it is empty and
+/// takes no touches.
+class _MaintenanceCover extends ConsumerWidget {
+  const _MaintenanceCover({required this.state});
+  final PatientAppState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(maintenanceProvider);
+    final route = state.route;
+    if (route == AppRoutes.app) {
+      return m.blocks ? const MaintenanceScreen(signedIn: true) : const SizedBox.shrink();
+    }
+    if (!m.pausesActions || route == AppRoutes.walkthrough || route == AppRoutes.unlock) {
+      return const SizedBox.shrink();
+    }
+    final choseDeviceOnly = ref.watch(maintenanceDeviceOnlyProvider);
+    if (!m.blocks && choseDeviceOnly && state.authIntent == AuthIntent.deviceOnly) return const SizedBox.shrink();
+    return AdaptiveFrame(
+      child: MaintenanceScreen(
+        signedIn: false,
+        onDeviceOnly: () {
+          ref.read(maintenanceDeviceOnlyProvider.notifier).choose();
+          state
+            ..setAuthIntent(AuthIntent.deviceOnly)
+            ..go(AppRoutes.phone);
+        },
       ),
     );
   }

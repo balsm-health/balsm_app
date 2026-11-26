@@ -1,12 +1,9 @@
-import 'dart:async';
-
 import 'package:core/core.dart';
 import 'package:fluster/fluster.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -19,18 +16,19 @@ import '../care/care_entity.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import 'map_packs_sheet.dart';
+import 'map_view.dart';
+
+export 'map_view.dart' show MapView, mapViewProvider;
 
 /// Nearby health entities (map.jsx `MapScreen`): a stylized Cairo map with
 /// entity pins, a searchable/filterable list, and a per-entity detail card.
 /// Data comes from [careDirectoryProvider] (a placeholder until the
 /// care-directory backend exists); no PHI is involved.
-/// Where the map was looking, kept for the session so switching tabs and back
-/// returns to the same view. `placed` is true once the camera is somewhere the
-/// patient chose — their own position, or wherever they panned — rather than
-/// the fallback shown before the location resolved.
-typedef MapView = ({LatLng center, double zoom, bool placed});
-
-final mapViewProvider = StateProvider<MapView?>((ref) => null);
+///
+/// The search (text, types, area) lives in [careSearchProvider], the camera in
+/// [mapViewProvider] and the "Search this area" offer in [mapPanProvider]; this
+/// screen keeps only what it draws itself: the map/list toggle and the
+/// selected pin.
 
 /// Zoom the map opens at on the patient's own position, as the recenter
 /// button does.
@@ -47,27 +45,14 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  final _searchCtrl = TextEditingController();
+  /// Opens on the search the results answer, so coming back to the tab never
+  /// shows an empty field over results filtered by text.
+  late final _searchCtrl = TextEditingController(text: ref.read(careSearchProvider).text);
   final _mapController = MapController();
-  String _query = '';
-
-  /// Types the patient is filtering to. Empty means "All" — the same result
-  /// as every type ticked, so clearing the last one falls back to all rather
-  /// than stranding the map with nothing to plot.
-  final Set<CareEntityType> _activeTypes = {};
   bool _mapView = true; // map | list
   /// Tapped pin's id. An id rather than an entity because the map now plots
   /// pins, which carry no details — the sheet fetches them.
   String? _selectedId;
-
-  /// Debounce for anything that triggers a network query. Typing and panning
-  /// both fire continuously; without this every keystroke and every frame of a
-  /// drag would hit the directory.
-  Timer? _debounce;
-  static const _debounceDelay = Duration(milliseconds: 400);
-
-  /// Last reported camera zoom, so the empty state can say WHY it is empty.
-  late double _zoom = ref.read(mapViewProvider)?.zoom ?? 13;
 
   /// The FlutterMap has laid out, so [_mapController] can move it.
   bool _mapReady = false;
@@ -89,102 +74,59 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final me = ref.read(deviceLocationProvider).value?.position;
     if (me == null || !kCareCoverage.contains(me)) return;
     _mapController.move(me, _kUserZoom);
-    _remember(me, _kUserZoom, placed: true);
-    setState(() => _zoom = _kUserZoom);
+    ref.read(mapViewProvider.notifier).remember(me, _kUserZoom, placed: true);
   }
 
-  void _remember(LatLng center, double zoom, {required bool placed}) =>
-      ref.read(mapViewProvider.notifier).state = (center: center, zoom: zoom, placed: placed);
+  @override
+  void initState() {
+    super.initState();
+    final request = widget.filterRequest;
+    if (request != null) _applyFilterRequest(request);
+  }
 
-  /// Camera as of the last pan, and the centre the current results were fetched
-  /// for. [_areaDirty] is what shows the "Search this area" button.
-  MapCamera? _pendingCamera;
-  LatLng? _lastSearched;
-  bool _areaDirty = false;
-  bool _wasZoomedOut = false;
+  @override
+  void didUpdateWidget(MapScreen old) {
+    super.didUpdateWidget(old);
+    final request = widget.filterRequest;
+    if (request != null && request != old.filterRequest) _applyFilterRequest(request);
+  }
 
-  /// How far the map must move before re-searching is worth offering. Roughly a
-  /// city block at street zoom — below it the results on screen still describe
-  /// what the user is looking at.
-  static const double _researchThresholdMeters = 600;
+  /// Selects exactly the requested types (empty = "All"). The notifier skips a
+  /// request it has already applied. After the frame: a provider must not
+  /// change while the tree is building.
+  void _applyFilterRequest(MapFilterRequest request) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(careSearchProvider.notifier).applyFilterRequest(types: request.types, serial: request.serial);
+    });
+  }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _searchCtrl.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
-  /// Pushes the current UI state into the query the directory provider watches.
-  /// [immediate] skips the debounce for discrete actions — ticking a type, or
-  /// clearing filters — where waiting would feel broken.
-  void _pushSearch({bool immediate = false, LatLng? focus, double? radiusKm, bool? tooZoomedOut}) {
-    void apply() {
-      if (!mounted) return;
-      final notifier = ref.read(careSearchProvider.notifier);
-      notifier.state = notifier.state.copyWith(
-        text: _query,
-        types: Set<CareEntityType>.from(_activeTypes),
-        focus: focus,
-        radiusKm: radiusKm,
-        tooZoomedOut: tooZoomedOut,
-      );
-    }
-
-    _debounce?.cancel();
-    if (immediate) {
-      apply();
-    } else {
-      _debounce = Timer(_debounceDelay, apply);
-    }
-  }
-
-  /// Re-queries around wherever the user has panned to.
-  ///
-  /// "Nearby" has to mean the area being looked at, not only the device's own
-  /// position — someone planning a trip across Cairo needs results where they
-  /// are heading. The radius follows the visible bounds so zooming out widens
-  /// the search instead of showing a sparse patch in the middle.
-  /// Where the user has panned to, and whether that differs from what is
-  /// currently plotted.
-  ///
-  /// Panning does NOT re-query. It fired a request per settled gesture, which
-  /// spent bandwidth on areas the user was only passing over and made results
-  /// shift under them mid-drag. Instead this arms "Search this area", so moving
-  /// the map is free and fetching is a decision — the behaviour people already
-  /// know from other map apps.
+  /// Where the patient has panned to. Panning does not re-query; it arms
+  /// "Search this area" (see [MapPanNotifier]).
   void _onMapMoved(MapCamera camera, bool hasGesture) {
-    _remember(camera.center, camera.zoom, placed: hasGesture || (ref.read(mapViewProvider)?.placed ?? false));
+    ref
+        .read(mapViewProvider.notifier)
+        .remember(camera.center, camera.zoom, placed: hasGesture || (ref.read(mapViewProvider)?.placed ?? false));
     if (!hasGesture) return;
-    final movedFar = _lastSearched == null ||
-        const Distance().as(LengthUnit.Meter, _lastSearched!, camera.center) > _researchThresholdMeters;
-    setState(() {
-      _zoom = camera.zoom;
-      _pendingCamera = camera;
-      // A nudge is not a new area; only offer the search once the view has
-      // actually moved somewhere else.
-      _areaDirty = movedFar || (camera.zoom < kCareMinQueryZoom) != _wasZoomedOut;
-      _wasZoomedOut = camera.zoom < kCareMinQueryZoom;
-    });
+    ref.read(mapPanProvider.notifier).panned(
+          CareArea(
+            center: camera.center,
+            radiusKm: _radiusForBounds(camera),
+            tooZoomedOut: camera.zoom < kCareMinQueryZoom,
+          ),
+        );
   }
 
-  /// Runs the search the button offers.
-  void _searchThisArea() {
-    final camera = _pendingCamera;
-    if (camera == null) return;
-    setState(() {
-      _lastSearched = camera.center;
-      _areaDirty = false;
-    });
-    _pushSearch(
-      immediate: true,
-      focus: camera.center,
-      radiusKm: _radiusForBounds(camera),
-      tooZoomedOut: camera.zoom < kCareMinQueryZoom,
-    );
-  }
-
+  /// "Nearby" has to mean the area being looked at, not only the device's own
+  /// position. The radius follows the visible bounds so zooming out widens the
+  /// search instead of showing a sparse patch in the middle.
   static double _radiusForBounds(MapCamera camera) {
     final bounds = camera.visibleBounds;
     final km = const Distance().as(LengthUnit.Kilometer, bounds.center, bounds.northEast);
@@ -221,13 +163,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
     _mapController.move(loc, _kUserZoom);
-    _remember(loc, _kUserZoom, placed: true);
-    setState(() {
-      _lastSearched = loc;
-      _areaDirty = false;
-      _pendingCamera = null;
-    });
-    _pushSearch(immediate: true, focus: loc, radiusKm: kCareDefaultRadiusKm, tooZoomedOut: false);
+    ref.read(mapViewProvider.notifier).remember(loc, _kUserZoom, placed: true);
+    ref.read(mapPanProvider.notifier).searchAroundMe(loc);
   }
 
   /// Says why recentering found no position, with the setting that fixes it.
@@ -246,14 +183,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  List<CareEntity> _filter(List<CareEntity> all) => filterCareEntities(all, query: _query, types: _activeTypes);
-
-  /// Multi-type selection stays client-side (the endpoint filters on one type),
-  /// so pins need the same narrowing the list gets. Free text is already applied
-  /// server-side — a pin carries no name to match against here.
-  List<CarePin> _filterPins(List<CarePin> all) =>
-      _activeTypes.isEmpty ? all : all.where((p) => _activeTypes.contains(p.type)).toList(growable: false);
-
   /// On the map a tap toggles the selection. In the list it only highlighted
   /// the row — the place's card lives on the map — so the list opens the map
   /// on that place with its card up.
@@ -262,7 +191,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       setState(() => _selectedId = _selectedId == e.id ? null : e.id);
       return;
     }
-    _remember(e.position, _kUserZoom, placed: true);
+    ref.read(mapViewProvider.notifier).remember(e.position, _kUserZoom, placed: true);
     setState(() {
       _selectedId = e.id;
       _mapView = true;
@@ -271,53 +200,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _selectPin(CarePin p) => setState(() => _selectedId = _selectedId == p.id ? null : p.id);
 
-  /// Selects exactly the requested types (empty = "All"). Runs in initState,
-  /// before the first search, and from didUpdateWidget for a request that
-  /// lands while the map is already on screen.
-  void _applyFilterRequest(MapFilterRequest request) {
-    _activeTypes
-      ..clear()
-      ..addAll(request.types);
-    _appliedFilterSerial = request.serial;
+  void _dismissCard() => setState(() => _selectedId = null);
+
+  void _typeText(String v) {
+    ref.read(careSearchProvider.notifier).typeText(v);
+    if (_selectedId != null) _dismissCard();
   }
 
-  /// Serial of the last request applied, so a rebuild does not re-apply the same
-  /// request over a filter the patient has since changed by hand.
-  int? _appliedFilterSerial;
-
-  @override
-  void initState() {
-    super.initState();
-    final request = widget.filterRequest;
-    if (request != null) _applyFilterRequest(request);
+  void _clearText() {
+    _searchCtrl.clear();
+    ref.read(careSearchProvider.notifier).clearText();
+    if (_selectedId != null) _dismissCard();
   }
 
-  @override
-  void didUpdateWidget(MapScreen old) {
-    super.didUpdateWidget(old);
-    final request = widget.filterRequest;
-    if (request == null || request.serial == _appliedFilterSerial) return;
-    setState(() {
-      _applyFilterRequest(request);
-      _pushSearch(immediate: true);
-    });
+  /// A single ticked type is pushed server-side; several stay client-side
+  /// because the endpoint filters on one type.
+  void _toggleType(CareEntityType? t) {
+    ref.read(careSearchProvider.notifier).toggleType(t);
+    if (_selectedId != null) _dismissCard();
   }
 
-  void _clearFilters() => setState(() {
-        _query = '';
-        _searchCtrl.clear();
-        _activeTypes.clear();
-        _areaDirty = false;
-        _pushSearch(immediate: true);
-      });
+  void _clearFilters() {
+    _searchCtrl.clear();
+    ref.read(careSearchProvider.notifier).clearFilters();
+    ref.read(mapPanProvider.notifier).dismissOffer();
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     // The position can land after the map is up; centre on it then.
     ref.listen(deviceLocationProvider, (prev, next) => _focusUserIfUnplaced());
-    final entities = ref.watch(careDirectoryProvider).value?.entities ?? const <CareEntity>[];
-    final filtered = _filter(entities);
+    final types = ref.watch(careSearchProvider.select((search) => search.types));
+    final stale = ref.watch(carePinsProvider.select((pins) => pins.value?.stale ?? false));
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -343,7 +258,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                       // "Offline" badge — the design puts the state in the app bar,
                       // not only in the notice below it.
-                      if (ref.watch(carePinsProvider).value?.stale ?? false) ...[
+                      if (stale) ...[
                         Pill(
                           s.strings.common.offline_badge,
                           dot: false,
@@ -366,52 +281,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Search.
                 Padding(
                   padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 10),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (v) => setState(() {
-                      _query = v;
-                      _pushSearch();
-                      _selectedId = null;
-                    }),
-                    style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.subhead, color: AppColors.textPrimary),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      filled: true,
-                      fillColor: AppColors.white,
-                      hintText: s.strings.care.map_search_ph,
-                      prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.textHint),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : Center(
-                              widthFactor: 1,
-                              child: GestureDetector(
-                                onTap: () => setState(() {
-                                  _query = '';
-                                  _searchCtrl.clear();
-                                  _pushSearch(immediate: true);
-                                  _selectedId = null;
-                                }),
-                                child: Container(
-                                  width: 20,
-                                  height: 20,
-                                  alignment: Alignment.center,
-                                  margin: const EdgeInsetsDirectional.only(end: 10),
-                                  decoration: const BoxDecoration(color: AppColors.ink200, shape: BoxShape.circle),
-                                  child: const Icon(LucideIcons.x, size: 11, color: AppColors.textSecondary),
-                                ),
-                              ),
-                            ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadii.md),
-                        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadii.md),
-                        borderSide: BorderSide(color: s.accent.main, width: 1.5),
-                      ),
-                    ),
-                  ),
+                  child: _SearchField(controller: _searchCtrl, onChanged: _typeText, onClear: _clearText),
                 ),
                 // Category filter — a dropdown selector (the design replaced the
                 // scrolling chip row with one, matching the Trends metrics
@@ -421,22 +291,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   alignment: AlignmentDirectional.centerStart,
                   child: Padding(
                     padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-                    child: _TypeDropdown(
-                      active: _activeTypes,
-                      onToggle: (t) => setState(() {
-                        // Null is the "All" row: clear the set rather than tick
-                        // every box, so "All" and all-ticked stay one state.
-                        if (t == null) {
-                          _activeTypes.clear();
-                        } else if (!_activeTypes.remove(t)) {
-                          _activeTypes.add(t);
-                        }
-                        _selectedId = null;
-                        // A single ticked type is pushed server-side; several stay
-                        // client-side because the endpoint filters on one type.
-                        _pushSearch(immediate: true);
-                      }),
-                    ),
+                    child: _TypeDropdown(active: types, onToggle: _toggleType),
                   ),
                 ),
               ],
@@ -446,28 +301,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // reach the server. Driven by the result's own provenance, not by the
           // connectivity stream: connectivity reports whether an interface is up,
           // not whether these particular rows are old.
-          if (ref.watch(carePinsProvider).value?.stale ?? false)
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-              // The design gives this its own ink-50 card rather than a bare
-              // line, so the cached state reads as deliberate, not as an error.
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.lg)),
-                child: Row(
-                  children: [
-                    const Icon(LucideIcons.database, size: 16, color: AppColors.textTertiary),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        s.strings.common.offline_stale_places,
-                        style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          if (stale) const _StaleNotice(),
           // The map itself stays full-bleed (real map UX never letterboxes); only
           // the list view — a column of cards — gets the same width cap as the
           // controls above.
@@ -476,46 +310,164 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // The map plots pins — cheap enough to cover the whole viewport —
                 // while the list shows full rows for the nearest few. Client-side
                 // type narrowing applies to both.
-                ? _mapBody(
-                    s,
-                    _filterPins(ref.watch(carePinsProvider).value?.pins ?? const []),
-                    ref.watch(deviceLocationProvider).value?.position,
+                ? _MapBody(
+                    pinCount: _filterPins(ref.watch(carePinsProvider).value?.pins ?? const [], types).length,
+                    selectedId: _selectedId,
+                    onRecenter: _recenter,
+                    onDismissCard: _dismissCard,
+                    onClearFilters: _clearFilters,
+                    map: _TileMap(
+                      controller: _mapController,
+                      initialView: _openingView,
+                      onReady: () {
+                        _mapReady = true;
+                        // Ready fires mid-layout; move and rebuild after the frame.
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) _focusUserIfUnplaced();
+                        });
+                      },
+                      pins: _filterPins(ref.watch(carePinsProvider).value?.pins ?? const [], types),
+                      selectedId: _selectedId,
+                      onPin: _selectPin,
+                      onMoved: _onMapMoved,
+                      userLocation: ref.watch(deviceLocationProvider.select((d) => d.value?.position)),
+                    ),
                   )
-                : ContentColumn(maxWidth: 720, child: _listBody(s, filtered)),
+                : ContentColumn(maxWidth: 720, child: _CareList(selectedId: _selectedId, onSelect: _select)),
           ),
         ],
       ),
     );
   }
 
-  // ── Map view ──────────────────────────────────────────────
-  Widget _mapBody(PatientAppState s, List<CarePin> pins, LatLng? userLocation) {
-    // The map stays mounted even with no results. Replacing it with an empty
-    // panel strands the user: _TileMap is what reports panning, so with it gone
-    // they cannot move to an area that HAS results — the only way out is
-    // clearing the search. Now the message overlays a live map instead.
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: _TileMap(
-            controller: _mapController,
-            initialView: _openingView,
-            onReady: () {
-              _mapReady = true;
-              // Ready fires mid-layout; move and rebuild after the frame.
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) _focusUserIfUnplaced();
-              });
-            },
-            pins: pins,
-            selectedId: _selectedId,
-            onPin: _selectPin,
-            onMoved: _onMapMoved,
-            userLocation: userLocation,
+  /// Multi-type selection stays client-side (the endpoint filters on one type),
+  /// so pins need the same narrowing the list gets. Free text is already applied
+  /// server-side — a pin carries no name to match against here.
+  static List<CarePin> _filterPins(List<CarePin> all, Set<CareEntityType> types) =>
+      types.isEmpty ? all : all.where((p) => types.contains(p.type)).toList(growable: false);
+}
+
+/// The search box. The clear button follows the field's own text, so typing
+/// rebuilds only this field.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged, required this.onClear});
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) => TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.subhead, color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          isDense: true,
+          filled: true,
+          fillColor: AppColors.white,
+          hintText: s.strings.care.map_search_ph,
+          prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.textHint),
+          suffixIcon: value.text.isEmpty
+              ? null
+              : Center(
+                  widthFactor: 1,
+                  child: GestureDetector(
+                    onTap: onClear,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      margin: const EdgeInsetsDirectional.only(end: 10),
+                      decoration: const BoxDecoration(color: AppColors.ink200, shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.x, size: 11, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            borderSide: BorderSide(color: s.accent.main, width: 1.5),
           ),
         ),
-        if (pins.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
-        if (_areaDirty) _SearchAreaButton(s, onTap: _searchThisArea),
+      ),
+    );
+  }
+}
+
+/// Retained places past their TTL. The design gives this its own ink-50 card
+/// rather than a bare line, so the cached state reads as deliberate, not as an
+/// error.
+class _StaleNotice extends StatelessWidget {
+  const _StaleNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.lg)),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.database, size: 16, color: AppColors.textTertiary),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                s.strings.common.offline_stale_places,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Map view ──────────────────────────────────────────────
+
+/// The live map with its overlays.
+///
+/// The map stays mounted even with no results. Replacing it with an empty
+/// panel strands the user: [_TileMap] is what reports panning, so with it gone
+/// they cannot move to an area that HAS results — the only way out is clearing
+/// the search. The message overlays a live map instead.
+class _MapBody extends StatelessWidget {
+  const _MapBody({
+    required this.map,
+    required this.pinCount,
+    required this.selectedId,
+    required this.onRecenter,
+    required this.onDismissCard,
+    required this.onClearFilters,
+  });
+
+  /// The [_TileMap], built by the screen that owns its controller.
+  final Widget map;
+  final int pinCount;
+  final String? selectedId;
+  final VoidCallback onRecenter;
+  final VoidCallback onDismissCard;
+  final VoidCallback onClearFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final selectedId = this.selectedId;
+    final railBottom = selectedId != null ? 220.0 : 20.0;
+    return Stack(
+      children: [
+        Positioned.fill(child: map),
+        if (pinCount == 0) Positioned.fill(child: Center(child: _EmptyOverlay(onClear: onClearFilters))),
+        const _SearchAreaButton(),
         // Count badge.
         PositionedDirectional(
           top: 12,
@@ -528,21 +480,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               boxShadow: AppShadows.sm,
             ),
             child: Text(
-              s.strings.care.map_found_count(pins.length),
+              s.strings.care.map_found_count(pinCount),
               style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textSecondary),
             ),
           ),
         ),
         // Recenter on the device's position.
         PositionedDirectional(
-          bottom: _selectedId != null ? 220 : 20,
+          bottom: railBottom,
           end: 14,
           child: RoundBtn(
             icon: LucideIcons.locateFixed,
             semanticLabel: s.strings.common.a11y_locate,
             bg: AppColors.white,
             fg: s.accent.main,
-            onTap: _recenter,
+            onTap: onRecenter,
           ),
         ),
         // Offline map packs — download a governorate's basemap + places for
@@ -553,7 +505,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // keep them (see bootstrap), so the button is not offered there.
         if (!kIsWeb)
           PositionedDirectional(
-            bottom: (_selectedId != null ? 220 : 20) + 56,
+            bottom: railBottom + 56,
             end: 14,
             child: RoundBtn(
               icon: LucideIcons.download,
@@ -563,38 +515,55 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onTap: () => showMapPacksSheet(context),
             ),
           ),
-        if (_selectedId != null) _selectedCard(s),
+        if (selectedId != null) _SelectedCard(id: selectedId, onDismiss: onDismissCard),
       ],
     );
   }
+}
 
-  /// Detail sheet for the tapped pin. Pins carry no name or contact details, so
-  /// this resolves them on demand — a spinner for the moment it takes, and a
-  /// quiet dismissal if the place has left the directory since the pin drew.
-  Widget _selectedCard(PatientAppState s) {
-    final id = _selectedId!;
-    return ref.watch(careEntityProvider(id)).when(
-          data: (e) => e == null ? const SizedBox.shrink() : _entityCard(s, e),
-          error: (_, __) => const SizedBox.shrink(),
-          loading: () => PositionedDirectional(
-            start: 0,
-            end: 0,
-            bottom: 0,
-            child: Container(
-              height: 96,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
-              ),
-              child: const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2)),
+/// Detail sheet for the tapped pin. Pins carry no name or contact details, so
+/// this resolves them on demand — a spinner for the moment it takes, and a
+/// quiet dismissal if the place has left the directory since the pin drew.
+class _SelectedCard extends ConsumerWidget {
+  const _SelectedCard({required this.id, required this.onDismiss});
+  final String id;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => ref.watch(careEntityProvider(id)).when(
+        data: (e) => e == null ? const SizedBox.shrink() : _EntityCard(entity: e, onDismiss: onDismiss),
+        error: (_, __) => const SizedBox.shrink(),
+        loading: () => PositionedDirectional(
+          start: 0,
+          end: 0,
+          bottom: 0,
+          child: Container(
+            height: 96,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
             ),
+            child: const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2)),
           ),
-        );
-  }
+        ),
+      );
+}
 
-  // ── List view ─────────────────────────────────────────────
-  Widget _listBody(PatientAppState s, List<CareEntity> filtered) {
+// ── List view ─────────────────────────────────────────────
+
+/// The nearest places as cards, narrowed by the same search the map shows.
+class _CareList extends ConsumerWidget {
+  const _CareList({required this.selectedId, required this.onSelect});
+  final String? selectedId;
+  final ValueChanged<CareEntity> onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final entities = ref.watch(careDirectoryProvider.select((r) => r.value?.entities ?? const <CareEntity>[]));
+    final search = ref.watch(careSearchProvider);
+    final filtered = filterCareEntities(entities, query: search.text, types: search.types);
     if (filtered.isEmpty) return _EmptyList(s);
     return ListView.separated(
       padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
@@ -602,191 +571,222 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final e = filtered[i];
-        final active = _selectedId == e.id;
-        return Pressable(
-          onTap: () => _select(e),
-          scale: 0.99,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: active ? e.type.bg : AppColors.white,
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-              border: Border.all(color: active ? e.type.color : AppColors.border, width: 1.5),
-              boxShadow: AppShadows.sm,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TypeIcon(e.type, 46),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        pick(e.name, ar: s.rtl),
-                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        pick(e.addr, ar: s.rtl),
-                        style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
-                      ),
-                      const SizedBox(height: 8),
-                      // Directory data has real gaps: no source supplies opening
-                      // hours or ratings, and ~8% of places have no phone. Omit the
-                      // row rather than rendering an empty icon or a bare "/ 5".
-                      Wrap(
-                        spacing: 14,
-                        runSpacing: 4,
-                        children: [
-                          if (e.distance.isNotEmpty) _MetaBit(LucideIcons.navigation, _ltr(e.distance), s),
-                          if (e.hours.isNotEmpty) _MetaBit(LucideIcons.clock, e.hours, s),
-                          if (e.rating.isNotEmpty) _MetaBit(LucideIcons.star, e.rating, s, star: true),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return _CareListRow(entity: e, active: selectedId == e.id, onTap: () => onSelect(e));
       },
     );
   }
+}
 
-  // ── Entity detail card (bottom sheet look) ────────────────
-  Widget _entityCard(PatientAppState s, CareEntity e) => Positioned.fill(
-        child: Stack(
+class _CareListRow extends StatelessWidget {
+  const _CareListRow({required this.entity, required this.active, required this.onTap});
+  final CareEntity entity;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final e = entity;
+    return Pressable(
+      onTap: onTap,
+      scale: 0.99,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: active ? e.type.bg : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: active ? e.type.color : AppColors.border, width: 1.5),
+          boxShadow: AppShadows.sm,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(onTap: () => setState(() => _selectedId = null), child: const SizedBox.expand()),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: RiseIn(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
-                    boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 32, offset: Offset(0, -4))],
+            _TypeIcon(e.type, 46),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pick(e.name, ar: s.rtl),
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                   ),
-                  padding: EdgeInsetsDirectional.fromSTEB(18, 10, 18, 24 + MediaQuery.paddingOf(context).bottom),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 2),
+                  Text(
+                    pick(e.addr, ar: s.rtl),
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                  ),
+                  const SizedBox(height: 8),
+                  // Directory data has real gaps: no source supplies opening
+                  // hours or ratings, and ~8% of places have no phone. Omit the
+                  // row rather than rendering an empty icon or a bare "/ 5".
+                  Wrap(
+                    spacing: 14,
+                    runSpacing: 4,
                     children: [
-                      const Center(child: Padding(padding: EdgeInsets.only(bottom: 14), child: SheetGrab())),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _TypeIcon(e.type, 50),
-                          const SizedBox(width: 13),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  pick(e.name, ar: s.rtl),
-                                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
-                                ),
-                                const SizedBox(height: 5),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: e.type.bg,
-                                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                                  ),
-                                  child: Text(
-                                    e.type.label(s.strings.care),
-                                    style:
-                                        Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: e.type.color),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          RoundBtn(
-                            icon: LucideIcons.x,
-                            semanticLabel: s.strings.common.a11y_close,
-                            ghost: true,
-                            iconSize: 16,
-                            onTap: () => setState(() => _selectedId = null),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      if (pick(e.addr, ar: s.rtl).isNotEmpty)
-                        _DetailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
-                      if (e.hours.isNotEmpty) _DetailRow(LucideIcons.clock, e.hours, s),
-                      if (e.distance.isNotEmpty)
-                        _DetailRow(LucideIcons.navigation, '${_ltr(e.distance)} ${s.strings.care.map_distance}', s),
-                      if (e.rating.isNotEmpty) _DetailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: PButton(
-                              s.strings.care.map_call,
-                              icon: LucideIcons.phone,
-                              large: true,
-                              block: true,
-                              accent: s.accent,
-                              ar: s.rtl,
-                              onTap: () => _launch('tel:${e.phone.replaceAll(' ', '')}'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: PButton(
-                              s.strings.care.map_directions,
-                              icon: LucideIcons.navigation,
-                              variant: BtnVariant.secondary,
-                              large: true,
-                              block: true,
-                              ar: s.rtl,
-                              onTap: () => _launch(careDirectionsUrl(e)),
-                            ),
-                          ),
-                        ],
-                      ),
+                      if (e.distance.isNotEmpty) _MetaBit(LucideIcons.navigation, _ltr(e.distance), s),
+                      if (e.hours.isNotEmpty) _MetaBit(LucideIcons.clock, e.hours, s),
+                      if (e.rating.isNotEmpty) _MetaBit(LucideIcons.star, e.rating, s, star: true),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
           ],
         ),
-      );
-
-  /// Hands a facility's map link or number to whatever app handles it.
-  ///
-  /// No `canLaunchUrl` gate. It asks Android which apps handle the link, and
-  /// from Android 11 the answer is filtered to apps the manifest declares in
-  /// `<queries>` — this one declares no `https:` handler, so the answer was
-  /// "none" and every Directions tap was dropped without a word (logcat:
-  /// `component name for https://… is null`). Launching is not filtered, only
-  /// asking, which is why the care-team screen, launching without asking, was
-  /// never affected. `launchUrl` returns false when nothing can open it.
-  Future<void> _launch(String url) async {
-    try {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } on PlatformException {
-      // No handler on this phone. Nothing about the destination is logged.
-    }
+      ),
+    );
   }
+}
 
-  /// No-results card, floated over a still-live map.
-  ///
-  /// Only the card itself takes hits — the map around it stays pannable, which
-  /// is the point: with server-side search an empty result is common, and the
-  /// user needs to be able to move somewhere that HAS results without first
-  /// clearing what they typed.
-  Widget _emptyOverlay(PatientAppState s) {
+// ── Entity detail card (bottom sheet look) ────────────────
+class _EntityCard extends StatelessWidget {
+  const _EntityCard({required this.entity, required this.onDismiss});
+  final CareEntity entity;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final e = entity;
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          GestureDetector(onTap: onDismiss, child: const SizedBox.expand()),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: RiseIn(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+                  boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 32, offset: Offset(0, -4))],
+                ),
+                padding: EdgeInsetsDirectional.fromSTEB(18, 10, 18, 24 + MediaQuery.paddingOf(context).bottom),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Center(child: Padding(padding: EdgeInsets.only(bottom: 14), child: SheetGrab())),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TypeIcon(e.type, 50),
+                        const SizedBox(width: 13),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                pick(e.name, ar: s.rtl),
+                                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 5),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: e.type.bg,
+                                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                                ),
+                                child: Text(
+                                  e.type.label(s.strings.care),
+                                  style:
+                                      Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: e.type.color),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        RoundBtn(
+                          icon: LucideIcons.x,
+                          semanticLabel: s.strings.common.a11y_close,
+                          ghost: true,
+                          iconSize: 16,
+                          onTap: onDismiss,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (pick(e.addr, ar: s.rtl).isNotEmpty) _DetailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
+                    if (e.hours.isNotEmpty) _DetailRow(LucideIcons.clock, e.hours, s),
+                    if (e.distance.isNotEmpty)
+                      _DetailRow(LucideIcons.navigation, '${_ltr(e.distance)} ${s.strings.care.map_distance}', s),
+                    if (e.rating.isNotEmpty) _DetailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: PButton(
+                            s.strings.care.map_call,
+                            icon: LucideIcons.phone,
+                            large: true,
+                            block: true,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: () => _launch('tel:${e.phone.replaceAll(' ', '')}'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: PButton(
+                            s.strings.care.map_directions,
+                            icon: LucideIcons.navigation,
+                            variant: BtnVariant.secondary,
+                            large: true,
+                            block: true,
+                            ar: s.rtl,
+                            onTap: () => _launch(careDirectionsUrl(e)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hands a facility's map link or number to whatever app handles it.
+///
+/// No `canLaunchUrl` gate. It asks Android which apps handle the link, and
+/// from Android 11 the answer is filtered to apps the manifest declares in
+/// `<queries>` — this one declares no `https:` handler, so the answer was
+/// "none" and every Directions tap was dropped without a word (logcat:
+/// `component name for https://… is null`). Launching is not filtered, only
+/// asking, which is why the care-team screen, launching without asking, was
+/// never affected. `launchUrl` returns false when nothing can open it.
+Future<void> _launch(String url) async {
+  try {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  } on PlatformException {
+    // No handler on this phone. Nothing about the destination is logged.
+  }
+}
+
+/// No-results card, floated over a still-live map.
+///
+/// Only the card itself takes hits — the map around it stays pannable, which
+/// is the point: with server-side search an empty result is common, and the
+/// user needs to be able to move somewhere that HAS results without first
+/// clearing what they typed.
+class _EmptyOverlay extends ConsumerWidget {
+  const _EmptyOverlay({required this.onClear});
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
     // "Nothing here" and "you are too far out to ask" are different answers, and
     // conflating them is what made a zoomed-out map read as an empty country.
     // With the dev flag on there is no floor, so "zoom in" would be a lie.
-    final zoomedOut = _zoom < kCareMinQueryZoom && !ref.read(devFlagProvider(kFlagMapNoZoomFloor));
+    final zoomedOut = ref.watch(mapViewProvider.select((v) => (v?.zoom ?? 13) < kCareMinQueryZoom)) &&
+        !ref.watch(devFlagProvider(kFlagMapNoZoomFloor));
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
@@ -816,17 +816,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // Clearing filters cannot fix being zoomed out, so do not offer it there.
           if (!zoomedOut) ...[
             const SizedBox(height: 16),
-            _SoftButton(label: s.strings.care.map_clear, onTap: _clearFilters),
+            _SoftButton(label: s.strings.care.map_clear, onTap: onClear),
           ],
         ],
       ),
     );
   }
-
-  /// Keeps "0.3 km" in its own left-to-right run inside Arabic text, where
-  /// it otherwise read "km 0.3".
-  static String _ltr(String text) => '\u2066$text\u2069';
 }
+
+/// Keeps "0.3 km" in its own left-to-right run inside Arabic text, where
+/// it otherwise read "km 0.3".
+String _ltr(String text) => '\u2066$text\u2069';
 
 /// Real OpenStreetMap tile map with a marker per entity. Centers on the first
 /// result (falls back to the market center); pins anchor at their lat/lng.
@@ -1280,47 +1280,52 @@ class _TypeDropdown extends StatelessWidget {
 /// "Search this area" — the pill that appears once the map has been moved.
 ///
 /// Centred near the top, under the controls, where the eye already is after a
-/// pan and clear of the detail sheet at the bottom.
-class _SearchAreaButton extends StatelessWidget {
-  const _SearchAreaButton(this.s, {required this.onTap});
-  final PatientAppState s;
-  final VoidCallback onTap;
+/// pan and clear of the detail sheet at the bottom. Watches only whether the
+/// offer stands, so a pan rebuilds this pill rather than the map.
+class _SearchAreaButton extends ConsumerWidget {
+  const _SearchAreaButton();
 
   @override
-  Widget build(BuildContext context) => PositionedDirectional(
-        top: 54,
-        start: 0,
-        end: 0,
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final offered = ref.watch(mapPanProvider.select((pan) => pan.offered));
+    return PositionedDirectional(
+      top: 54,
+      start: 0,
+      end: 0,
+      child: !offered
+          ? const SizedBox.shrink()
+          : Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => ref.read(mapPanProvider.notifier).searchArea(),
                   borderRadius: BorderRadius.circular(AppRadii.pill),
-                  boxShadow: AppShadows.sm,
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(LucideIcons.search, size: 15, color: s.accent.main),
-                    const SizedBox(width: 7),
-                    Text(
-                      s.strings.care.map_search_area,
-                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.main),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                      boxShadow: AppShadows.sm,
+                      border: Border.all(color: AppColors.border),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.search, size: 15, color: s.accent.main),
+                        const SizedBox(width: 7),
+                        Text(
+                          s.strings.care.map_search_area,
+                          style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.main),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      );
+    );
+  }
 }
 
 /// List view with nothing to show — a plain card, no action (map.jsx).

@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -329,6 +331,10 @@ const double kCareMinQueryZoom = 10;
 /// [focus] is the map's centre once the user pans; until then it is null and the
 /// query centres on the device position. That is the difference between "near
 /// me" and "near what I am looking at", and both have to work.
+///
+/// A value: Riverpod 3 filters provider updates with `==`, so an unchanged
+/// search does not refetch and a changed one always does.
+@immutable
 class CareSearch {
   const CareSearch({
     this.text = '',
@@ -358,7 +364,7 @@ class CareSearch {
   }) =>
       CareSearch(
         text: text ?? this.text,
-        types: types ?? this.types,
+        types: types == null ? this.types : Set.unmodifiable(types),
         focus: clearFocus ? null : (focus ?? this.focus),
         radiusKm: radiusKm ?? this.radiusKm,
         tooZoomedOut: tooZoomedOut ?? this.tooZoomedOut,
@@ -367,9 +373,97 @@ class CareSearch {
   /// The single type to push server-side. Only sent when exactly one is ticked —
   /// the API filters on one type, and an empty set means "all".
   String? get wireType => types.length == 1 ? types.first.wire : null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CareSearch &&
+      other.text == text &&
+      setEquals(other.types, types) &&
+      other.focus == focus &&
+      other.radiusKm == radiusKm &&
+      other.tooZoomedOut == tooZoomedOut;
+
+  @override
+  int get hashCode => Object.hash(text, Object.hashAllUnordered(types), focus, radiusKm, tooZoomedOut);
 }
 
-final careSearchProvider = StateProvider<CareSearch>((ref) => const CareSearch());
+/// The one place the care map's search lives: the text, the ticked types and
+/// the area. The map screen and the directory providers all read it, and it
+/// outlives the route, so the map comes back showing the search its results
+/// answer.
+class CareSearchNotifier extends Notifier<CareSearch> {
+  /// Typing fires continuously; without this pause every keystroke would hit
+  /// the directory.
+  static const typingPause = Duration(milliseconds: 400);
+
+  Timer? _typing;
+  String? _typedText;
+
+  /// Serial of the last deep-link filter applied, so the same request is not
+  /// applied again over a filter the patient has since changed by hand.
+  int? _appliedFilterSerial;
+
+  @override
+  CareSearch build() {
+    ref.onDispose(() => _typing?.cancel());
+    return const CareSearch();
+  }
+
+  /// Text as typed: searched once typing pauses.
+  void typeText(String text) {
+    _typedText = text;
+    _typing?.cancel();
+    _typing = Timer(typingPause, () {
+      if (ref.mounted) _set(state);
+    });
+  }
+
+  /// Applies [next] with any text still waiting for the typing pause, so a
+  /// discrete action (ticking a type) never drops what was just typed.
+  void _set(CareSearch next) {
+    _typing?.cancel();
+    final typed = _typedText;
+    _typedText = null;
+    state = typed == null ? next : next.copyWith(text: typed);
+  }
+
+  /// Null is the "All" row: it clears the set rather than ticking every box,
+  /// so "All" and all-ticked stay one state.
+  void toggleType(CareEntityType? type) {
+    final types = {...state.types};
+    if (type == null) {
+      types.clear();
+    } else if (!types.remove(type)) {
+      types.add(type);
+    }
+    _set(state.copyWith(types: types));
+  }
+
+  /// Selects exactly [types] for a deep-link request, once per [serial].
+  void applyFilterRequest({required Set<CareEntityType> types, required int serial}) {
+    if (serial == _appliedFilterSerial) return;
+    _appliedFilterSerial = serial;
+    _set(state.copyWith(types: types));
+  }
+
+  void clearText() {
+    _typedText = null;
+    _set(state.copyWith(text: ''));
+  }
+
+  /// Clears the text and the type filter; the area stays.
+  void clearFilters() {
+    _typedText = null;
+    _set(state.copyWith(text: '', types: const {}));
+  }
+
+  /// Searches around [focus] within [radiusKm].
+  void searchAround(LatLng focus, {required double radiusKm, required bool tooZoomedOut}) =>
+      _set(state.copyWith(focus: focus, radiusKm: radiusKm, tooZoomedOut: tooZoomedOut));
+}
+
+final NotifierProvider<CareSearchNotifier, CareSearch> careSearchProvider =
+    NotifierProvider<CareSearchNotifier, CareSearch>(CareSearchNotifier.new);
 
 /// Nearby health places from the care-directory API.
 ///

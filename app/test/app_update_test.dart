@@ -4,8 +4,13 @@ import 'dart:io';
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/update/update_gate.dart';
 import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// The gate keeps its answer in a provider, so it needs a scope, as in the app.
+Future<void> pumpScoped(WidgetTester tester, Widget app) =>
+    tester.pumpWidget(ProviderScope(retry: noProviderRetry, child: app));
 
 /// The update sheet as an app shell mounts it, and the manifests bundled with
 /// the web app. What a manifest demands of a build is tested in core
@@ -69,7 +74,8 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-      await tester.pumpWidget(
+      await pumpScoped(
+        tester,
         AppScope(
           state: state,
           child: MaterialApp(
@@ -103,7 +109,8 @@ void main() {
     testWidgets('asks for release notes in the app language', (tester) async {
       String? asked;
       final state = PatientAppState()..setLang(LanguageCode.ar);
-      await tester.pumpWidget(
+      await pumpScoped(
+        tester,
         AppScope(
           state: state,
           child: MaterialApp(
@@ -189,7 +196,8 @@ void main() {
       // has since been withdrawn. First on launch, then while the block is up.
       var live = forced;
       final state = PatientAppState();
-      await tester.pumpWidget(
+      await pumpScoped(
+        tester,
         AppScope(
           state: state,
           child: MaterialApp(

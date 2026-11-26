@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../balsm_app/kit.dart';
 import '../balsm_app/maintenance/maintenance_tokens.dart';
+import 'update_gate_state.dart';
 
 /// The words on the update sheet. A plain value so the sheet belongs to no
 /// brand's string bundle: each app shell fills it from its own, with its own
@@ -77,7 +79,7 @@ class UpdateLook {
 ///
 /// Mount it in `MaterialApp.builder`, above the navigator, so no route or
 /// sheet can cover a required update.
-class UpdateGate extends StatefulWidget {
+class UpdateGate extends ConsumerStatefulWidget {
   const UpdateGate({
     required this.child,
     required this.brand,
@@ -106,18 +108,12 @@ class UpdateGate extends StatefulWidget {
   final Future<AppUpdateInfo> Function(String lang)? check;
 
   @override
-  State<UpdateGate> createState() => _UpdateGateState();
+  ConsumerState<UpdateGate> createState() => _UpdateGateState();
 }
 
-class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
-  AppUpdateInfo _info = AppUpdateInfo.none;
-
-  /// The version the user chose to skip (persisted).
-  String? _skipped;
-
+class _UpdateGateState extends ConsumerState<UpdateGate> with WidgetsBindingObserver {
   /// The version closed with X for this run only.
   String? _closed;
-  AppUpdateChecker? _checker;
 
   @override
   void initState() {
@@ -144,40 +140,29 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) unawaited(_run());
   }
 
-  Future<void> _run({bool first = false}) async {
-    final prefs = widget.prefs;
-    final lang = widget.lang;
-    if (widget.check == null && prefs == null) return;
-    if (prefs != null) {
-      _checker ??= AppUpdateChecker(prefs: prefs, brand: widget.brand);
-      _skipped = await prefs.skipped();
-    }
-    // The cached answer first, so a forced update blocks at once even with no
-    // connection; then the live one.
-    if (first) _apply(await (widget.cached?.call(lang) ?? _checker!.cached(lang: lang)));
-    _apply(await (widget.check?.call(lang) ?? _checker!.check(lang: lang)));
-  }
+  /// Runs the check in [updateGateProvider], which keeps the answer; the
+  /// widget only shows it. Every change to it follows an await, so none lands
+  /// while the tree is building.
+  Future<void> _run({bool first = false}) => ref.read(updateGateProvider.notifier).refresh(
+        (brand: widget.brand, prefs: widget.prefs, cached: widget.cached, check: widget.check),
+        lang: widget.lang,
+        first: first,
+      );
 
-  void _apply(AppUpdateInfo info) {
-    if (!mounted) return;
-    setState(() => _info = info);
-  }
+  void _close() => setState(() => _closed = ref.read(updateGateProvider).info.latest);
 
-  void _close() => setState(() => _closed = _info.latest);
+  Future<void> _skip() => ref.read(updateGateProvider.notifier).skip(widget.prefs);
 
-  Future<void> _skip() async {
-    final latest = _info.latest;
-    setState(() => _skipped = latest);
-    await widget.prefs?.setSkipped(latest);
-  }
-
-  Future<void> _update() => launchUrl(Uri.parse(_info.url), mode: LaunchMode.externalApplication);
+  Future<void> _update() =>
+      launchUrl(Uri.parse(ref.read(updateGateProvider).info.url), mode: LaunchMode.externalApplication);
 
   @override
   Widget build(BuildContext context) {
-    final required = _info.status == UpdateStatus.required;
+    final gate = ref.watch(updateGateProvider);
+    final info = gate.info;
+    final required = info.status == UpdateStatus.required;
     final show =
-        required || (_info.status == UpdateStatus.available && _skipped != _info.latest && _closed != _info.latest);
+        required || (info.status == UpdateStatus.available && gate.skipped != info.latest && _closed != info.latest);
     if (!show) return widget.child;
     return Stack(
       children: [
@@ -192,7 +177,7 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
                 type: MaterialType.transparency,
                 child: UpdateSheet(
                   look: widget.look,
-                  info: _info,
+                  info: info,
                   onUpdate: _update,
                   onClose: required ? null : _close,
                   onSkip: required ? null : _skip,

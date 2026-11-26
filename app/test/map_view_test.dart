@@ -73,10 +73,12 @@ void main() {
       overrides: [
         careDirectoryRepositoryProvider.overrideWithValue(_CountingRepository()),
         deviceLocationProvider.overrideWith((ref) => location),
-        if (saved != null) mapViewProvider.overrideWith((ref) => saved),
       ],
     );
     addTearDown(container.dispose);
+    if (saved != null) {
+      container.read(mapViewProvider.notifier).remember(saved.center, saved.zoom, placed: saved.placed);
+    }
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {

@@ -1,233 +1,57 @@
 import 'package:core/core.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:medications/medications.dart';
 
 import '../app_state.dart';
-import '../i18n/strings.i69n.dart';
 import '../kit.dart';
+import 'med_plan_draft.dart';
 import 'select_field.dart';
 
-/// One medication as typed into a form (prescriptions.jsx `MedRow` +
-/// `AddMedSheet`'s "When do you take it?").
-///
-/// Shared by Add medication and Add prescription, so a med typed into either
-/// lands in the Meds tab's daily list the same way. On-device PHI only.
-class MedPlanDraft {
-  MedPlanDraft() : _from = null;
-
-  /// A draft filled from [med], for Edit medication (prescriptions.jsx
-  /// `AddMedSheet` with `initial`). [toMedication] then saves under the same
-  /// id and keeps the start date, and a schedule or duration the patient left
-  /// untouched is kept exactly as stored — even one the form cannot express.
-  MedPlanDraft.fromMedication(Medication med) : _from = med {
-    final cfg = med.scheduleConfig;
-    final first = cfg.times.firstOrNull ?? morningTime;
-    name.text = med.name;
-    dose.text = med.doseAmount ?? '';
-    notes.text = med.notes ?? '';
-    evening = (int.tryParse(first.split(':').first) ?? 8) >= 12;
-    times = [first];
-    switch (med.scheduleType) {
-      case _ when cfg.frequencyNote != null:
-        freqType = 'other';
-        freqOther.text = cfg.frequencyNote!;
-      case ScheduleType.once:
-        freqType = 'once';
-      case ScheduleType.everyHours:
-        freqType = 'every_x';
-        freqUnit = 'hours';
-        freqN.text = '${cfg.interval ?? 1}';
-      case ScheduleType.everyDays:
-        freqType = 'every_x';
-        freqUnit = 'days';
-        freqN.text = '${cfg.interval ?? 1}';
-      case ScheduleType.daily || ScheduleType.weekly || ScheduleType.custom:
-        freqType = 'per_day';
-        freqN.text = '${cfg.times.length.clamp(1, 12)}';
-        if (cfg.times.length > 1) times = [...cfg.times];
-    }
-    switch (cfg.durationKind) {
-      case DurationKind.period when med.endDate != null:
-        durType = 'period';
-        durUnit = 'days';
-        durN.text = '${DateUtils.dateOnly(med.endDate!).difference(DateUtils.dateOnly(med.startDate)).inDays}';
-      case DurationKind.untilEmpty:
-        durType = 'until_empty';
-      case DurationKind.other:
-        durType = 'other';
-        durOther.text = cfg.durationNote ?? '';
-      case _:
-        durType = 'ongoing';
-    }
-    _seededSchedule = _scheduleKey;
-    _seededDuration = _durationKey;
-  }
-
-  /// The medication being edited; null when adding.
-  final Medication? _from;
-  String? _seededSchedule;
-  String? _seededDuration;
-
-  String get _scheduleKey => [freqType, freqN.text, freqUnit, freqOther.text, evening, ...times].join('|');
-  String get _durationKey => [durType, durN.text, durUnit, durOther.text].join('|');
-
-  final name = TextEditingController();
-  final dose = TextEditingController();
-  final notes = TextEditingController();
-  final freqN = TextEditingController(text: '2');
-  final freqOther = TextEditingController();
-  final durN = TextEditingController();
-  final durOther = TextEditingController();
-
-  /// `once` · `per_day` · `every_x` · `other` — the design's frequency ids.
-  String freqType = 'once';
-
-  /// `hours` · `days`, for `every_x`.
-  String freqUnit = 'hours';
-
-  /// `period` · `until_empty` · `ongoing` · `other`.
-  String durType = 'ongoing';
-
-  /// `days` · `weeks` · `months`, for `period`.
-  String durUnit = 'days';
-
-  /// Morning or evening, for a single daily dose. Mapped to [morningTime] /
-  /// [eveningTime].
-  bool evening = false;
-
-  /// Dose times for 2+ per day, or the first dose of "every X hours". Kept in
-  /// step with the count by [syncTimes].
-  List<String> times = suggestedTimes(2);
-
-  static const morningTime = '08:00';
-  static const eveningTime = '20:00';
-
-  bool get isNamed => name.text.trim().isNotEmpty;
-
-  int get _n => (int.tryParse(freqN.text) ?? 1).clamp(1, 99);
-
-  int get perDay => _n.clamp(1, 12);
-
-  /// Which timing control the form shows for the current frequency.
-  MedTiming get timing => switch (freqType) {
-        'per_day' when perDay > 1 => MedTiming.times,
-        'every_x' when freqUnit == 'hours' => MedTiming.firstDose,
-        _ => MedTiming.halfOfDay,
-      };
-
-  /// Re-suggests [times] when the dose count changes. A count the patient has
-  /// already tuned by hand is left alone.
-  void syncTimes() {
-    switch (timing) {
-      case MedTiming.times:
-        if (times.length != perDay) times = suggestedTimes(perDay);
-      case MedTiming.firstDose:
-        if (times.length != 1) times = [times.firstOrNull ?? morningTime];
-      case MedTiming.halfOfDay:
-        break;
-    }
-  }
-
-  String get _halfOfDay => evening ? eveningTime : morningTime;
-
-  /// The scheduled medication. It starts at midnight today, so a dose due
-  /// earlier today is listed as Due rather than silently skipped.
-  Medication toMedication(UserId userId, {DateTime? now}) {
-    final from = _from;
-    final today = from?.startDate ?? DateUtils.dateOnly(now ?? DateTime.now());
-    final text = freqOther.text.trim();
-    final (type, times, interval) = switch (freqType) {
-      'once' => (ScheduleType.once, [_halfOfDay], null),
-      'per_day' when perDay > 1 => (ScheduleType.daily, [...this.times], null),
-      'every_x' when freqUnit == 'hours' => (ScheduleType.everyHours, [this.times.first], _n),
-      'every_x' when _n > 1 => (ScheduleType.everyDays, [_halfOfDay], _n),
-      _ => (ScheduleType.daily, [_halfOfDay], null),
-    };
-    final count = int.tryParse(durN.text) ?? 0;
-    final period = durType == 'period' && count > 0;
-    final durText = durOther.text.trim();
-    final keepSchedule = from != null && _scheduleKey == _seededSchedule;
-    final keepDuration = from != null && _durationKey == _seededDuration;
-    final cfg = from?.scheduleConfig;
-    return Medication(
-      id: from?.id ?? MedicationId.uuid(),
-      userId: from?.userId ?? userId,
-      name: name.text.trim(),
-      doseAmount: dose.text.trim().isEmpty ? null : dose.text.trim(),
-      scheduleType: keepSchedule ? from.scheduleType : type,
-      scheduleConfig: ScheduleConfig(
-        times: keepSchedule ? cfg!.times : times,
-        days: keepSchedule ? cfg!.days : null,
-        interval: keepSchedule ? cfg!.interval : interval,
-        frequencyNote: keepSchedule ? cfg!.frequencyNote : (freqType == 'other' && text.isNotEmpty ? text : null),
-        durationKind: keepDuration
-            ? cfg!.durationKind
-            : switch (durType) {
-                'period' when period => DurationKind.period,
-                'until_empty' => DurationKind.untilEmpty,
-                'other' => DurationKind.other,
-                _ => DurationKind.ongoing,
-              },
-        durationNote: keepDuration ? cfg!.durationNote : (durType == 'other' && durText.isNotEmpty ? durText : null),
-      ),
-      startDate: today,
-      endDate:
-          keepDuration ? from.endDate : (period ? periodEnd(today, count, PeriodUnit.values.byName(durUnit)) : null),
-      isControlled: from?.isControlled ?? false,
-      notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
-    );
-  }
-
-  /// "500 mg · 2×/day · 7 days" — the one-line summary a prescription keeps.
-  String summary(MedsStrings m) {
-    final freq = switch (freqType) {
-      'once' => m.freq_once,
-      'per_day' => m.freq_n_per_day('$perDay'),
-      'every_x' => '${m.freq_every} $_n ${freqUnit == 'days' ? m.unit_days : m.unit_hours}',
-      _ => freqOther.text.trim().isEmpty ? m.freq_other : freqOther.text.trim(),
-    };
-    final dur = switch (durType) {
-      'until_empty' => m.dur_until_empty,
-      'other' => durOther.text.trim().isEmpty ? null : durOther.text.trim(),
-      'period' when durN.text.isNotEmpty =>
-        '${durN.text} ${switch (durUnit) { 'weeks' => m.unit_weeks, 'months' => m.unit_months, _ => m.unit_days }}',
-      _ => null,
-    };
-    return [dose.text.trim(), freq, dur].where((p) => p != null && p.isNotEmpty).join(' · ');
-  }
-
-  void dispose() {
-    for (final c in [name, dose, notes, freqN, freqOther, durN, durOther]) {
-      c.dispose();
-    }
-  }
-}
-
-enum MedTiming { halfOfDay, times, firstDose }
+export 'med_plan_draft.dart';
 
 /// The medication fields card: name, dose, notes, frequency, duration and when
-/// it's taken. [onChanged] rebuilds the owner (its Save button depends on the
-/// name).
-class MedPlanCard extends StatelessWidget {
+/// it's taken.
+///
+/// The card owns its text controllers (view state); every edit reports a new
+/// [MedPlanDraft] through [onChanged], and the owner keeps it in a Notifier
+/// (its Save button depends on the name). The controllers start from [draft]
+/// once, so the owner keys a card per medication.
+class MedPlanCard extends StatefulWidget {
   const MedPlanCard({required this.draft, required this.onChanged, super.key, this.onRemove});
   final MedPlanDraft draft;
-  final VoidCallback onChanged;
+  final ValueChanged<MedPlanDraft> onChanged;
 
   /// Shows the remove button when set (more than one med in a prescription).
   final VoidCallback? onRemove;
 
-  void _set(VoidCallback change) {
-    change();
-    draft.syncTimes();
-    onChanged();
+  @override
+  State<MedPlanCard> createState() => _MedPlanCardState();
+}
+
+class _MedPlanCardState extends State<MedPlanCard> {
+  late final _name = TextEditingController(text: widget.draft.name);
+  late final _dose = TextEditingController(text: widget.draft.dose);
+  late final _notes = TextEditingController(text: widget.draft.notes);
+  late final _freqN = TextEditingController(text: widget.draft.freqN);
+  late final _freqOther = TextEditingController(text: widget.draft.freqOther);
+  late final _durN = TextEditingController(text: widget.draft.durN);
+  late final _durOther = TextEditingController(text: widget.draft.durOther);
+
+  @override
+  void dispose() {
+    for (final c in [_name, _dose, _notes, _freqN, _freqOther, _durN, _durOther]) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final m = s.strings.meds;
-    final d = draft;
+    final d = widget.draft;
+    final onChanged = widget.onChanged;
+    final onRemove = widget.onRemove;
     return PCard(
       margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(14),
@@ -236,11 +60,16 @@ class MedPlanCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Input(controller: d.name, hint: m.rx_med_name_ph, onChanged: onChanged),
+              _Input(controller: _name, hint: m.rx_med_name_ph, onChanged: (v) => onChanged(d.copyWith(name: v))),
               const SizedBox(height: 12),
-              _Input(controller: d.dose, hint: m.rx_med_dose_ph, onChanged: onChanged),
+              _Input(controller: _dose, hint: m.rx_med_dose_ph, onChanged: (v) => onChanged(d.copyWith(dose: v))),
               const SizedBox(height: 12),
-              _Input(controller: d.notes, hint: m.rx_med_desc_ph, onChanged: onChanged, lines: 2),
+              _Input(
+                controller: _notes,
+                hint: m.rx_med_desc_ph,
+                onChanged: (v) => onChanged(d.copyWith(notes: v)),
+                lines: 2,
+              ),
               const SizedBox(height: 12),
               _FieldLabel(m.rx_frequency),
               Row(
@@ -254,14 +83,18 @@ class MedPlanCard extends StatelessWidget {
                         ('every_x', m.freq_every_x),
                         ('other', m.freq_other),
                       ],
-                      onChanged: (v) => _set(() => d.freqType = v),
+                      onChanged: (v) => onChanged(d.copyWith(freqType: v).synced()),
                     ),
                   ),
                   if (d.freqType == 'per_day' || d.freqType == 'every_x') ...[
                     const SizedBox(width: 8),
                     SizedBox(
                       width: 64,
-                      child: _Input(controller: d.freqN, number: true, onChanged: () => _set(() {})),
+                      child: _Input(
+                        controller: _freqN,
+                        number: true,
+                        onChanged: (v) => onChanged(d.copyWith(freqN: v).synced()),
+                      ),
                     ),
                   ],
                   if (d.freqType == 'every_x') ...[
@@ -270,7 +103,7 @@ class MedPlanCard extends StatelessWidget {
                       child: SelectField<String>(
                         value: d.freqUnit,
                         items: [('hours', m.unit_hours), ('days', m.unit_days)],
-                        onChanged: (v) => _set(() => d.freqUnit = v),
+                        onChanged: (v) => onChanged(d.copyWith(freqUnit: v).synced()),
                       ),
                     ),
                   ],
@@ -278,7 +111,11 @@ class MedPlanCard extends StatelessWidget {
               ),
               if (d.freqType == 'other') ...[
                 const SizedBox(height: 8),
-                _Input(controller: d.freqOther, hint: m.freq_other_ph(s.gender), onChanged: onChanged),
+                _Input(
+                  controller: _freqOther,
+                  hint: m.freq_other_ph(s.gender),
+                  onChanged: (v) => onChanged(d.copyWith(freqOther: v)),
+                ),
               ],
               const SizedBox(height: 12),
               _FieldLabel(m.rx_duration),
@@ -290,7 +127,7 @@ class MedPlanCard extends StatelessWidget {
                   ('ongoing', m.dur_ongoing),
                   ('other', m.dur_other),
                 ],
-                onChanged: (v) => _set(() => d.durType = v),
+                onChanged: (v) => onChanged(d.copyWith(durType: v)),
               ),
               if (d.durType == 'period') ...[
                 const SizedBox(height: 8),
@@ -298,14 +135,19 @@ class MedPlanCard extends StatelessWidget {
                   children: [
                     SizedBox(
                       width: 64,
-                      child: _Input(controller: d.durN, hint: '1', number: true, onChanged: onChanged),
+                      child: _Input(
+                        controller: _durN,
+                        hint: '1',
+                        number: true,
+                        onChanged: (v) => onChanged(d.copyWith(durN: v)),
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: SelectField<String>(
                         value: d.durUnit,
                         items: [('days', m.unit_days), ('weeks', m.unit_weeks), ('months', m.unit_months)],
-                        onChanged: (v) => _set(() => d.durUnit = v),
+                        onChanged: (v) => onChanged(d.copyWith(durUnit: v)),
                       ),
                     ),
                   ],
@@ -313,7 +155,11 @@ class MedPlanCard extends StatelessWidget {
               ],
               if (d.durType == 'other') ...[
                 const SizedBox(height: 8),
-                _Input(controller: d.durOther, hint: m.dur_other_ph(s.gender), onChanged: onChanged),
+                _Input(
+                  controller: _durOther,
+                  hint: m.dur_other_ph(s.gender),
+                  onChanged: (v) => onChanged(d.copyWith(durOther: v)),
+                ),
               ],
               const SizedBox(height: 14),
               _Timing(draft: d, onChanged: onChanged),
@@ -352,7 +198,7 @@ class MedPlanCard extends StatelessWidget {
 class _Timing extends StatelessWidget {
   const _Timing({required this.draft, required this.onChanged});
   final MedPlanDraft draft;
-  final VoidCallback onChanged;
+  final ValueChanged<MedPlanDraft> onChanged;
 
   Future<void> _pick(BuildContext context, int i) async {
     final parts = draft.times[i].split(':');
@@ -360,10 +206,11 @@ class _Timing extends StatelessWidget {
       context: context,
       initialTime: TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1])),
     );
-    if (picked == null) return;
-    draft.times = [...draft.times]..[i] =
-        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-    onChanged();
+    // The sheet may have closed while the picker was up.
+    if (picked == null || !context.mounted) return;
+    onChanged(
+      draft.withTime(i, '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}'),
+    );
   }
 
   @override
@@ -387,10 +234,7 @@ class _Timing extends StatelessWidget {
                       selected: draft.evening == evening,
                       icon: icon,
                       label: label,
-                      onTap: () {
-                        draft.evening = evening;
-                        onChanged();
-                      },
+                      onTap: () => onChanged(draft.copyWith(evening: evening)),
                     ),
                   ),
                 ],
@@ -406,14 +250,15 @@ class _Timing extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (var i = 0; i < draft.times.length; i++)
-                  _Choice(
+                ...draft.times.indexed.map(
+                  (e) => _Choice(
                     selected: true,
                     icon: LucideIcons.clock,
-                    label: draft.times[i],
+                    label: e.$2,
                     numeric: true,
-                    onTap: () => _pick(context, i),
+                    onTap: () => _pick(context, e.$1),
                   ),
+                ),
               ],
             ),
           ],
@@ -505,7 +350,7 @@ OutlineInputBorder _border(Color color) => OutlineInputBorder(
 class _Input extends StatelessWidget {
   const _Input({required this.controller, required this.onChanged, this.hint, this.lines = 1, this.number = false});
   final TextEditingController controller;
-  final VoidCallback onChanged;
+  final ValueChanged<String> onChanged;
   final String? hint;
   final int lines;
   final bool number;
@@ -519,7 +364,7 @@ class _Input extends StatelessWidget {
       maxLines: lines,
       keyboardType: number ? TextInputType.number : TextInputType.text,
       textAlign: number ? TextAlign.center : TextAlign.start,
-      onChanged: (_) => onChanged(),
+      onChanged: onChanged,
       style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
       decoration: InputDecoration(
         hintText: hint,
