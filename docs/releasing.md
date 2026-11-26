@@ -154,9 +154,8 @@ cp .env.release.example .env.release && chmod 600 .env.release
 ```
 
 It is git-ignored (every `.env*` is, except the examples) and the script
-refuses one that is not, or that others can read. Without it the script reads
-`~/.config/balsm/release.env`, one file for every checkout, or the file named
-by `$BALSM_RELEASE_ENV`. It is `KEY=value` lines, never sourced; a value
+refuses one that is not, or that others can read. `$BALSM_RELEASE_ENV` names
+another file instead. It is `KEY=value` lines, never sourced; a value
 `keychain:<service>` comes from the login keychain and `file:<path>` from the
 first line of a file, so passwords need not sit in the file at all:
 

@@ -20,8 +20,8 @@
 #   production  prod      TestFlight · Play production (draft) · AppGallery draft
 #
 # Secrets come from .env.release in the checkout (git-ignored; start from
-# .env.release.example), or ~/.config/balsm/release.env, or the file named by
-# $BALSM_RELEASE_ENV. Mode 600, KEY=value
+# .env.release.example), or the file named by $BALSM_RELEASE_ENV. Mode 600,
+# KEY=value
 # lines (never sourced). A value written as `keychain:<service>` is read from
 # the login keychain (`security add-generic-password -s <service> -a "$USER" -w`
 # stores one); `file:<path>` reads the first line of that file.
@@ -74,11 +74,8 @@ LABEL="v$BUILD_NAME-$CHANNEL (build $BUILD_NUMBER, local)"
 DIST="$ROOT/dist/local"
 
 # ── Config ────────────────────────────────────────────────────────────────
-# $BALSM_RELEASE_ENV, else .env.release in this checkout (git-ignored), else
-# ~/.config/balsm/release.env (one file for every checkout).
-if [ -n "${BALSM_RELEASE_ENV:-}" ]; then CONFIG="$BALSM_RELEASE_ENV"
-elif [ -f "$ROOT/.env.release" ]; then CONFIG="$ROOT/.env.release"
-else CONFIG="$HOME/.config/balsm/release.env"; fi
+# .env.release in this checkout (git-ignored), or the file $BALSM_RELEASE_ENV names.
+CONFIG="${BALSM_RELEASE_ENV:-$ROOT/.env.release}"
 [ -f "$CONFIG" ] || die "no credentials file: cp .env.release.example .env.release and fill it in (docs/releasing.md → Releasing from a Mac)"
 case "$(cd "$(dirname "$CONFIG")" && pwd)/" in
   "$ROOT"/*) git check-ignore -q "$CONFIG" || die "$CONFIG is inside the repo but not git-ignored; it must never be committed" ;;
