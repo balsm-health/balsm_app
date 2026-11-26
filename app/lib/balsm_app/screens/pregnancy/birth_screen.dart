@@ -11,6 +11,7 @@ import '../../kit.dart';
 import '../../shell.dart';
 import '../family/family_kit.dart';
 import '../family/member_screen.dart';
+import 'pregnancy_drafts.dart';
 import 'pregnancy_kit.dart';
 
 /// Opens the birth flow.
@@ -31,33 +32,26 @@ class BirthScreen extends ConsumerStatefulWidget {
 }
 
 class _BirthScreenState extends ConsumerState<BirthScreen> {
-  HealthProfileId? _babyId;
   final _name = TextEditingController();
-  Sex? _sex;
-  DateTime? _dob = DateTime.now();
-  BloodType? _blood;
-  bool _bloodUnsure = false;
-
-  /// Ticked records; null until the baby is chosen (then all of its records).
-  Set<PregnancyItemId>? _keep;
+  late final BirthDraftKey _key = (form: Object(), mother: widget.mother);
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Choosing a baby (by tap, or by itself when only one is followed) seeds
+    // the name field with the name given during the pregnancy.
+    ref.listenManual(
+      birthDraftProvider(_key).select((d) => d.babyId),
+      (_, __) => _name.text = ref.read(birthDraftProvider(_key)).name,
+      fireImmediately: true,
+    );
+  }
 
   @override
   void dispose() {
     _name.dispose();
     super.dispose();
-  }
-
-  void _choose(PregnancyBaby b, List<PregnancyItem> items) {
-    _babyId = b.id;
-    _name.text = b.givenName ?? '';
-    _sex = null;
-    _blood = null;
-    _bloodUnsure = false;
-    _keep = {
-      for (final i in items)
-        if (i.isAbout(b.id)) i.id,
-    };
   }
 
   /// The child's relationship to the account holder (mother-child.jsx
@@ -74,21 +68,19 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
   }
 
   Future<void> _save(Pregnancy preg) async {
-    final id = _babyId;
-    if (id == null || _saving) return;
+    if (_saving || ref.read(birthDraftProvider(_key)).babyId == null) return;
     setState(() => _saving = true);
     final relationship = await _relationship();
+    if (!mounted) return;
+    final details = ref.read(birthDraftProvider(_key)).details(relationship: relationship);
+    if (details == null) {
+      setState(() => _saving = false);
+      return;
+    }
+    final id = details.babyId;
     final r = await ref.read(recordBirthUseCaseProvider)(
       preg.id,
-      BirthDetails(
-        babyId: id,
-        name: _name.text,
-        sex: _sex,
-        dateOfBirth: _dob,
-        bloodType: _bloodUnsure ? null : _blood,
-        keepItemIds: _keep ?? const {},
-        relationship: relationship,
-      ),
+      details,
       motherId: preg.motherId,
       now: DateTime.now(),
     );
@@ -130,13 +122,13 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     final all = ref.watch(pregnancyBabiesProvider(preg.id)).value ?? const <PregnancyBaby>[];
     final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).value ?? const <PregnancyItem>[];
     final active = all.where((b) => b.isActive).toList();
-    if (_babyId == null && active.length == 1) _choose(active.single, items);
-    final b = active.where((x) => x.id == _babyId).firstOrNull;
+    final now = DateTime.now();
+    final (babyId, valid) = ref.watch(birthDraftProvider(_key).select((d) => (d.babyId, d.valid(now))));
+    final b = active.where((x) => x.id == babyId).firstOrNull;
     final multi = all.length > 1;
     final its = b == null ? const <PregnancyItem>[] : items.where((i) => i.isAbout(b.id)).toList();
-    final keep = _keep ?? const <PregnancyItemId>{};
-    final ok = b != null &&
-        BirthDetails(babyId: b.id, name: _name.text, sex: _sex, dateOfBirth: _dob).violations(DateTime.now()).isEmpty;
+    final ok = b != null && valid;
+    BirthDraftNotifier draft() => ref.read(birthDraftProvider(_key).notifier);
 
     return FamilyScaffold(
       title: b != null && multi ? p.birth_title(babyLabel(s, b, all)) : p.birth_title_one,
@@ -170,16 +162,17 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                for (final x in active)
-                  BChip(
-                    babyLabel(s, x, all),
-                    active: x.id == _babyId,
-                    accent: s.accent.main,
-                    ar: s.rtl,
-                    onTap: () => setState(() => _choose(x, items)),
-                  ),
-              ],
+              children: active
+                  .map(
+                    (x) => BChip(
+                      babyLabel(s, x, all),
+                      active: x.id == babyId,
+                      accent: s.accent.main,
+                      ar: s.rtl,
+                      onTap: () => draft().choose(x, items),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
         if (b != null) ...[
@@ -188,77 +181,115 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
             child: TextField(
               controller: _name,
               maxLength: BirthDetails.maxNameLength,
-              onChanged: (_) => setState(() {}),
+              onChanged: (v) => draft().setName(v),
               decoration: fieldDecoration(s, null).copyWith(counterText: ''),
             ),
           ),
-          LabelledField(
-            label: f.f_sex,
-            child: BalsmSegmented<Sex?>(
-              options: const [Sex.female, Sex.male],
-              labelOf: (x) => x == Sex.female ? f.sex_female : f.sex_male,
-              selected: _sex,
-              onChanged: (x) => setState(() => _sex = x),
-            ),
-          ),
-          LabelledField(
-            label: f.f_dob,
-            child: DayField(
-              value: _dob,
-              placeholder: p.pick_date,
-              onTap: () async {
-                final now = DateTime.now();
-                final picked = await pickDay(
-                  context,
-                  title: f.f_dob,
-                  initial: _dob ?? now,
-                  first: now.subtract(const Duration(days: 365)),
-                  last: now,
-                );
-                if (picked != null && mounted) setState(() => _dob = picked);
-              },
-            ),
-          ),
-          LabelledField(
-            label: '${f.f_blood} · ${p.blood_if_known}',
-            child: BloodTypeGrid(
-              value: _blood,
-              unsure: _bloodUnsure,
-              onChanged: (b) => setState(() {
-                _blood = b;
-                _bloodUnsure = b == null;
-              }),
-            ),
-          ),
+          LabelledField(label: f.f_sex, child: _BirthSexField(draftKey: _key)),
+          LabelledField(label: f.f_dob, child: _BirthDobField(draftKey: _key)),
+          LabelledField(label: '${f.f_blood} · ${p.blood_if_known}', child: _BirthBloodField(draftKey: _key)),
           LabelledField(
             label: p.moves,
             help: p.me_stay,
             child: its.isEmpty
                 ? Text(p.no_records, style: Typo.meta(ar: s.rtl))
-                : RowsCard(
-                    children: [
-                      for (final it in its)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          child: BCheck(
-                            label: [
-                              it.title ?? itemKindLabel(s, it.kind),
-                              '${itemKindLabel(s, it.kind)} · ${formatDay(it.recordedOn)}${it.isShared ? ' · ${p.shared}' : ''}',
-                            ].join('\n'),
-                            checked: keep.contains(it.id),
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: () => setState(() {
-                              final k = _keep ??= {};
-                              k.contains(it.id) ? k.remove(it.id) : k.add(it.id);
-                            }),
-                          ),
-                        ),
-                    ],
-                  ),
+                : _KeepRecords(draftKey: _key, items: its),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _BirthSexField extends ConsumerWidget {
+  const _BirthSexField({required this.draftKey});
+  final BirthDraftKey draftKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = AppScope.of(context).strings.family;
+    return BalsmSegmented<Sex?>(
+      options: const [Sex.female, Sex.male],
+      labelOf: (x) => x == Sex.female ? f.sex_female : f.sex_male,
+      selected: ref.watch(birthDraftProvider(draftKey).select((d) => d.sex)),
+      onChanged: (x) {
+        if (x != null) ref.read(birthDraftProvider(draftKey).notifier).setSex(x);
+      },
+    );
+  }
+}
+
+/// The date of birth: within the last year, not after today.
+class _BirthDobField extends ConsumerWidget {
+  const _BirthDobField({required this.draftKey});
+  final BirthDraftKey draftKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final dob = ref.watch(birthDraftProvider(draftKey).select((d) => d.dob));
+    return DayField(
+      value: dob,
+      placeholder: s.strings.pregnancy.pick_date,
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await pickDay(
+          context,
+          title: s.strings.family.f_dob,
+          initial: dob ?? now,
+          first: now.subtract(const Duration(days: 365)),
+          last: now,
+        );
+        if (picked != null && context.mounted) ref.read(birthDraftProvider(draftKey).notifier).setDob(picked);
+      },
+    );
+  }
+}
+
+class _BirthBloodField extends ConsumerWidget {
+  const _BirthBloodField({required this.draftKey});
+  final BirthDraftKey draftKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (blood, unsure) = ref.watch(birthDraftProvider(draftKey).select((d) => (d.blood, d.bloodUnsure)));
+    return BloodTypeGrid(
+      value: blood,
+      unsure: unsure,
+      onChanged: (b) => ref.read(birthDraftProvider(draftKey).notifier).setBlood(b),
+    );
+  }
+}
+
+/// The records about this baby, each ticked to move with it.
+class _KeepRecords extends ConsumerWidget {
+  const _KeepRecords({required this.draftKey, required this.items});
+  final BirthDraftKey draftKey;
+  final List<PregnancyItem> items;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final p = s.strings.pregnancy;
+    final keep = ref.watch(birthDraftProvider(draftKey).select((d) => d.keep));
+    return RowsCard(
+      children: items
+          .map(
+            (it) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: BCheck(
+                label: [
+                  it.title ?? itemKindLabel(s, it.kind),
+                  '${itemKindLabel(s, it.kind)} · ${formatDay(it.recordedOn)}${it.isShared ? ' · ${p.shared}' : ''}',
+                ].join('\n'),
+                checked: keep.contains(it.id),
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: () => ref.read(birthDraftProvider(draftKey).notifier).toggleKeep(it.id),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }

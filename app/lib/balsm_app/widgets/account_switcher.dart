@@ -4,8 +4,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
-import '../i18n/strings.i69n.dart' show CommonStrings;
 import '../kit.dart';
+import 'add_family_member_draft.dart';
 import 'family_qr_scan.dart';
 
 /// Account sheet (home.jsx AccountSwitcherSheet + AddFamilyMemberSheet).
@@ -409,7 +409,7 @@ class _LinkRequests extends StatelessWidget {
   }
 }
 
-class _AddFamilyMemberSheet extends StatefulWidget {
+class _AddFamilyMemberSheet extends ConsumerStatefulWidget {
   const _AddFamilyMemberSheet({required this.s, required this.selfName, required this.onClose, required this.onAdd});
   final PatientAppState s;
 
@@ -419,27 +419,18 @@ class _AddFamilyMemberSheet extends StatefulWidget {
   final VoidCallback onClose;
   final void Function(String name, String relation, DateTime? dob, {String? linkJti}) onAdd;
   @override
-  State<_AddFamilyMemberSheet> createState() => _AddFamilyMemberSheetState();
+  ConsumerState<_AddFamilyMemberSheet> createState() => _AddFamilyMemberSheetState();
 }
 
 /// choose → scan → found | manual (design AddFamilyMemberSheet modes).
 enum _AddMode { choose, scan, found, manual }
 
-class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
+class _AddFamilyMemberSheetState extends ConsumerState<_AddFamilyMemberSheet> {
   final _name = TextEditingController();
-  String _relation = '';
-  DateTime? _dob;
-
+  final Object _sheet = Object();
   _AddMode _mode = _AddMode.choose;
-  late ScannedProfile _scanned;
 
   PatientAppState get s => widget.s;
-  bool get canSave => _name.text.trim().length > 1;
-
-  bool get _isSelfName {
-    final self = widget.selfName;
-    return self.isNotEmpty && _name.text.trim().toLowerCase() == self.toLowerCase();
-  }
 
   @override
   void dispose() {
@@ -447,16 +438,20 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
     super.dispose();
   }
 
-  List<(String id, String label)> get _relations => [
-        ('spouse', s.strings.common.rel_spouse),
-        ('son', s.strings.common.rel_son),
-        ('daughter', s.strings.common.rel_daughter),
-        ('father', s.strings.common.rel_father),
-        ('mother', s.strings.common.rel_mother),
-        ('sibling', s.strings.common.rel_sibling),
-        ('grandparent', s.strings.common.rel_grandparent),
-        ('other', s.strings.common.rel_other),
-      ];
+  void _go(_AddMode mode) => setState(() => _mode = mode);
+
+  void _onFound(ScannedProfile found) {
+    ref.read(addFamilyMemberDraftProvider(_sheet).notifier).applyScan(found);
+    _name.text = ref.read(addFamilyMemberDraftProvider(_sheet)).name;
+    _go(_AddMode.found);
+  }
+
+  /// A scanned member is sent as a link request ([linked]); a manual one is
+  /// a local row.
+  void _add({required bool linked}) {
+    final d = ref.read(addFamilyMemberDraftProvider(_sheet));
+    widget.onAdd(d.name.trim(), d.relation, d.dob, linkJti: linked ? d.scanned?.jti : null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -492,246 +487,302 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           const SizedBox(height: 8),
           const Divider(height: 1, color: AppColors.ink100),
           const SizedBox(height: 16),
-          ..._body(c),
+          switch (_mode) {
+            _AddMode.choose => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ChooseCard(
+                    s: s,
+                    title: c.fam_scan_qr(s.gender),
+                    sub: c.fam_scan_qr_sub,
+                    icon: LucideIcons.qrCode,
+                    accent: true,
+                    onTap: () => _go(_AddMode.scan),
+                  ),
+                  const SizedBox(height: 10),
+                  _ChooseCard(
+                    s: s,
+                    title: c.fam_manual,
+                    sub: c.fam_manual_sub,
+                    icon: LucideIcons.pencilLine,
+                    onTap: () => _go(_AddMode.manual),
+                  ),
+                ],
+              ),
+            _AddMode.scan => FamilyQrScanView(onFound: _onFound, onManual: () => _go(_AddMode.manual)),
+            _AddMode.found => _FoundBody(
+                s: s,
+                sheet: _sheet,
+                onSend: () => _add(linked: true),
+                onScanOther: () => _go(_AddMode.scan),
+              ),
+            _AddMode.manual => _ManualBody(
+                s: s,
+                sheet: _sheet,
+                selfName: widget.selfName,
+                name: _name,
+                onAdd: () => _add(linked: false),
+                onScanInstead: () => _go(_AddMode.scan),
+              ),
+          },
         ],
       ),
     );
   }
+}
 
-  List<Widget> _body(CommonStrings c) => switch (_mode) {
-        _AddMode.choose => [
-            _chooseCard(
-              c.fam_scan_qr(s.gender),
-              c.fam_scan_qr_sub,
-              LucideIcons.qrCode,
-              accent: true,
-              onTap: () => setState(() => _mode = _AddMode.scan),
-            ),
-            const SizedBox(height: 10),
-            _chooseCard(
-              c.fam_manual,
-              c.fam_manual_sub,
-              LucideIcons.pencilLine,
-              onTap: () => setState(() => _mode = _AddMode.manual),
-            ),
-          ],
-        _AddMode.scan => [
-            FamilyQrScanView(
-              onFound: (found) => setState(() {
-                _scanned = found;
-                _name.text = found.payload.name ?? '';
-                _dob = DateTime.tryParse(found.payload.dateOfBirth ?? '');
-                _mode = _AddMode.found;
-              }),
-              onManual: () => setState(() => _mode = _AddMode.manual),
-            ),
-          ],
-        _AddMode.found => _foundBody(c),
-        _ => _manualBody(c),
-      };
+/// One way to add a member: scan their QR, or type them in.
+class _ChooseCard extends StatelessWidget {
+  const _ChooseCard({
+    required this.s,
+    required this.title,
+    required this.sub,
+    required this.icon,
+    required this.onTap,
+    this.accent = false,
+  });
+  final PatientAppState s;
+  final String title;
+  final String sub;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool accent;
 
-  Widget _chooseCard(String title, String sub, IconData icon, {required VoidCallback onTap, bool accent = false}) {
-    return PressHighlight(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            IconSquare(
-              icon,
-              bg: accent ? s.accent.bg : AppColors.ink50,
-              fg: accent ? s.accent.main : AppColors.textSecondary,
-              size: 44,
-              iconSize: 22,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
-                ],
+  @override
+  Widget build(BuildContext context) => PressHighlight(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              IconSquare(
+                icon,
+                bg: accent ? s.accent.bg : AppColors.ink50,
+                fg: accent ? s.accent.main : AppColors.textSecondary,
+                size: 44,
+                iconSize: 22,
               ),
-            ),
-            Icon(forwardChevron(context), size: 18, color: AppColors.textTertiary),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                  ],
+                ),
+              ),
+              Icon(forwardChevron(context), size: 18, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      );
+}
+
+/// A scanned profile: confirm who it is and the relation, then send the
+/// link request.
+class _FoundBody extends ConsumerWidget {
+  const _FoundBody({required this.s, required this.sheet, required this.onSend, required this.onScanOther});
+  final PatientAppState s;
+  final Object sheet;
+  final VoidCallback onSend;
+  final VoidCallback onScanOther;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = s.strings.common;
+    final typed = ref.watch(addFamilyMemberDraftProvider(sheet).select((d) => d.name.trim()));
+    final name = typed.isEmpty ? '—' : typed;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.hueMint50,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Avatar(initials: accountInitials(name), color: AppColors.hueMint600, size: 48, ar: s.rtl),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  name,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+              ),
+              const Icon(LucideIcons.badgeCheck, size: 22, color: AppColors.hueMint600),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Labeled(s: s, label: c.relation, child: _RelationField(s: s, sheet: sheet)),
+        const SizedBox(height: 14),
+        Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+        const SizedBox(height: 18),
+        PButton(c.fam_send_request, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: onSend),
+        const SizedBox(height: 8),
+        PButton(c.fam_scan_other, variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: onScanOther),
+      ],
+    );
+  }
+}
+
+/// Typed in by hand: name, relation and an optional date of birth.
+class _ManualBody extends ConsumerWidget {
+  const _ManualBody({
+    required this.s,
+    required this.sheet,
+    required this.selfName,
+    required this.name,
+    required this.onAdd,
+    required this.onScanInstead,
+  });
+  final PatientAppState s;
+  final Object sheet;
+  final String selfName;
+  final TextEditingController name;
+  final VoidCallback onAdd;
+  final VoidCallback onScanInstead;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = s.strings.common;
+    final (canSave, isSelf) =
+        ref.watch(addFamilyMemberDraftProvider(sheet).select((d) => (d.canSave, d.isSelf(selfName))));
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Labeled(
+          s: s,
+          label: c.member_name,
+          child: TextField(
+            controller: name,
+            autofocus: true,
+            onChanged: (v) => ref.read(addFamilyMemberDraftProvider(sheet).notifier).setName(v),
+            style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
+            decoration: _sheetInputDecoration(s, c.member_name_ph),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _Labeled(s: s, label: c.relation, child: _RelationField(s: s, sheet: sheet)),
+        const SizedBox(height: 14),
+        // Optional — only used to show the member's age in the switcher.
+        _Labeled(s: s, label: c.member_dob, child: _DobField(s: s, sheet: sheet)),
+        if (isSelf) ...[
+          const SizedBox(height: 10),
+          Text(c.fam_self_add_manual, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.danger)),
+        ],
+        const SizedBox(height: 20),
+        PButton(
+          c.add_member_cta,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: canSave && !isSelf ? onAdd : null,
+        ),
+        const SizedBox(height: 8),
+        PButton(
+          c.fam_scan_instead,
+          variant: BtnVariant.ghost,
+          block: true,
+          ar: s.rtl,
+          icon: LucideIcons.qrCode,
+          onTap: onScanInstead,
+        ),
+      ],
+    );
+  }
+}
+
+/// Relation picker field (shared by the found + manual modes).
+class _RelationField extends ConsumerWidget {
+  const _RelationField({required this.s, required this.sheet});
+  final PatientAppState s;
+  final Object sheet;
+
+  List<(String id, String label)> get _relations => [
+        ('spouse', s.strings.common.rel_spouse),
+        ('son', s.strings.common.rel_son),
+        ('daughter', s.strings.common.rel_daughter),
+        ('father', s.strings.common.rel_father),
+        ('mother', s.strings.common.rel_mother),
+        ('sibling', s.strings.common.rel_sibling),
+        ('grandparent', s.strings.common.rel_grandparent),
+        ('other', s.strings.common.rel_other),
+      ];
+
+  Future<void> _pick(BuildContext context, WidgetRef ref) async {
+    final picked = await showAppSheet<String>(
+      context,
+      textDirection: s.dir,
+      builder: (ctx) => _PickerSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _relations
+              .map(
+                (r) => ListTile(
+                  title: Text(r.$2, style: Typo.body(ar: s.rtl)),
+                  onTap: () => Navigator.pop(ctx, r.$2),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+    // The sheet may have closed while the picker was open.
+    if (picked != null && context.mounted) {
+      ref.read(addFamilyMemberDraftProvider(sheet).notifier).setRelation(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = s.strings.common;
+    final relation = ref.watch(addFamilyMemberDraftProvider(sheet).select((d) => d.relation));
+    return GestureDetector(
+      onTap: () => _pick(context, ref),
+      child: InputDecorator(
+        decoration: _sheetInputDecoration(s, null),
+        child: Text(
+          relation.isEmpty ? c.select_relation(s.gender) : relation,
+          style: Typo.body(ar: s.rtl).copyWith(color: relation.isEmpty ? AppColors.textHint : AppColors.textPrimary),
         ),
       ),
     );
   }
+}
 
-  List<Widget> _foundBody(CommonStrings c) {
-    final found = _scanned;
-    final name = _name.text.trim().isEmpty ? '—' : _name.text.trim();
-    return [
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.hueMint50,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Avatar(initials: accountInitials(name), color: AppColors.hueMint600, size: 48, ar: s.rtl),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                name,
-                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-              ),
-            ),
-            const Icon(LucideIcons.badgeCheck, size: 22, color: AppColors.hueMint600),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      _labeled(c.relation, _relationField()),
-      const SizedBox(height: 14),
-      Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
-      const SizedBox(height: 18),
-      PButton(
-        c.fam_send_request,
-        large: true,
-        block: true,
-        accent: s.accent,
-        ar: s.rtl,
-        onTap: () => widget.onAdd(_name.text.trim(), _relation, _dob, linkJti: found.jti),
-      ),
-      const SizedBox(height: 8),
-      PButton(
-        c.fam_scan_other,
-        variant: BtnVariant.ghost,
-        block: true,
-        ar: s.rtl,
-        onTap: () => setState(() => _mode = _AddMode.scan),
-      ),
-    ];
-  }
-
-  List<Widget> _manualBody(CommonStrings c) {
-    return [
-      _labeled(
-        c.member_name,
-        TextField(
-          controller: _name,
-          autofocus: true,
-          onChanged: (_) => setState(() {}),
-          style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
-          decoration: _dec(s, c.member_name_ph),
-        ),
-      ),
-      const SizedBox(height: 14),
-      _labeled(
-        c.relation,
-        GestureDetector(
-          onTap: () async {
-            final picked = await showAppSheet<String>(
-              context,
-              textDirection: s.dir,
-              builder: (ctx) => _PickerSheet(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final r in _relations)
-                      ListTile(
-                        title: Text(r.$2, style: Typo.body(ar: s.rtl)),
-                        onTap: () => Navigator.pop(ctx, r.$2),
-                      ),
-                  ],
-                ),
-              ),
-            );
-            if (picked != null) setState(() => _relation = picked);
-          },
-          child: InputDecorator(
-            decoration: _dec(s, null),
-            child: Text(
-              _relation.isEmpty ? c.select_relation(s.gender) : _relation,
-              style:
-                  Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? AppColors.textHint : AppColors.textPrimary),
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 14),
-      // Optional — only used to show the member's age in the switcher.
-      _labeled(
-        c.member_dob,
-        GestureDetector(
-          onTap: _pickDob,
-          child: InputDecorator(
-            decoration: _dec(s, null),
-            child: Row(
-              children: [
-                const Icon(LucideIcons.calendar, size: 17, color: AppColors.textTertiary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    switch (_dob) {
-                      final dob? => _formatDob(dob),
-                      _ => c.member_dob_ph
-                    },
-                    // Dates read left-to-right even in Arabic.
-                    textDirection: TextDirection.ltr,
-                    textAlign: s.rtl ? TextAlign.right : TextAlign.left,
-                    style:
-                        Typo.body(ar: s.rtl).copyWith(color: _dob == null ? AppColors.textHint : AppColors.textPrimary),
-                  ),
-                ),
-                const Icon(LucideIcons.chevronDown, size: 15, color: AppColors.textTertiary),
-              ],
-            ),
-          ),
-        ),
-      ),
-      if (_isSelfName) ...[
-        const SizedBox(height: 10),
-        Text(c.fam_self_add_manual, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.danger)),
-      ],
-      const SizedBox(height: 20),
-      PButton(
-        c.add_member_cta,
-        large: true,
-        block: true,
-        accent: s.accent,
-        ar: s.rtl,
-        onTap: canSave && !_isSelfName ? () => widget.onAdd(_name.text.trim(), _relation, _dob) : null,
-      ),
-      const SizedBox(height: 8),
-      PButton(
-        c.fam_scan_instead,
-        variant: BtnVariant.ghost,
-        block: true,
-        ar: s.rtl,
-        icon: LucideIcons.qrCode,
-        onTap: () => setState(() => _mode = _AddMode.scan),
-      ),
-    ];
-  }
+/// The optional date of birth, from the app's own calendar sheet (not the
+/// raw native dialog — the design switched every DOB field to this picker
+/// so they all match).
+class _DobField extends ConsumerWidget {
+  const _DobField({required this.s, required this.sheet});
+  final PatientAppState s;
+  final Object sheet;
 
   /// `fmtDob` — day + localized month + year, always LTR.
-  String _formatDob(DateTime d) {
+  String _format(DateTime d) {
     final months = s.strings.settings.cal_months.split('|');
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 
-  /// Uses the app's own calendar bottom-sheet, not the raw native dialog —
-  /// the design switched every DOB field to this picker so they all match.
-  Future<void> _pickDob() async {
+  Future<void> _pick(BuildContext context, WidgetRef ref, DateTime? dob) async {
     final now = DateTime.now();
     final picked = await showBalsmDatePicker(
       context,
-      initial: _dob ?? DateTime(now.year - 30, now.month, now.day),
+      initial: dob ?? DateTime(now.year - 30, now.month, now.day),
       firstDate: DateTime(now.year - 120),
       lastDate: now,
       title: s.strings.common.member_dob,
@@ -741,43 +792,49 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
       rtl: s.rtl,
       accent: s.accent.main,
     );
-    if (picked != null && mounted) setState(() => _dob = picked);
+    if (picked != null && context.mounted) ref.read(addFamilyMemberDraftProvider(sheet).notifier).setDob(picked);
   }
 
-  /// Relation picker field (shared by the found + manual modes).
-  Widget _relationField() {
-    final c = s.strings.common;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dob = ref.watch(addFamilyMemberDraftProvider(sheet).select((d) => d.dob));
     return GestureDetector(
-      onTap: () async {
-        final picked = await showAppSheet<String>(
-          context,
-          textDirection: s.dir,
-          builder: (ctx) => _PickerSheet(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final r in _relations)
-                  ListTile(
-                    title: Text(r.$2, style: Typo.body(ar: s.rtl)),
-                    onTap: () => Navigator.pop(ctx, r.$2),
-                  ),
-              ],
-            ),
-          ),
-        );
-        if (picked != null && mounted) setState(() => _relation = picked);
-      },
+      onTap: () => _pick(context, ref, dob),
       child: InputDecorator(
-        decoration: _dec(s, null),
-        child: Text(
-          _relation.isEmpty ? c.select_relation(s.gender) : _relation,
-          style: Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? AppColors.textHint : AppColors.textPrimary),
+        decoration: _sheetInputDecoration(s, null),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.calendar, size: 17, color: AppColors.textTertiary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                switch (dob) {
+                  final dob? => _format(dob),
+                  _ => s.strings.common.member_dob_ph,
+                },
+                // Dates read left-to-right even in Arabic.
+                textDirection: TextDirection.ltr,
+                textAlign: s.rtl ? TextAlign.right : TextAlign.left,
+                style: Typo.body(ar: s.rtl).copyWith(color: dob == null ? AppColors.textHint : AppColors.textPrimary),
+              ),
+            ),
+            const Icon(LucideIcons.chevronDown, size: 15, color: AppColors.textTertiary),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _labeled(String label, Widget child) => Column(
+/// A form field with its label above.
+class _Labeled extends StatelessWidget {
+  const _Labeled({required this.s, required this.label, required this.child});
+  final PatientAppState s;
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -788,24 +845,24 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           child,
         ],
       );
-
-  InputDecoration _dec(PatientAppState s, String? hint) => InputDecoration(
-        hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.subhead),
-        filled: true,
-        fillColor: AppColors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: BorderSide(color: s.accent.main, width: 1.5),
-        ),
-      );
 }
+
+InputDecoration _sheetInputDecoration(PatientAppState s, String? hint) => InputDecoration(
+      hintText: hint,
+      hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.subhead),
+      filled: true,
+      fillColor: AppColors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: BorderSide(color: s.accent.main, width: 1.5),
+      ),
+    );

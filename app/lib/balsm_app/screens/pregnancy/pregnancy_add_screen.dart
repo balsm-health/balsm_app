@@ -8,6 +8,7 @@ import '../../app_state.dart';
 import '../../kit.dart';
 import '../../widgets/photo_attach.dart';
 import '../family/family_kit.dart';
+import 'pregnancy_drafts.dart';
 import 'pregnancy_kit.dart';
 
 /// Opens the attach flow, preselecting [babyIds] (from a baby's screen).
@@ -32,16 +33,12 @@ class PregnancyAddScreen extends ConsumerStatefulWidget {
 }
 
 class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
-  bool _me = false;
-  late final Set<HealthProfileId> _babies = {...widget.babyIds};
-  ItemKind _kind = ItemKind.scan;
+  late final PregnancyItemDraftKey _key = (form: Object(), babyIds: widget.babyIds);
   final _title = TextEditingController();
-  DateTime _date = DateTime.now();
   final _hr = TextEditingController();
   final _efw = TextEditingController();
   final _otherLabel = TextEditingController();
   final _otherValue = TextEditingController();
-  PickedAttach? _file;
   bool _saving = false;
 
   @override
@@ -52,26 +49,25 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
     super.dispose();
   }
 
-  bool get _canMeasure => !_me && _babies.length == 1;
-  ItemKind get _effectiveKind => _kind == ItemKind.measure && !_canMeasure ? ItemKind.scan : _kind;
+  PregnancyItemDraftNotifier get _notifier => ref.read(pregnancyItemDraftProvider(_key).notifier);
 
   static int? _int(String s) => int.tryParse(s.trim());
 
   /// The form as the domain sees it; its rules decide whether Save is on.
-  AppResult<PregnancyItem> _draft(Pregnancy preg, {String? fileRef}) => PregnancyItem.create(
+  AppResult<PregnancyItem> _asItem(Pregnancy preg, PregnancyItemDraft d) => PregnancyItem.create(
         id: const PregnancyItemId.value('draft'),
         pregnancyId: preg.id,
-        about: _me ? ItemAbout.me : ItemAbout.baby,
-        babyIds: _me ? const [] : _babies.toList(),
-        kind: _effectiveKind,
-        recordedOn: _date,
+        about: d.me ? ItemAbout.me : ItemAbout.baby,
+        babyIds: d.me ? const [] : d.babies.toList(),
+        kind: d.effectiveKind,
+        recordedOn: d.date,
         now: DateTime.now(),
         title: _title.text,
         fetalHeartRateBpm: _int(_hr.text),
         estimatedFetalWeightG: _int(_efw.text),
         otherLabel: _otherLabel.text,
         otherValue: _otherValue.text,
-        attachmentRef: fileRef ?? (_file == null ? null : 'picked'),
+        attachmentRef: d.file == null ? null : 'picked',
       );
 
   bool _numbersParse() =>
@@ -80,29 +76,33 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
   Future<void> _pickFile() async {
     final picked = await pickAttachment(context);
     if (picked == null || picked.bytes == null || !mounted) return;
-    setState(() => _file = picked);
+    _notifier.attach(picked);
   }
 
   Future<void> _save(Pregnancy preg) async {
     if (_saving) return;
     setState(() => _saving = true);
+    final d = ref.read(pregnancyItemDraftProvider(_key));
+    final kind = d.effectiveKind;
     String? ref0;
     try {
-      final f = _file;
-      if (f != null && _effectiveKind != ItemKind.measure) {
+      final f = d.file;
+      if (f != null && kind != ItemKind.measure) {
+        // pickAttachment only hands over a file with its bytes (see _pickFile).
         ref0 = await ref.read(userFileStoreProvider).save(f.name ?? 'pregnancy-record', f.bytes!);
       }
     } on Object catch (_) {
       ref0 = null;
     }
-    if (_file != null && ref0 == null && _effectiveKind != ItemKind.measure) return _fail();
+    if (!mounted) return;
+    if (d.file != null && ref0 == null && kind != ItemKind.measure) return _fail();
     final r = await ref.read(pregnancyRecordsUseCaseProvider).addItem(
           pregnancyId: preg.id,
           motherId: preg.motherId,
-          about: _me ? ItemAbout.me : ItemAbout.baby,
-          babyIds: _me ? const [] : _babies.toList(),
-          kind: _effectiveKind,
-          recordedOn: _date,
+          about: d.me ? ItemAbout.me : ItemAbout.baby,
+          babyIds: d.me ? const [] : d.babies.toList(),
+          kind: kind,
+          recordedOn: d.date,
           now: DateTime.now(),
           title: _title.text,
           fetalHeartRateBpm: _int(_hr.text),
@@ -123,6 +123,19 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.strings.family.save_failed(s.gender))));
   }
 
+  Future<void> _pickDate(DateTime current) async {
+    final p = AppScope.of(context).strings.pregnancy;
+    final now = DateTime.now();
+    final picked = await pickDay(
+      context,
+      title: p.date,
+      initial: current,
+      first: now.subtract(const Duration(days: 400)),
+      last: now,
+    );
+    if (picked != null && mounted) _notifier.setDate(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -132,11 +145,11 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
     if (preg == null) return const Scaffold(backgroundColor: AppColors.white);
     final all = ref.watch(pregnancyBabiesProvider(preg.id)).value ?? const <PregnancyBaby>[];
     final active = all.where((b) => b.isActive).toList();
-    final chosen = _me || _babies.isNotEmpty;
-    final kinds = _canMeasure ? ItemKind.values : const [ItemKind.scan, ItemKind.doc];
-    final kind = _effectiveKind;
-    final ok = chosen && _numbersParse() && _draft(preg).isSuccess;
-    final allOn = active.length > 1 && active.every((b) => _babies.contains(b.id));
+    final d = ref.watch(pregnancyItemDraftProvider(_key));
+    final kinds = d.canMeasure ? ItemKind.values : const [ItemKind.scan, ItemKind.doc];
+    final kind = d.effectiveKind;
+    final ok = d.chosen && _numbersParse() && _asItem(preg, d).isSuccess;
+    final allOn = active.length > 1 && active.every((b) => d.babies.contains(b.id));
 
     return FamilyScaffold(
       title: p.attach_t,
@@ -157,11 +170,8 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
               _WhoOption(
                 me: true,
                 label: owner == null ? p.me : p.me_of(owner.shortName),
-                on: _me,
-                onTap: () => setState(() {
-                  _me = !_me;
-                  _babies.clear();
-                }),
+                on: d.me,
+                onTap: () => _notifier.toggleMe(),
               ),
               const SizedBox(height: 8),
               LayoutBuilder(
@@ -171,20 +181,18 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
                   return Wrap(
                     spacing: gap,
                     runSpacing: gap,
-                    children: [
-                      for (final b in active)
-                        SizedBox(
-                          width: w,
-                          child: _WhoOption(
-                            label: babyLabel(s, b, all),
-                            on: _babies.contains(b.id),
-                            onTap: () => setState(() {
-                              _me = false;
-                              _babies.contains(b.id) ? _babies.remove(b.id) : _babies.add(b.id);
-                            }),
+                    children: active
+                        .map(
+                          (b) => SizedBox(
+                            width: w,
+                            child: _WhoOption(
+                              label: babyLabel(s, b, all),
+                              on: d.babies.contains(b.id),
+                              onTap: () => _notifier.toggleBaby(b.id),
+                            ),
                           ),
-                        ),
-                    ],
+                        )
+                        .toList(),
                   );
                 },
               ),
@@ -192,10 +200,7 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: TextButton(
-                    onPressed: () => setState(() {
-                      _me = false;
-                      allOn ? _babies.clear() : _babies.addAll(active.map((b) => b.id));
-                    }),
+                    onPressed: () => _notifier.toggleAll(active.map((b) => b.id)),
                     child: Text(
                       allOn ? p.clear_babies : p.all_babies,
                       style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d),
@@ -205,15 +210,15 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
             ],
           ),
         ),
-        if (chosen) ...[
+        if (d.chosen) ...[
           LabelledField(
             label: p.type,
-            help: !_me && _babies.length > 1 ? p.one_at_a_time : null,
+            help: !d.me && d.babies.length > 1 ? p.one_at_a_time : null,
             child: BalsmSegmented<ItemKind>(
               options: kinds,
               labelOf: (k) => itemKindLabel(s, k),
               selected: kind,
-              onChanged: (k) => setState(() => _kind = k),
+              onChanged: (k) => _notifier.setKind(k),
             ),
           ),
           LabelledField(
@@ -228,73 +233,115 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
           ),
           LabelledField(
             label: p.date,
-            child: DayField(
-              value: _date,
-              placeholder: p.pick_date,
-              onTap: () async {
-                final now = DateTime.now();
-                final picked = await pickDay(
-                  context,
-                  title: p.date,
-                  initial: _date,
-                  first: now.subtract(const Duration(days: 400)),
-                  last: now,
-                );
-                if (picked != null && mounted) setState(() => _date = picked);
-              },
-            ),
+            child: DayField(value: d.date, placeholder: p.pick_date, onTap: () => _pickDate(d.date)),
           ),
-          if (kind == ItemKind.measure) ..._measureFields(s) else _fileField(s),
+          if (kind == ItemKind.measure)
+            _MeasureFields(
+              hr: _hr,
+              efw: _efw,
+              otherLabel: _otherLabel,
+              otherValue: _otherValue,
+              onChanged: () => setState(() {}),
+            )
+          else
+            _FileField(file: d.file, onTap: _pickFile),
         ],
       ],
     );
   }
+}
 
-  List<Widget> _measureFields(PatientAppState s) {
+/// A scan's measurements, as written on the report.
+class _MeasureFields extends StatelessWidget {
+  const _MeasureFields({
+    required this.hr,
+    required this.efw,
+    required this.otherLabel,
+    required this.otherValue,
+    required this.onChanged,
+  });
+  final TextEditingController hr;
+  final TextEditingController efw;
+  final TextEditingController otherLabel;
+  final TextEditingController otherValue;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    Widget field(String label, TextEditingController c, {String? hint, bool number = false}) => Expanded(
-          child: LabelledField(
-            label: label,
-            child: TextField(
-              controller: c,
-              keyboardType: number ? TextInputType.number : TextInputType.text,
-              maxLength: PregnancyItem.maxOtherLength,
-              onChanged: (_) => setState(() {}),
-              decoration: fieldDecoration(s, hint).copyWith(counterText: ''),
-            ),
-          ),
-        );
-    return [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          field(p.hr_field, _hr, number: true),
-          const SizedBox(width: 10),
-          field(p.efw_field, _efw, number: true),
-        ],
-      ),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          field(p.other_field, _otherLabel, hint: p.other_ph),
-          const SizedBox(width: 10),
-          field(p.value, _otherValue, hint: p.value_ph),
-        ],
-      ),
-      Text(p.as_written, style: Typo.meta(ar: s.rtl)),
-    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _MeasureField(label: p.hr_field, controller: hr, number: true, onChanged: onChanged),
+            const SizedBox(width: 10),
+            _MeasureField(label: p.efw_field, controller: efw, number: true, onChanged: onChanged),
+          ],
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _MeasureField(label: p.other_field, controller: otherLabel, hint: p.other_ph, onChanged: onChanged),
+            const SizedBox(width: 10),
+            _MeasureField(label: p.value, controller: otherValue, hint: p.value_ph, onChanged: onChanged),
+          ],
+        ),
+        Text(p.as_written, style: Typo.meta(ar: s.rtl)),
+      ],
+    );
   }
+}
 
-  Widget _fileField(PatientAppState s) {
+class _MeasureField extends StatelessWidget {
+  const _MeasureField({
+    required this.label,
+    required this.controller,
+    required this.onChanged,
+    this.hint,
+    this.number = false,
+  });
+  final String label;
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+  final String? hint;
+  final bool number;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: LabelledField(
+          label: label,
+          child: TextField(
+            controller: controller,
+            keyboardType: number ? TextInputType.number : TextInputType.text,
+            maxLength: PregnancyItem.maxOtherLength,
+            onChanged: (_) => onChanged(),
+            decoration: fieldDecoration(AppScope.of(context), hint).copyWith(counterText: ''),
+          ),
+        ),
+      );
+}
+
+/// The scan or document to attach; stored encrypted on this phone.
+class _FileField extends StatelessWidget {
+  const _FileField({required this.file, required this.onTap});
+  final PickedAttach? file;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final f = _file;
+    final f = file;
     return LabelledField(
       label: p.file,
       child: Semantics(
         button: true,
         child: PCard(
           flat: true,
-          onTap: _pickFile,
+          onTap: onTap,
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [

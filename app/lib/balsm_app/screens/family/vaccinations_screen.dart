@@ -9,6 +9,7 @@ import '../../kit.dart';
 import 'family_kit.dart';
 import 'health_log_form.dart';
 import 'profile_bar.dart';
+import 'vaccination_draft.dart';
 
 /// Opens person [id]'s vaccinations (mother-child.jsx `MCVaccScreen`).
 Future<void> openVaccinations(BuildContext context, HealthProfileId id) =>
@@ -300,9 +301,7 @@ class AddVaccinationScreen extends ConsumerStatefulWidget {
 class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
   late final _name = TextEditingController(text: widget.editing?.vaccine ?? widget.vaccine ?? '');
   late final _clinic = TextEditingController(text: widget.editing?.clinic ?? '');
-  late int _dose = widget.editing?.doseNumber ?? widget.dose ?? 1;
-  late DateTime? _given = widget.editing?.administeredOn ?? DateTime.now();
-  late DateTime? _next = widget.editing?.nextDueOn;
+  late final VaccinationDraftKey _key = (form: Object(), editing: widget.editing, dose: widget.dose);
   bool _saving = false;
 
   PatientAppState get s => AppScope.of(context);
@@ -314,36 +313,28 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
     super.dispose();
   }
 
-  bool get _ok => VaccinationRecord.violationsOf(
-        vaccine: _name.text,
-        doseNumber: _dose,
-        administeredOn: _given,
-        clinic: _clinic.text,
-        nextDueOn: _next,
-        now: DateTime.now(),
-      ).isEmpty;
-
   Future<void> _save() async {
     if (_saving) return;
     setState(() => _saving = true);
     final editing = widget.editing;
+    final draft = ref.read(vaccinationDraftProvider(_key));
     final result = editing == null
         ? await ref.read(recordVaccinationUseCaseProvider)(
             vaccine: _name.text,
-            doseNumber: _dose,
-            administeredOn: _given,
+            doseNumber: draft.dose,
+            administeredOn: draft.given,
             clinic: _clinic.text,
-            nextDueOn: _next,
+            nextDueOn: draft.next,
             now: DateTime.now(),
             profileId: widget.id,
           )
         : await ref.read(updateVaccinationUseCaseProvider)(
             id: editing.id,
             vaccine: _name.text,
-            doseNumber: _dose,
-            administeredOn: _given,
+            doseNumber: draft.dose,
+            administeredOn: draft.given,
             clinic: _clinic.text,
-            nextDueOn: _next,
+            nextDueOn: draft.next,
             now: DateTime.now(),
             profileId: widget.id,
           );
@@ -375,9 +366,10 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
   Widget build(BuildContext context) {
     final v = s.strings.vacc;
     final editing = widget.editing;
-    final now = DateTime.now();
-    final given = _given;
-    final doses = [for (var n = 1; n <= (_dose > 5 ? _dose : 5); n++) n];
+    final ok = ref.watch(
+      vaccinationDraftProvider(_key)
+          .select((d) => d.violations(vaccine: _name.text, clinic: _clinic.text, now: DateTime.now()).isEmpty),
+    );
     return FamilyScaffold(
       title: editing == null ? v.add : v.edit_t,
       footer: Column(
@@ -390,7 +382,7 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
             block: true,
             accent: s.accent,
             ar: s.rtl,
-            onTap: _ok && !_saving ? _save : null,
+            onTap: ok && !_saving ? _save : null,
           ),
           if (editing != null) ...[
             const SizedBox(height: 8),
@@ -417,40 +409,8 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
             decoration: logInputDecoration(s, v.f_name_ph),
           ),
         ),
-        LogField(
-          label: v.f_dose,
-          child: LayoutBuilder(
-            builder: (context, c) {
-              const gap = 8.0;
-              final w = (c.maxWidth - gap * 4) / 5;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (final n in doses)
-                    SizedBox(
-                      width: w,
-                      child: _DoseChip(n: n, active: _dose == n, onTap: () => setState(() => _dose = n)),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-        LogField(
-          label: v.f_date,
-          child: LogDateField(
-            value: given,
-            title: v.f_date,
-            first: DateTime(now.year - 120),
-            last: now,
-            onPicked: (d) => setState(() {
-              _given = d;
-              final next = _next;
-              if (next != null && !next.isAfter(d)) _next = null;
-            }),
-          ),
-        ),
+        LogField(label: v.f_dose, child: _DoseField(draftKey: _key)),
+        LogField(label: v.f_date, child: _GivenField(draftKey: _key)),
         LogField(
           label: v.f_clinic,
           child: TextField(
@@ -465,16 +425,85 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
           label: v.f_next,
           trailing: v.optional,
           hint: v.f_next_hint(s.gender),
-          child: LogDateField(
-            value: _next,
-            title: v.f_next,
-            first: (given ?? now).add(const Duration(days: 1)),
-            last: DateTime(now.year + 20),
-            onPicked: (d) => setState(() => _next = d),
-            onClear: () => setState(() => _next = null),
-          ),
+          child: _NextDueField(draftKey: _key),
         ),
       ],
+    );
+  }
+}
+
+/// The dose-number chips: 1–5, or up to the dose being recorded when higher.
+class _DoseField extends ConsumerWidget {
+  const _DoseField({required this.draftKey});
+  final VaccinationDraftKey draftKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dose = ref.watch(vaccinationDraftProvider(draftKey).select((d) => d.dose));
+    final doses = [for (var n = 1; n <= (dose > 5 ? dose : 5); n++) n];
+    return LayoutBuilder(
+      builder: (context, c) {
+        const gap = 8.0;
+        final w = (c.maxWidth - gap * 4) / 5;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: doses
+              .map(
+                (n) => SizedBox(
+                  width: w,
+                  child: _DoseChip(
+                    n: n,
+                    active: dose == n,
+                    onTap: () => ref.read(vaccinationDraftProvider(draftKey).notifier).setDose(n),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+/// The day the dose was given: not after today.
+class _GivenField extends ConsumerWidget {
+  const _GivenField({required this.draftKey});
+  final VaccinationDraftKey draftKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final v = AppScope.of(context).strings.vacc;
+    final given = ref.watch(vaccinationDraftProvider(draftKey).select((d) => d.given));
+    final now = DateTime.now();
+    return LogDateField(
+      value: given,
+      title: v.f_date,
+      first: DateTime(now.year - 120),
+      last: now,
+      onPicked: (d) => ref.read(vaccinationDraftProvider(draftKey).notifier).setGiven(d),
+    );
+  }
+}
+
+/// The optional next due day: after the day given.
+class _NextDueField extends ConsumerWidget {
+  const _NextDueField({required this.draftKey});
+  final VaccinationDraftKey draftKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final v = AppScope.of(context).strings.vacc;
+    final (given, next) = ref.watch(vaccinationDraftProvider(draftKey).select((d) => (d.given, d.next)));
+    final now = DateTime.now();
+    VaccinationDraftNotifier notifier() => ref.read(vaccinationDraftProvider(draftKey).notifier);
+    return LogDateField(
+      value: next,
+      title: v.f_next,
+      first: given.add(const Duration(days: 1)),
+      last: DateTime(now.year + 20),
+      onPicked: (d) => notifier().setNext(d),
+      onClear: () => notifier().setNext(null),
     );
   }
 }

@@ -11,6 +11,7 @@ import '../../widgets/family_qr_scan.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
 import 'family_link_kit.dart';
+import 'link_scan_draft.dart';
 
 /// Opens the scan-to-link flow (mother-child.jsx `MCAddMemberScreen`, mode
 /// `scan`).
@@ -26,15 +27,15 @@ class LinkScanScreen extends ConsumerStatefulWidget {
 }
 
 class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
-  ScannedProfile? _found;
-  LinkRelation? _relation;
+  final Object _screen = Object();
   bool _sending = false;
 
   PatientAppState get s => AppScope.of(context);
 
+  LinkScanDraftNotifier get _draft => ref.read(linkScanDraftProvider(_screen).notifier);
+
   Future<void> _send() async {
-    final found = _found;
-    final relation = _relation;
+    final LinkScanDraft(:found, :relation) = ref.read(linkScanDraftProvider(_screen));
     if (found == null || relation == null || _sending) return;
     setState(() => _sending = true);
     final result = await ref.read(familyLinksProvider.notifier).request(
@@ -61,13 +62,13 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
   @override
   Widget build(BuildContext context) {
     final c = s.strings.common;
-    final found = _found;
+    final (found, canSend) = ref.watch(linkScanDraftProvider(_screen).select((d) => (d.found, d.canSend)));
     if (found == null) {
       return FamilyScaffold(
         title: c.fam_scan_title,
         children: [
           FamilyQrScanView(
-            onFound: (p) => setState(() => _found = p),
+            onFound: (p) => _draft.found(p),
             onManual: _manual,
           ),
         ],
@@ -76,7 +77,7 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
     final name = (found.payload.name ?? '').trim();
     return FamilyScaffold(
       title: c.fam_confirm_title,
-      onBack: () => setState(() => _found = null),
+      onBack: () => _draft.back(),
       footer: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -87,7 +88,7 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
             block: true,
             accent: s.accent,
             ar: s.rtl,
-            onTap: _relation != null && !_sending ? _send : null,
+            onTap: canSend && !_sending ? _send : null,
           ),
           const SizedBox(height: 8),
           PButton(
@@ -95,10 +96,7 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
             variant: BtnVariant.ghost,
             block: true,
             ar: s.rtl,
-            onTap: () => setState(() {
-              _found = null;
-              _relation = null;
-            }),
+            onTap: () => _draft.scanAgain(),
           ),
         ],
       ),
@@ -136,25 +134,39 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
           style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final r in LinkRelation.values)
-              BChip(
-                linkRelationPick(s, r),
-                active: _relation == r,
-                accent: s.accent.main,
-                ar: s.rtl,
-                onTap: () => setState(() => _relation = r),
-              ),
-          ],
-        ),
+        _RelationPicks(screen: _screen),
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(2, 16, 2, 0),
           child: Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
         ),
       ],
+    );
+  }
+}
+
+/// How the scanned person is related to the account holder.
+class _RelationPicks extends ConsumerWidget {
+  const _RelationPicks({required this.screen});
+  final Object screen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final relation = ref.watch(linkScanDraftProvider(screen).select((d) => d.relation));
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: LinkRelation.values
+          .map(
+            (r) => BChip(
+              linkRelationPick(s, r),
+              active: relation == r,
+              accent: s.accent.main,
+              ar: s.rtl,
+              onTap: () => ref.read(linkScanDraftProvider(screen).notifier).setRelation(r),
+            ),
+          )
+          .toList(),
     );
   }
 }

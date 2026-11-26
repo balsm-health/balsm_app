@@ -16,6 +16,7 @@ import 'baby_screen.dart';
 import 'birth_screen.dart';
 import 'pregnancy_add_screen.dart';
 import 'pregnancy_card_screen.dart';
+import 'pregnancy_drafts.dart';
 import 'pregnancy_guidance.dart';
 import 'pregnancy_kit.dart';
 import 'pregnancy_start_screen.dart';
@@ -405,7 +406,7 @@ class _VisitSheet extends ConsumerStatefulWidget {
 }
 
 class _VisitSheetState extends ConsumerState<_VisitSheet> {
-  late DateTime? _date = widget.pregnancy.nextVisit?.date;
+  late final NextVisitDayKey _day = (form: Object(), initial: widget.pregnancy.nextVisit?.date);
   late final _time = TextEditingController(text: widget.pregnancy.nextVisit?.time ?? '');
   late final _clinic = TextEditingController(text: widget.pregnancy.nextVisit?.clinic ?? '');
   bool _saving = false;
@@ -433,7 +434,7 @@ class _VisitSheetState extends ConsumerState<_VisitSheet> {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final now = DateTime.now();
-    final date = _date;
+    final date = ref.watch(nextVisitDayProvider(_day));
     return FamilySheet(
       title: p.next_visit_t,
       children: [
@@ -450,7 +451,7 @@ class _VisitSheetState extends ConsumerState<_VisitSheet> {
                 first: now,
                 last: now.add(const Duration(days: 300)),
               );
-              if (picked != null && mounted) setState(() => _date = picked);
+              if (picked != null && mounted) ref.read(nextVisitDayProvider(_day).notifier).day = picked;
             },
           ),
         ),

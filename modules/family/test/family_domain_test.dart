@@ -186,4 +186,18 @@ void main() {
       expect(sections.single.members.map((m) => m.id.value), ['a', 'b']);
     });
   });
+
+  test('MemberDraft compares by value over every field, so a form provider notifies on each edit', () {
+    MemberDraft draft({String name = 'Test Child', String? newGroup}) => MemberDraft(
+          displayName: name,
+          relationship: Relationship.child,
+          dateOfBirth: DateTime(2020, 3),
+          sex: Sex.female,
+          newGroupName: newGroup,
+        );
+    expect(draft(), draft());
+    expect(draft().hashCode, draft().hashCode);
+    expect(draft(), isNot(draft(name: 'Test Other')));
+    expect(draft(), isNot(draft(newGroup: '')));
+  });
 }

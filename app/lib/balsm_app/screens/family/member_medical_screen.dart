@@ -10,6 +10,7 @@ import '../../kit.dart';
 import '../pregnancy/pregnancy_kit.dart' show fieldDecoration;
 import '../profile_subscreens.dart' show memberHealthProfileProvider;
 import 'family_kit.dart';
+import 'medical_summary_draft.dart';
 
 /// Opens member [m]'s medical profile (mother-child.jsx `MCMedicalScreen`).
 Future<void> openMemberMedical(BuildContext context, FamilyMember m) =>
@@ -26,35 +27,26 @@ class MemberMedicalScreen extends ConsumerStatefulWidget {
 }
 
 class _MemberMedicalScreenState extends ConsumerState<MemberMedicalScreen> {
-  BloodType? _blood;
-  List<String> _allergies = const [];
-  List<String> _conditions = const [];
-
-  /// False until the stored profile has been copied into the form.
-  bool _seeded = false;
+  late final MedicalSummaryKey _key = (form: Object(), id: widget.id);
   bool _saving = false;
   bool _saved = false;
 
-  void _seed(HealthProfile? h) {
-    if (_seeded || h == null) return;
-    _seeded = true;
-    _blood = h.bloodType;
-    _allergies = h.allergies.map((a) => a.name).toList();
-    _conditions = h.conditions.map((c) => c.name).toList();
-  }
-
   Future<void> _save() async {
     final user = ref.read(currentUserIdProvider);
-    if (user == null || _saving) return;
+    final draft = ref.read(medicalSummaryDraftProvider(_key));
+    if (user == null || draft == null || _saving) return;
     setState(() => _saving = true);
+    // The container outlives this screen: the member's card behind it must
+    // refresh even if the form closed while saving.
+    final container = ProviderScope.containerOf(context, listen: false);
     final r = await ref.read(saveMedicalSummaryUseCaseProvider).execute(
           userId: user,
           profileId: widget.id,
-          bloodType: _blood,
-          allergies: _allergies,
-          conditions: _conditions,
+          bloodType: draft.blood,
+          allergies: draft.allergies,
+          conditions: draft.conditions,
         );
-    ref.invalidate(memberHealthProfileProvider(widget.id));
+    container.invalidate(memberHealthProfileProvider(widget.id));
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -76,9 +68,8 @@ class _MemberMedicalScreenState extends ConsumerState<MemberMedicalScreen> {
     final f = s.strings.family;
     final m =
         (ref.watch(familyMembersProvider).value ?? const <FamilyMember>[]).where((x) => x.id == widget.id).firstOrNull;
-    final health = ref.watch(memberHealthProfileProvider(widget.id));
-    if (m == null || !health.hasValue) return const Scaffold(backgroundColor: AppColors.white);
-    _seed(health.value);
+    final seeded = ref.watch(medicalSummaryDraftProvider(_key).select((d) => d != null));
+    if (m == null || !seeded) return const Scaffold(backgroundColor: AppColors.white);
     final editable = m.status == ProfileStatus.active;
 
     return FamilyScaffold(
@@ -100,30 +91,11 @@ class _MemberMedicalScreenState extends ConsumerState<MemberMedicalScreen> {
           child: Text(f.medical_intro(m.shortName), style: Typo.bodySm(ar: s.rtl)),
         ),
         _Head(icon: LucideIcons.droplet, label: f.f_blood),
-        BloodTypeGrid(
-          value: _blood,
-          unsure: _blood == null,
-          enabled: editable,
-          onChanged: (b) => setState(() => _blood = b),
-        ),
+        _BloodField(draftKey: _key, editable: editable),
         _Head(icon: LucideIcons.shieldAlert, label: f.card_allergies),
-        ChipListCard(
-          items: _allergies,
-          onChanged: editable ? (v) => setState(() => _allergies = v) : null,
-          none: f.medical_allergies_none,
-          addHint: f.medical_allergy_ph(s.gender),
-          bg: AppColors.dangerBackground,
-          fg: AppColors.danger,
-        ),
+        _AllergiesField(draftKey: _key, editable: editable),
         _Head(icon: LucideIcons.heartPulse, label: f.medical_conditions),
-        ChipListCard(
-          items: _conditions,
-          onChanged: editable ? (v) => setState(() => _conditions = v) : null,
-          none: f.medical_conditions_none,
-          addHint: f.medical_condition_ph(s.gender),
-          bg: AppColors.hueViolet50,
-          fg: AppColors.hueViolet,
-        ),
+        _ConditionsField(draftKey: _key, editable: editable),
         if (!editable)
           Padding(
             padding: const EdgeInsets.only(top: 14),
@@ -136,6 +108,66 @@ class _MemberMedicalScreenState extends ConsumerState<MemberMedicalScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The member's blood type; none picked is "not sure".
+class _BloodField extends ConsumerWidget {
+  const _BloodField({required this.draftKey, required this.editable});
+  final MedicalSummaryKey draftKey;
+  final bool editable;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final blood = ref.watch(medicalSummaryDraftProvider(draftKey).select((d) => d?.blood));
+    return BloodTypeGrid(
+      value: blood,
+      unsure: blood == null,
+      enabled: editable,
+      onChanged: (b) => ref.read(medicalSummaryDraftProvider(draftKey).notifier).setBlood(b),
+    );
+  }
+}
+
+class _AllergiesField extends ConsumerWidget {
+  const _AllergiesField({required this.draftKey, required this.editable});
+  final MedicalSummaryKey draftKey;
+  final bool editable;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final f = s.strings.family;
+    final items = ref.watch(medicalSummaryDraftProvider(draftKey).select((d) => d?.allergies)) ?? const [];
+    return ChipListCard(
+      items: items,
+      onChanged: editable ? (v) => ref.read(medicalSummaryDraftProvider(draftKey).notifier).setAllergies(v) : null,
+      none: f.medical_allergies_none,
+      addHint: f.medical_allergy_ph(s.gender),
+      bg: AppColors.dangerBackground,
+      fg: AppColors.danger,
+    );
+  }
+}
+
+class _ConditionsField extends ConsumerWidget {
+  const _ConditionsField({required this.draftKey, required this.editable});
+  final MedicalSummaryKey draftKey;
+  final bool editable;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final f = s.strings.family;
+    final items = ref.watch(medicalSummaryDraftProvider(draftKey).select((d) => d?.conditions)) ?? const [];
+    return ChipListCard(
+      items: items,
+      onChanged: editable ? (v) => ref.read(medicalSummaryDraftProvider(draftKey).notifier).setConditions(v) : null,
+      none: f.medical_conditions_none,
+      addHint: f.medical_condition_ph(s.gender),
+      bg: AppColors.hueViolet50,
+      fg: AppColors.hueViolet,
     );
   }
 }

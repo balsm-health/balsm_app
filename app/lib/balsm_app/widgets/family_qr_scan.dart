@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
@@ -11,12 +10,12 @@ import '../kit.dart';
 import '../routes.dart';
 import '../tokens.dart';
 import 'permission_denied.dart';
+import 'qr_scan_resolve.dart';
+
+export 'qr_scan_resolve.dart' show ScannedProfile;
 
 // One pass of the scan line.
 const _scanLineLoop = Duration(milliseconds: 2200);
-
-/// A successfully scanned + decrypted profile QR.
-typedef ScannedProfile = ({String jti, ProfileQrPayload payload});
 
 /// Design `QRScanView`: live camera viewfinder with corner brackets and a
 /// sweeping scan line. Recognises Balsm profile-QR URLs (`/t/{jti}#k=…`,
@@ -35,8 +34,7 @@ class FamilyQrScanView extends ConsumerStatefulWidget {
 
 class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
   final _controller = MobileScannerController(formats: [BarcodeFormat.qrCode]);
-  bool _busy = false;
-  bool _found = false;
+  final Object _view = Object();
   String? _flash;
   Timer? _flashTimer;
 
@@ -73,7 +71,8 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_busy || _found) return;
+    final scan = qrScanProvider(_view);
+    if (ref.read(scan) is! QrScanIdle) return;
     final s = AppScope.of(context);
     final raw = capture.barcodes.firstOrNull?.rawValue;
     final parsed = _parse(raw);
@@ -81,37 +80,30 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
       if (raw != null) _note(s.strings.common.fam_scan_invalid);
       return;
     }
-    setState(() => _busy = true);
-    // You cannot add yourself: your own permanent QR carries your own jti.
-    final own = await ref.read(permanentQrStoreProvider).read();
+    final outcome = await ref.read(scan.notifier).resolve(jti: parsed.jti, key: parsed.key);
     if (!mounted) return;
-    if (own != null && own.jti == parsed.jti) {
-      setState(() => _busy = false);
-      _note(s.strings.common.fam_self_add);
-      return;
+    switch (outcome) {
+      case null:
+        return;
+      case QrResolveOutcome.ownCode:
+        _note(s.strings.common.fam_self_add);
+      case QrResolveOutcome.failed:
+        _note(s.strings.common.fam_scan_failed(s.gender));
+      case QrResolveOutcome.found:
+        unawaited(_controller.stop());
+        // Design: hold the mint check a beat before handing over.
+        Timer(const Duration(milliseconds: 620), () {
+          if (!mounted) return;
+          if (ref.read(scan) case QrScanFound(:final profile)) widget.onFound(profile);
+        });
     }
-    final result =
-        await ref.read(resolveEmergencyQrTokenUseCaseProvider).call(tokenId: parsed.jti, keyBase64Url: parsed.key);
-    if (!mounted) return;
-    final resolved = result.fold((v) => v, (_) => null);
-    final payload = resolved?.payload;
-    if (payload == null) {
-      setState(() => _busy = false);
-      _note(s.strings.common.fam_scan_failed(s.gender));
-      return;
-    }
-    setState(() => _found = true);
-    unawaited(_controller.stop());
-    // Design: hold the mint check a beat before handing over.
-    Timer(const Duration(milliseconds: 620), () {
-      if (mounted) widget.onFound((jti: parsed.jti, payload: payload));
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final accentLine = _found ? AppColors.hueMint600 : AppColors.white;
+    final found = ref.watch(qrScanProvider(_view).select((q) => q is QrScanFound));
+    final accentLine = found ? AppColors.hueMint600 : AppColors.white;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,8 +178,8 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
                       ),
                     ),
                   ),
-                if (!_found) const _ScanLine(),
-                if (_found)
+                if (!found) const _ScanLine(),
+                if (found)
                   Center(
                     child: Container(
                       width: 62,
@@ -210,7 +202,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
                       ),
                     ),
                     child: Text(
-                      _flash ?? (_found ? s.strings.common.fam_code_found : s.strings.common.fam_point_camera),
+                      _flash ?? (found ? s.strings.common.fam_code_found : s.strings.common.fam_point_camera),
                       textAlign: TextAlign.center,
                       style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white, fontWeight: FontWeight.w500),
                     ),

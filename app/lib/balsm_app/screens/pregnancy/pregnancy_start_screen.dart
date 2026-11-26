@@ -8,10 +8,9 @@ import '../../app_state.dart';
 import '../../kit.dart';
 import '../../shell.dart';
 import '../family/family_kit.dart';
+import 'pregnancy_drafts.dart';
 import 'pregnancy_kit.dart';
 import 'pregnancy_screen.dart';
-
-enum _Mode { due, lastPeriod }
 
 /// The first and last day the start screen's date pickers offer, counted in
 /// calendar days to match the domain's rules (`Pregnancy.start`).
@@ -42,10 +41,7 @@ class PregnancyStartScreen extends ConsumerStatefulWidget {
 }
 
 class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
-  _Mode _mode = _Mode.due;
-  DateTime? _date;
-  DateTime? _visit;
-  int _count = 1;
+  final Object _form = Object();
   final _ob = TextEditingController();
   final _phone = TextEditingController();
   bool _saving = false;
@@ -57,26 +53,23 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
     super.dispose();
   }
 
-  DateTime? get _due {
-    final d = _date;
-    if (d == null) return null;
-    return _mode == _Mode.due ? d : PregnancyDates.dueFromLastPeriod(d);
-  }
+  PregnancyStartDraftNotifier get _draft => ref.read(pregnancyStartDraftProvider(_form).notifier);
 
   Future<void> _pick() async {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final now = DateTime.now();
-    final due = _mode == _Mode.due;
+    final PregnancyStartDraft(:mode, :date) = ref.read(pregnancyStartDraftProvider(_form));
+    final due = mode == PregnancyStartMode.due;
     final range = startPickerRange(now, dueDate: due);
     final picked = await pickDay(
       context,
       title: due ? p.due_date : p.lmp,
-      initial: _date ?? now,
+      initial: date ?? now,
       first: range.first,
       last: range.last,
     );
-    if (picked != null && mounted) setState(() => _date = picked);
+    if (picked != null && mounted) _draft.setDate(picked);
   }
 
   /// The optional next antenatal visit: today up to the latest possible due date.
@@ -86,26 +79,29 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
     final picked = await pickDay(
       context,
       title: p.visit_date,
-      initial: _visit ?? now,
+      initial: ref.read(pregnancyStartDraftProvider(_form)).visit ?? now,
       first: DateTime(now.year, now.month, now.day),
       last: DateTime(now.year, now.month, now.day + Pregnancy.maxDaysAhead),
     );
-    if (picked != null && mounted) setState(() => _visit = picked);
+    if (picked != null && mounted) _draft.setVisit(picked);
   }
 
   Future<void> _save() async {
-    final due = _due;
+    if (_saving) return;
     final mother = widget.mother ?? await ref.read(selfProfileIdProvider.future);
+    if (!mounted) return;
+    final draft = ref.read(pregnancyStartDraftProvider(_form));
+    final due = draft.due;
     if (due == null || mother == null || _saving) return;
     setState(() => _saving = true);
     final r = await ref.read(startPregnancyUseCaseProvider)(
       motherId: mother,
       dueDate: due,
-      babyCount: _count,
+      babyCount: draft.count,
       now: DateTime.now(),
       obName: _ob.text,
       obPhone: _phone.text,
-      nextVisitOn: _visit,
+      nextVisitOn: draft.visit,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -127,7 +123,7 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final due = _due;
+    final (mode, due) = ref.watch(pregnancyStartDraftProvider(_form).select((d) => (d.mode, d.due)));
     final owner = pregnancyOwner(ref, widget.mother);
     return FamilyScaffold(
       title: owner == null ? p.title : p.title_of(owner.shortName),
@@ -149,25 +145,22 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 18),
-          child: BalsmSegmented<_Mode>(
-            options: _Mode.values,
-            labelOf: (m) => m == _Mode.due ? p.mode_due : p.mode_lmp,
-            selected: _mode,
-            onChanged: (m) => setState(() {
-              _mode = m;
-              _date = null;
-            }),
+          child: BalsmSegmented<PregnancyStartMode>(
+            options: PregnancyStartMode.values,
+            labelOf: (m) => m == PregnancyStartMode.due ? p.mode_due : p.mode_lmp,
+            selected: mode,
+            onChanged: (m) => _draft.setMode(m),
           ),
         ),
         LabelledField(
-          label: _mode == _Mode.due ? p.due_date : p.lmp,
-          help: _mode == _Mode.lastPeriod && due != null ? '${p.est_due} ${formatDay(due)}' : null,
-          child: DayField(value: _date, placeholder: p.pick_date, onTap: _pick),
+          label: mode == PregnancyStartMode.due ? p.due_date : p.lmp,
+          help: mode == PregnancyStartMode.lastPeriod && due != null ? '${p.est_due} ${formatDay(due)}' : null,
+          child: _StartDayField(form: _form, onTap: _pick),
         ),
         LabelledField(
           label: p.how_many,
           help: p.add_later,
-          child: _BabyCountStepper(count: _count, onChanged: (n) => setState(() => _count = n)),
+          child: _BabyCountStepper(form: _form),
         ),
         LabelledField(
           label: p.ob,
@@ -189,35 +182,55 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
         ),
         LabelledField(
           label: '${p.next_visit_t} · ${s.strings.family.optional}',
-          child: DayField(value: _visit, placeholder: p.pick_date, onTap: _pickVisit),
+          child: _VisitDayField(form: _form, onTap: _pickVisit),
         ),
       ],
     );
   }
 }
 
+/// The due date or last period's first day, as picked.
+class _StartDayField extends ConsumerWidget {
+  const _StartDayField({required this.form, required this.onTap});
+  final Object form;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => DayField(
+        value: ref.watch(pregnancyStartDraftProvider(form).select((d) => d.date)),
+        placeholder: AppScope.of(context).strings.pregnancy.pick_date,
+        onTap: onTap,
+      );
+}
+
+/// The optional next antenatal visit, as picked.
+class _VisitDayField extends ConsumerWidget {
+  const _VisitDayField({required this.form, required this.onTap});
+  final Object form;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => DayField(
+        value: ref.watch(pregnancyStartDraftProvider(form).select((d) => d.visit)),
+        placeholder: AppScope.of(context).strings.pregnancy.pick_date,
+        onTap: onTap,
+      );
+}
+
 /// How many babies, 1 to [Pregnancy.maxBabies] (design `MCPregStartScreen`):
 /// a − / + stepper with the count in the middle and, from two babies, what
 /// that is called ("Twin pregnancy"…). Each button dims and stops at its end.
-class _BabyCountStepper extends StatelessWidget {
-  const _BabyCountStepper({required this.count, required this.onChanged});
-  final int count;
-  final ValueChanged<int> onChanged;
+class _BabyCountStepper extends ConsumerWidget {
+  const _BabyCountStepper({required this.form});
+  final Object form;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
+    final count = ref.watch(pregnancyStartDraftProvider(form).select((d) => d.count));
     final type = pregnancyTypeLabel(s, count);
-    Widget step(IconData icon, String label, int to, {required bool enabled}) => Opacity(
-          opacity: enabled ? 1 : 0.4,
-          child: RoundBtn(
-            icon: icon,
-            semanticLabel: label,
-            iconSize: 18,
-            onTap: enabled ? () => onChanged(to) : null,
-          ),
-        );
+    void setCount(int n) => ref.read(pregnancyStartDraftProvider(form).notifier).setCount(n);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
@@ -227,7 +240,11 @@ class _BabyCountStepper extends StatelessWidget {
       ),
       child: Row(
         children: [
-          step(LucideIcons.minus, p.fewer_babies, count - 1, enabled: count > 1),
+          _CountStep(
+            icon: LucideIcons.minus,
+            label: p.fewer_babies,
+            onTap: count > 1 ? () => setCount(count - 1) : null,
+          ),
           Expanded(
             // Announced as it changes, so a screen-reader user hears the count.
             child: Semantics(
@@ -245,9 +262,27 @@ class _BabyCountStepper extends StatelessWidget {
               ),
             ),
           ),
-          step(LucideIcons.plus, p.more_babies, count + 1, enabled: count < Pregnancy.maxBabies),
+          _CountStep(
+            icon: LucideIcons.plus,
+            label: p.more_babies,
+            onTap: count < Pregnancy.maxBabies ? () => setCount(count + 1) : null,
+          ),
         ],
       ),
     );
   }
+}
+
+/// One end of the baby-count stepper; dimmed and inert at its limit.
+class _CountStep extends StatelessWidget {
+  const _CountStep({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+        opacity: onTap == null ? 0.4 : 1,
+        child: RoundBtn(icon: icon, semanticLabel: label, iconSize: 18, onTap: onTap),
+      );
 }

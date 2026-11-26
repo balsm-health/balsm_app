@@ -99,7 +99,8 @@ class LogDateField extends StatelessWidget {
       rtl: s.rtl,
       accent: s.accent.main,
     );
-    if (picked != null) onPicked(picked);
+    // The form may have closed while the picker was open.
+    if (picked != null && context.mounted) onPicked(picked);
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app_state.dart';
 import '../../kit.dart';
 import 'family_kit.dart';
+import 'growth_draft.dart';
 import 'health_log_form.dart';
 import 'profile_bar.dart';
 
@@ -29,11 +30,8 @@ class GrowthScreen extends ConsumerStatefulWidget {
 class _GrowthScreenState extends ConsumerState<GrowthScreen> {
   final _weight = TextEditingController();
   final _height = TextEditingController();
-  DateTime _day = DateTime.now();
+  final Object _form = Object();
   bool _saving = false;
-
-  /// The entry loaded into the form, or null when the form adds a new one.
-  GrowthEntry? _editing;
 
   PatientAppState get s => AppScope.of(context);
 
@@ -59,10 +57,10 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
       return;
     }
     setState(() => _saving = true);
-    final editing = _editing;
+    final GrowthDraft(:day, :editing) = ref.read(growthDraftProvider(_form));
     final result = editing == null
         ? await ref.read(recordGrowthEntryUseCaseProvider)(
-            measuredOn: _day,
+            measuredOn: day,
             weightKg: w,
             heightCm: h,
             now: DateTime.now(),
@@ -70,7 +68,7 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
           )
         : await ref.read(updateGrowthEntryUseCaseProvider)(
             id: editing.id,
-            measuredOn: _day,
+            measuredOn: day,
             weightKg: w,
             heightCm: h,
             now: DateTime.now(),
@@ -91,19 +89,17 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
   }
 
   /// Back to adding a new entry, with an empty form dated today.
-  void _reset() => setState(() {
-        _weight.clear();
-        _height.clear();
-        _day = DateTime.now();
-        _editing = null;
-      });
+  void _reset() {
+    _weight.clear();
+    _height.clear();
+    ref.read(growthDraftProvider(_form).notifier).reset();
+  }
 
-  void _startEdit(GrowthEntry e) => setState(() {
-        _editing = e;
-        _weight.text = switch (e.weightKg) { final weightKg? => formatMeasure(weightKg), _ => '' };
-        _height.text = switch (e.heightCm) { final heightCm? => formatMeasure(heightCm), _ => '' };
-        _day = e.measuredOn;
-      });
+  void _startEdit(GrowthEntry e) {
+    _weight.text = switch (e.weightKg) { final weightKg? => formatMeasure(weightKg), _ => '' };
+    _height.text = switch (e.heightCm) { final heightCm? => formatMeasure(heightCm), _ => '' };
+    ref.read(growthDraftProvider(_form).notifier).startEdit(e);
+  }
 
   Future<void> _delete(GrowthEntry e) async {
     final g = s.strings.growth;
@@ -116,15 +112,14 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
       messenger.showSnackBar(SnackBar(content: Text(s.strings.family.save_failed(s.gender))));
       return;
     }
-    if (_editing?.id == e.id) _reset();
+    if (ref.read(growthDraftProvider(_form)).editing?.id == e.id) _reset();
   }
 
   @override
   Widget build(BuildContext context) {
     final g = s.strings.growth;
     final entries = ref.watch(growthEntriesProvider(widget.id)).value;
-    final now = DateTime.now();
-    final editing = _editing;
+    final editing = ref.watch(growthDraftProvider(_form).select((d) => d.editing));
     return FamilyScaffold(
       title: g.title,
       bar: const ProfileBar(),
@@ -146,20 +141,24 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: LogField(label: g.weight, child: _number(_weight))),
+                  Expanded(
+                    child: LogField(
+                      label: g.weight,
+                      child: _MeasureField(controller: _weight, onChanged: () => setState(() {})),
+                    ),
+                  ),
                   const SizedBox(width: 10),
-                  Expanded(child: LogField(label: g.height, child: _number(_height))),
+                  Expanded(
+                    child: LogField(
+                      label: g.height,
+                      child: _MeasureField(controller: _height, onChanged: () => setState(() {})),
+                    ),
+                  ),
                 ],
               ),
               LogField(
                 label: g.date,
-                child: LogDateField(
-                  value: _day,
-                  title: g.date,
-                  first: DateTime(now.year - 120),
-                  last: now,
-                  onPicked: (d) => setState(() => _day = d),
-                ),
+                child: _GrowthDayField(form: _form),
               ),
               PButton(
                 editing == null ? g.add : g.save_changes,
@@ -209,19 +208,47 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
       ],
     );
   }
+}
 
-  Widget _number(TextEditingController c) => TextField(
-        controller: c,
+/// A weight or height: digits (Western or Arabic-Indic) and one separator.
+class _MeasureField extends StatelessWidget {
+  const _MeasureField({required this.controller, required this.onChanged});
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) => TextField(
+        controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp('[0-9٠-٩۰-۹.,٫]')),
           LengthLimitingTextInputFormatter(6),
         ],
         textDirection: TextDirection.ltr,
-        onChanged: (_) => setState(() {}),
+        onChanged: (_) => onChanged(),
         style: Typo.num(weight: FontWeight.w500),
-        decoration: logInputDecoration(s, null),
+        decoration: logInputDecoration(AppScope.of(context), null),
       );
+}
+
+/// The day measured: not after today.
+class _GrowthDayField extends ConsumerWidget {
+  const _GrowthDayField({required this.form});
+  final Object form;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = AppScope.of(context).strings.growth;
+    final day = ref.watch(growthDraftProvider(form).select((d) => d.day));
+    final now = DateTime.now();
+    return LogDateField(
+      value: day,
+      title: g.date,
+      first: DateTime(now.year - 120),
+      last: now,
+      onPicked: (d) => ref.read(growthDraftProvider(form).notifier).setDay(d),
+    );
+  }
 }
 
 /// One measurement: tap to edit it in the form above, or the bin to delete.

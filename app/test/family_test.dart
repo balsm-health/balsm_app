@@ -246,6 +246,33 @@ void main() {
       expect(find.text('Test Son'), findsOne);
       expect(find.text(f.group_family), findsOne);
     });
+
+    testWidgets('a group named in the form is created and the member filed under it', (tester) async {
+      final state = familyState();
+      final f = state.strings.family;
+      final c = await pump(tester, const FamilyScreen(), state);
+      await tester.tap(find.text(f.add_member));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(f.manual_t));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(f.pick_daughter));
+      await tester.enterText(find.byType(TextField).first, 'Test Daughter');
+      await tester.tap(find.text('+ ${f.new_group}'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'Test Group');
+      await tester.tap(find.text(f.f_dob_ph));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(state.strings.onboarding.dob_confirm));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PButton, f.save));
+      await tester.pumpAndSettle();
+
+      final member = (await c.read(familyMembersPortProvider).listMembers()).single;
+      expect(member.sex, Sex.female, reason: 'the Daughter chip sets the sex');
+      final groups = await c.read(memberGroupsProvider.future);
+      expect(groups.where((g) => g.id == member.groupId).single.name, 'Test Group');
+    });
   });
 
   group('People picker', () {
