@@ -18,7 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const host = 'app.balsm.health';
   const bundleId = 'app.balsm.health';
-  const teamId = '8F78S7D344';
+  const teamId = '56V9N23Y78';
 
   String read(String path) => File(path).readAsStringSync();
 
