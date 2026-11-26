@@ -190,6 +190,43 @@ void main() {
     expect(cancel.calls, 0, reason: 'a disposed flow must not go on to cancel the deletion');
   });
 
+  test('a code that fails to send while a verify is running does not re-enable Submit', () async {
+    final c = make();
+    hold(c, DeletionEntry.publicCancel);
+    final flow = c.read(deletionFlowProvider(DeletionEntry.publicCancel).notifier);
+    final verify = flow.verify(_credentials);
+    final send = flow.sendCode('id');
+
+    reauth.challenge.complete(AppResult.failure(const OfflineFailure()));
+    await send;
+    final during = c.read(deletionFlowProvider(DeletionEntry.publicCancel));
+    expect(during.failure, isA<OfflineFailure>(), reason: 'the send failure is shown');
+    expect(during.submitting, isTrue, reason: 'the verify is still running');
+
+    await flow.verify(_credentials);
+    expect(reauth.verifies, 1, reason: 'a second Submit must not start a second request');
+    reauth.verifyAnswer.complete(AppResult.success(null));
+    await verify;
+    expect(cancel.calls, 1);
+  });
+
+  test('a send-code failure that landed during the verify does not follow the flow to the next step', () async {
+    final c = make();
+    hold(c, DeletionEntry.publicDelete);
+    final flow = c.read(deletionFlowProvider(DeletionEntry.publicDelete).notifier);
+    final verify = flow.verify(_credentials);
+    final send = flow.sendCode('id');
+    reauth.challenge.complete(AppResult.failure(const OfflineFailure()));
+    await send;
+
+    reauth.verifyAnswer.complete(AppResult.success(null));
+    await verify;
+    final after = c.read(deletionFlowProvider(DeletionEntry.publicDelete));
+    expect(after.stage, DeletionStage.preconfirm);
+    expect(after.submitting, isFalse);
+    expect(after.failure, isNull, reason: 'its Retry button would request the deletion');
+  });
+
   test('the state compares by value over every field', () {
     final a = DeletionFlow(stage: DeletionStage.scheduled, graceUntil: DateTime.utc(2030));
     final b = DeletionFlow(stage: DeletionStage.scheduled, graceUntil: DateTime.utc(2030));

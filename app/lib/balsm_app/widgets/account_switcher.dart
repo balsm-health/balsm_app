@@ -433,6 +433,15 @@ class _AddFamilyMemberSheetState extends ConsumerState<_AddFamilyMemberSheet> {
   PatientAppState get s => widget.s;
 
   @override
+  void initState() {
+    super.initState();
+    // Only the manual and found bodies watch the draft, so without this it is
+    // disposed whenever the sheet is in choose or scan mode and the typed name
+    // or picked relation is lost on the way back.
+    ref.listenManual(addFamilyMemberDraftProvider(_sheet), (_, __) {});
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     super.dispose();

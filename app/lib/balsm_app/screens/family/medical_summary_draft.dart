@@ -52,19 +52,24 @@ typedef MedicalSummaryKey = ({Object form, HealthProfileId id});
 
 /// Null until the stored profile has loaded; then seeded from it once, so a
 /// reload (the form refreshes the profile after every save, failed or not)
-/// never throws away what the user is typing.
+/// never throws away what the user is typing. A member with no stored profile
+/// (closed, or never filled in) is seeded with an empty draft, so the screen
+/// still opens, locked when the member is not active.
 class MedicalSummaryDraftNotifier extends Notifier<MedicalSummaryDraft?> {
   MedicalSummaryDraftNotifier(this.args);
   final MedicalSummaryKey args;
 
   @override
   MedicalSummaryDraft? build() {
-    final stored = ref.listen(memberHealthProfileProvider(args.id), (_, next) {
-      final h = next.value;
-      if (state == null && h != null) state = MedicalSummaryDraft.from(h);
-    });
-    return switch (stored.read().value) { final h? => MedicalSummaryDraft.from(h), _ => null };
+    final stored = ref.listen(memberHealthProfileProvider(args.id), (_, next) => state ??= _seeded(next));
+    return _seeded(stored.read());
   }
+
+  static MedicalSummaryDraft? _seeded(AsyncValue<HealthProfile?> profile) => switch (profile) {
+        AsyncData(:final value?) => MedicalSummaryDraft.from(value),
+        AsyncData() => MedicalSummaryDraft(),
+        _ => null,
+      };
 
   void setBlood(BloodType? b) => _edit((d) => d.withBlood(b));
   void setAllergies(List<String> v) => _edit((d) => d.withAllergies(v));

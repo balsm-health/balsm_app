@@ -141,6 +141,18 @@ void main() {
     });
   });
 
+  group('MedicalSummaryDraft without a stored profile', () {
+    const id = HealthProfileId.value('hp-test');
+
+    test('a member with nothing stored still gets an empty draft, so the screen opens', () async {
+      final c = container([memberHealthProfileProvider(id).overrideWith((ref) async => null)]);
+      final sub = c.listen(medicalSummaryDraftProvider((form: Object(), id: id)), (_, __) {});
+      expect(sub.read(), isNull, reason: 'still loading');
+      await c.read(memberHealthProfileProvider(id).future);
+      expect(sub.read(), MedicalSummaryDraft(), reason: 'null draft would leave the screen blank for good');
+    });
+  });
+
   group('MemberForm', () {
     final now = DateTime(2030, 6, 15);
 

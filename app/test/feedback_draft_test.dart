@@ -1,3 +1,4 @@
+import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/screens/feedback_draft.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,15 @@ class _FakeReporter implements FeedbackReporter {
     sent.add(feedback);
     return ok;
   }
+}
+
+/// A store whose every read fails, as a locked or corrupt preferences file does.
+class _UnreadableKV implements GlobalKVDataSource {
+  @override
+  Future<T?> get<T>(String key) => Future.error(StateError('unreadable'));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => Future<void>.value();
 }
 
 /// The feedback sheet's rating and topics live in one notifier, which the
@@ -59,6 +69,19 @@ void main() {
 
     expect(await c.read(provider.notifier).submit(note: '', topicOrder: const []), isFalse);
     expect(reporter.sent, isEmpty);
+  });
+
+  test('a preferences store that cannot be read still leaves a usable form', () async {
+    final reporter = _FakeReporter(ok: true);
+    final c = containerWith(reporter);
+    final provider = feedbackDraftProvider(PatientAppPrefs(_UnreadableKV()));
+    final sub = c.listen(provider, (_, __) {});
+    addTearDown(sub.close);
+
+    final draft = await c.read(provider.future);
+    expect(draft.rating, 0);
+    c.read(provider.notifier).rate(5);
+    expect(c.read(provider).value?.rating, 5, reason: 'taps are not ignored after a failed load');
   });
 
   test('a failed send reports false', () async {

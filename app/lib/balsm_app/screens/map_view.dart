@@ -1,3 +1,4 @@
+import 'package:core/core.dart' show currentUserIdProvider;
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -10,13 +11,17 @@ import '../care/care_entity.dart';
 /// than the fallback shown before the location resolved.
 typedef MapView = ({LatLng center, double zoom, bool placed});
 
-/// The map's last camera. Not auto-disposed: it is meant to outlive the route.
+/// The map's last camera. Not auto-disposed: it is meant to outlive the route,
+/// but not the account: it resets when the signed-in user changes.
 ///
 /// Updated on every camera move, so a widget watches it only through a
 /// `select` that changes rarely (zoomed past the query floor or not).
 class MapViewNotifier extends Notifier<MapView?> {
   @override
-  MapView? build() => null;
+  MapView? build() {
+    ref.watch(currentUserIdProvider);
+    return null;
+  }
 
   void remember(LatLng center, double zoom, {required bool placed}) =>
       state = (center: center, zoom: zoom, placed: placed);
@@ -83,7 +88,11 @@ class MapPanNotifier extends Notifier<MapPan> {
   static const double researchThresholdMeters = 600;
 
   @override
-  MapPan build() => const MapPan();
+  MapPan build() {
+    // Per account, like the camera and the search it offers to repeat.
+    ref.watch(currentUserIdProvider);
+    return const MapPan();
+  }
 
   /// The patient panned or zoomed to [area].
   void panned(CareArea area) {

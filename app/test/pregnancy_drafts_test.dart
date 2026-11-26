@@ -61,6 +61,16 @@ void main() {
       expect(d.dob, DateTime(2020, 5), reason: 'the date of birth stays');
     });
 
+    test('choosing the baby that is already chosen keeps what was typed', () {
+      final items = [
+        item('i1', [babyA]),
+      ];
+      final typed =
+          BirthDraft(dob: DateTime(2020, 5)).choose(baby(babyA, 1, name: 'Test Baby'), items).withName('Typed Name');
+      expect(typed.choose(baby(babyA, 1, name: 'Test Baby'), items), same(typed));
+      expect(typed.choose(baby(babyB, 2), items).name, '', reason: 'another baby still starts afresh');
+    });
+
     test('ticks toggle, and sets compare by value', () {
       final d = BirthDraft(keep: {const PregnancyItemId.value('i1')});
       final off = d.toggleKeep(const PregnancyItemId.value('i1'));

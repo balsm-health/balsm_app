@@ -87,6 +87,12 @@ class DeletionFlow {
   /// A request failed: back to idle on the same step, showing [f].
   DeletionFlow failed(AppFailure f) => DeletionFlow(stage: stage, channel: channel, failure: f, graceUntil: graceUntil);
 
+  /// A failure that lands while another request is still running (a code that
+  /// failed to send while the form is verifying): shown, but that request is
+  /// unfinished, so [submitting] stays and Submit stays disabled.
+  DeletionFlow withFailure(AppFailure f) =>
+      DeletionFlow(stage: stage, channel: channel, submitting: submitting, failure: f, graceUntil: graceUntil);
+
   DeletionFlow withoutFailure() => DeletionFlow(
         stage: stage,
         channel: channel,
@@ -133,7 +139,7 @@ class DeletionFlowNotifier extends Notifier<DeletionFlow> {
     state = state.withoutFailure();
     final sent = await ref.read(reauthPortProvider).requestChallenge(state.channel, identifier);
     if (!ref.mounted) return;
-    if (sent case AppFailureResult(:final failure)) state = state.failed(failure);
+    if (sent case AppFailureResult(:final failure)) state = state.withFailure(failure);
   }
 
   /// Verifies the code. Nothing here trusts the form: the only way past this
@@ -150,6 +156,9 @@ class DeletionFlowNotifier extends Notifier<DeletionFlow> {
       state = state.failed(failure);
       return;
     }
+    // A send-code failure that landed during the verify is about the step
+    // being left, so it must not follow the flow into the next one.
+    state = state.withoutFailure();
     if (entry == DeletionEntry.publicCancel) {
       await _cancel();
     } else {

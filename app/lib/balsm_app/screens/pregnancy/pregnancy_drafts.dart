@@ -116,12 +116,17 @@ class BirthDraft {
 
   /// Choosing a baby starts its answers afresh: its given name, no sex or
   /// blood type, and every record about it ticked. The date of birth stays.
-  BirthDraft choose(PregnancyBaby b, List<PregnancyItem> items) => BirthDraft(
-        babyId: b.id,
-        name: b.givenName ?? '',
-        dob: dob,
-        keep: items.where((i) => i.isAbout(b.id)).map((i) => i.id).toSet(),
-      );
+  /// Choosing the baby already chosen changes nothing: the name field only
+  /// re-syncs when the baby changes, so a reset here would make the form save
+  /// a name other than the one it shows.
+  BirthDraft choose(PregnancyBaby b, List<PregnancyItem> items) => b.id == babyId
+      ? this
+      : BirthDraft(
+          babyId: b.id,
+          name: b.givenName ?? '',
+          dob: dob,
+          keep: items.where((i) => i.isAbout(b.id)).map((i) => i.id).toSet(),
+        );
 
   BirthDraft _with({
     String? name,

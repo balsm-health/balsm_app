@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/day_records_screen.dart';
@@ -28,6 +30,20 @@ class _Recorder extends UpdateCheckInUseCase {
   }
 }
 
+/// Holds every store until `gate` completes, so two deletes can be confirmed
+/// before the first has reached the store.
+class _Gated extends _Recorder {
+  _Gated(super.dao);
+
+  final gate = Completer<void>();
+
+  @override
+  Future<bool> call(CheckIn edited) async {
+    await gate.future;
+    return super.call(edited);
+  }
+}
+
 void main() {
   final bpOnly = CheckIn(
     id: const CheckInId.value('chk-1'),
@@ -39,7 +55,12 @@ void main() {
     vitals: const Vitals(systolic: 118, diastolic: 76, glucoseFasting: 95),
   );
 
-  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester, List<CheckIn> checkIns, {bool ar = false}) async {
+  Future<(_Recorder, PatientAppState)> pump(
+    WidgetTester tester,
+    List<CheckIn> checkIns, {
+    bool ar = false,
+    _Recorder Function(CheckInsDataSource ds)? recorderFor,
+  }) async {
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
     final db = AppDatabase(NativeDatabase.memory());
@@ -48,7 +69,7 @@ void main() {
     for (final ci in checkIns) {
       await ds.put(ci.id, ci);
     }
-    final recorder = _Recorder(ds);
+    final recorder = recorderFor?.call(ds) ?? _Recorder(ds);
     tester.view.physicalSize = const Size(390, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -94,6 +115,23 @@ void main() {
     await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.text(s.strings.common.del)));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('two quick deletes on one check-in both hold: the second does not bring the first back', (tester) async {
+    late _Gated gated;
+    final (_, s) = await pump(tester, [bpOnly], recorderFor: (ds) => gated = _Gated(ds));
+
+    // The first store is still running when the second delete is confirmed.
+    await openMenu(tester, s, s.strings.profile.m_bp);
+    await confirm(tester, s);
+    await openMenu(tester, s, s.strings.profile.m_glucose);
+    await confirm(tester, s);
+    gated.gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(gated.stored, hasLength(2));
+    expect(gated.stored.last.vitals.systolic, isNull, reason: 'the first delete is not undone by the second');
+    expect(gated.stored.last.vitals.glucoseFasting, isNull);
+  });
 
   testWidgets('a quick BP log shows no pain row', (tester) async {
     final (_, s) = await pump(tester, [bpOnly]);

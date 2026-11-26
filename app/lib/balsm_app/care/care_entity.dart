@@ -405,6 +405,11 @@ class CareSearchNotifier extends Notifier<CareSearch> {
 
   @override
   CareSearch build() {
+    // Per account: the search text and filters are reset when the signed-in
+    // user changes, like the other per-account state the sign-out sweep clears,
+    // so they never show to whoever signs in next on this device.
+    ref.watch(currentUserIdProvider);
+    _typedText = null;
     ref.onDispose(() => _typing?.cancel());
     return const CareSearch();
   }

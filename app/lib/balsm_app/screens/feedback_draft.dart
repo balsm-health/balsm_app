@@ -48,9 +48,15 @@ class FeedbackDraftNotifier extends AsyncNotifier<FeedbackDraft> {
   Future<FeedbackDraft> build() async {
     final prefs = this.prefs;
     if (prefs == null) return FeedbackDraft();
-    final rating = await prefs.feedbackRating();
-    final at = await prefs.feedbackSentAt();
-    return FeedbackDraft(rating: rating ?? 0, lastSentAt: at);
+    try {
+      final rating = await prefs.feedbackRating();
+      final at = await prefs.feedbackSentAt();
+      return FeedbackDraft(rating: rating ?? 0, lastSentAt: at);
+    } on Object catch (_) {
+      // The last rating only pre-fills the form. A store that cannot be read
+      // must not leave the sheet stuck in an error state that ignores every tap.
+      return FeedbackDraft();
+    }
   }
 
   void _edit(FeedbackDraft Function(FeedbackDraft) change) {

@@ -78,6 +78,11 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
   /// Stores run one after another, so a later edit never lands first.
   Future<void> _saving = Future.value();
 
+  /// Check-ins a delete is still storing. The screen reads the day from the
+  /// store, which has not shown that delete yet, so a second delete on the same
+  /// check-in starts from this and does not bring the first one back.
+  final _inFlight = <CheckInId, CheckIn>{};
+
   @override
   void initState() {
     super.initState();
@@ -155,11 +160,15 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
           for (final r in readings) {
             (gone[r.checkIn.id] ??= []).add(r.metric);
           }
-          // From the check-ins as stored now, so an earlier delete still holds.
+          // From the check-ins as stored now, or as an earlier delete is still
+          // storing them, so that delete holds.
           for (final ci in _dayOf(ref.read(profileCheckInsProvider(_owner)))) {
             if (gone[ci.id] case final metrics?) {
-              final edited = metrics.fold(ci, (x, m) => x.without(m));
-              _saving = _saving.then((_) => _persist(edited));
+              final edited = metrics.fold(_inFlight[ci.id] ?? ci, (x, m) => x.without(m));
+              _inFlight[ci.id] = edited;
+              _saving = _saving.then((_) => _persist(edited)).whenComplete(() {
+                if (identical(_inFlight[ci.id], edited)) _inFlight.remove(ci.id);
+              });
             }
           }
         },
