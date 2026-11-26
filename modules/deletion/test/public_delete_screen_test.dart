@@ -32,12 +32,7 @@ void main() {
           reauthPortProvider.overrideWithValue(_Reauth(accept: accept)),
           requestDeletionUseCaseProvider.overrideWithValue(_Request()),
         ],
-        // The test font draws every glyph a full em wide, so the long danger
-        // label would overflow the 480 dp column; real fonts fit.
-        child: const MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(0.7)),
-          child: MaterialApp(home: PublicDeleteScreen()),
-        ),
+        child: const MaterialApp(home: PublicDeleteScreen()),
       ),
     );
     await tester.pump();
