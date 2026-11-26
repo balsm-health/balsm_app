@@ -114,6 +114,39 @@
         "id": "arrow-down",
         "color": "terminal.ansiBlue"
       }
+    },
+    {
+      "label": "Stores: check (dry run)",
+      "detail": "Checks .env.release and prints what a store release would build and upload. Touches nothing.",
+      "type": "shell",
+      "command": "${workspaceFolder}/tool/release_local.sh ${input:storeChannel} --build-number=${input:storeBuildNumber} --stores=${input:stores} --dry-run",
+      "problemMatcher": [],
+      "icon": {
+        "id": "checklist",
+        "color": "terminal.ansiYellow"
+      }
+    },
+    {
+      "label": "Stores: build & upload",
+      "detail": "Builds the release on this Mac and uploads it (TestFlight, Google Play, AppGallery). Nothing is submitted for review.",
+      "type": "shell",
+      "command": "${workspaceFolder}/tool/release_local.sh ${input:storeChannel} --build-number=${input:storeBuildNumber} --stores=${input:stores}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "cloud-upload",
+        "color": "terminal.ansiMagenta"
+      }
+    },
+    {
+      "label": "Stores: upload last build",
+      "detail": "Uploads what dist/local/ already holds, without building again.",
+      "type": "shell",
+      "command": "${workspaceFolder}/tool/release_local.sh ${input:storeChannel} --build-number=${input:storeBuildNumber} --stores=${input:stores} --skip-build",
+      "problemMatcher": [],
+      "icon": {
+        "id": "cloud-upload",
+        "color": "terminal.ansiBlue"
+      }
     }
   ],
   "inputs": [
@@ -153,6 +186,35 @@
         "prod"
       ],
       "default": "dev"
+    },
+    {
+      "id": "storeChannel",
+      "description": "Release channel: alpha and beta build against staging, production against prod (Play gets a draft)",
+      "type": "pickString",
+      "options": [
+        "alpha",
+        "beta",
+        "production"
+      ],
+      "default": "alpha"
+    },
+    {
+      "id": "storeBuildNumber",
+      "description": "Build number: above every build already uploaded (and the latest Release run number)",
+      "type": "promptString"
+    },
+    {
+      "id": "stores",
+      "description": "Which stores",
+      "type": "pickString",
+      "options": [
+        "ios,play,huawei",
+        "ios",
+        "play",
+        "huawei",
+        "play,huawei"
+      ],
+      "default": "ios,play,huawei"
     }
   ]
 }

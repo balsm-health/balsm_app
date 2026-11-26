@@ -19,8 +19,9 @@
 #   beta        staging   TestFlight · Play closed testing `alpha` (released) · AppGallery draft
 #   production  prod      TestFlight · Play production (draft) · AppGallery draft
 #
-# Secrets come from a config file outside the repo (default
-# ~/.config/balsm/release.env, or $BALSM_RELEASE_ENV), mode 600, KEY=value
+# Secrets come from .env.release in the checkout (git-ignored; start from
+# .env.release.example), or ~/.config/balsm/release.env, or the file named by
+# $BALSM_RELEASE_ENV. Mode 600, KEY=value
 # lines (never sourced). A value written as `keychain:<service>` is read from
 # the login keychain (`security add-generic-password -s <service> -a "$USER" -w`
 # stores one); `file:<path>` reads the first line of that file.
@@ -73,10 +74,16 @@ LABEL="v$BUILD_NAME-$CHANNEL (build $BUILD_NUMBER, local)"
 DIST="$ROOT/dist/local"
 
 # ── Config ────────────────────────────────────────────────────────────────
-CONFIG="${BALSM_RELEASE_ENV:-$HOME/.config/balsm/release.env}"
-[ -f "$CONFIG" ] || die "no config at $CONFIG (see docs/releasing.md → Releasing from a Mac)"
-case "$(cd "$(dirname "$CONFIG")" && pwd)/" in "$ROOT"/*) die "$CONFIG is inside the repo; keep it outside" ;; esac
-[ "$(stat -f '%Lp' "$CONFIG")" = 600 ] || die "$CONFIG must be mode 600 (chmod 600 '$CONFIG')"
+# $BALSM_RELEASE_ENV, else .env.release in this checkout (git-ignored), else
+# ~/.config/balsm/release.env (one file for every checkout).
+if [ -n "${BALSM_RELEASE_ENV:-}" ]; then CONFIG="$BALSM_RELEASE_ENV"
+elif [ -f "$ROOT/.env.release" ]; then CONFIG="$ROOT/.env.release"
+else CONFIG="$HOME/.config/balsm/release.env"; fi
+[ -f "$CONFIG" ] || die "no credentials file: cp .env.release.example .env.release and fill it in (docs/releasing.md → Releasing from a Mac)"
+case "$(cd "$(dirname "$CONFIG")" && pwd)/" in
+  "$ROOT"/*) git check-ignore -q "$CONFIG" || die "$CONFIG is inside the repo but not git-ignored; it must never be committed" ;;
+esac
+[ "$(stat -f '%Lp' "$CONFIG")" = 600 ] || die "$CONFIG must be readable by you only: chmod 600 '$CONFIG'"
 # KEY=value lines only; never sourced, so the file cannot run anything.
 cfg() {
   local v

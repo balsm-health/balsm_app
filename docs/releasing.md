@@ -143,10 +143,22 @@ tool/release_local.sh beta --build-number=62 --stores=play,huawei
   `--allow-dirty`, for test builds.
 - **Outputs** go to `dist/local/`; `--skip-build` uploads what is there.
 
-Secrets are read from `~/.config/balsm/release.env` (or `$BALSM_RELEASE_ENV`),
-which must be mode 600 and outside the repo. It is `KEY=value` lines, never
-sourced; a value `keychain:<service>` comes from the login keychain and
-`file:<path>` from the first line of a file:
+Or from VS Code: **Tasks: Run Task** → **Stores: check (dry run)**, **Stores:
+build & upload** or **Stores: upload last build**; each asks for the channel,
+build number and stores.
+
+Credentials are read from `.env.release` in the checkout:
+
+```
+cp .env.release.example .env.release && chmod 600 .env.release
+```
+
+It is git-ignored (every `.env*` is, except the examples) and the script
+refuses one that is not, or that others can read. Without it the script reads
+`~/.config/balsm/release.env`, one file for every checkout, or the file named
+by `$BALSM_RELEASE_ENV`. It is `KEY=value` lines, never sourced; a value
+`keychain:<service>` comes from the login keychain and `file:<path>` from the
+first line of a file, so passwords need not sit in the file at all:
 
 | Key | What |
 |---|---|
