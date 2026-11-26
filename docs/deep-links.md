@@ -80,7 +80,7 @@ file on the domain:
 
 | | File (served from `app/web/.well-known/`) | Status |
 |---|---|---|
-| iOS | `https://app.balsm.health/.well-known/apple-app-site-association` | Team `56V9N23Y78`, bundle `app.balsm.health` |
+| iOS | `https://app.balsm.health/.well-known/apple-app-site-association` | Team `56V9N23Y78`, bundle `app.balsm.health`; also the previous team `8F78S7D344`, so builds signed before the app transfer keep opening links until people update |
 | Android | `https://app.balsm.health/.well-known/assetlinks.json` | **Fingerprint still a placeholder.** Paste the SHA-256 of the *Play App Signing* key (Play Console → Test and release → App integrity), not the upload key. |
 
 Both files must be served over HTTPS as `application/json`, with no redirect.
