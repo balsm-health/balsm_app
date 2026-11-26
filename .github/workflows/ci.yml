@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, dev, 'release/**']
+    branches: [main, develop, 'release/**']
   pull_request:
-    branches: [main, dev, 'release/**']
+    branches: [main, develop, 'release/**']
 
 # A new push to a pull request cancels the run still going for the last one.
-# Pushes to main/dev/release keep every run.
+# Pushes to main/develop/release keep every run.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
