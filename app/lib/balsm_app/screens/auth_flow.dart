@@ -1401,6 +1401,11 @@ class _DiscardConfirmSheet extends StatelessWidget {
 const String kDisclosureId = 'consolidated';
 const String kDisclosureVersion = '1';
 
+/// How long [enterAfterSignIn] waits for the on-device acceptance record. A
+/// local read answers in milliseconds; this only bounds a database that
+/// cannot open.
+const _disclosureReadTimeout = Duration(seconds: 10);
+
 /// Fail-closed disclosure GATE — interposed between a successful sign-in and
 /// reaching 'app'. Shared by BOTH the OTP-verify and the email+password
 /// sign-in paths so neither can bypass it. A user who has not accepted the
@@ -1412,13 +1417,26 @@ const String kDisclosureVersion = '1';
 /// the real `AcceptDisclosureUseCase` (persist + cloud sync + domain event) and
 /// pops `true`. Only a persisted acceptance unlocks 'app'.
 Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppState s) async {
-  final accepted = await ref
-      .read(disclosureDaoProvider)
-      .watchAcceptance(
-        const DisclosureId.value(kDisclosureId),
-        kDisclosureVersion,
-      )
-      .first;
+  final DisclosureAcceptance? accepted;
+  try {
+    accepted = await ref
+        .read(disclosureDaoProvider)
+        .watchAcceptance(
+          const DisclosureId.value(kDisclosureId),
+          kDisclosureVersion,
+        )
+        .first
+        .timeout(_disclosureReadTimeout);
+  } on Object catch (_) {
+    // The on-device database did not answer: it could not be opened (#172:
+    // its key went missing) or failed. Waiting would leave the patient on a
+    // sign-in screen that looks dead; say so instead. Startup checks the key
+    // again and offers to start fresh. Fails closed: nothing reaches 'app'.
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.strings.boot.lost_unavailable)));
+    }
+    return;
+  }
   if (!context.mounted) return;
   if (accepted != null) {
     s.go(AppRoutes.app);

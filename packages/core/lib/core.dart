@@ -57,6 +57,7 @@ export 'src/data_source/profile_data_source.dart';
 export 'src/data_source/storage_exceptions.dart';
 export 'src/data_source/user_data_source.dart';
 export 'src/db/app_database.dart';
+export 'src/db/db_key_check.dart';
 export 'src/db/entry_provenance_store.dart';
 export 'src/db/owner_rekey.dart';
 export 'src/dev/dev_config_store.dart' show DevConfigStore, DevFlag, kDevFlags, kFlagMapNoZoomFloor;

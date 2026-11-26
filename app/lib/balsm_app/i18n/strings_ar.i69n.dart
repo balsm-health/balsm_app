@@ -375,6 +375,17 @@ class BootStrings_ar extends BootStrings {
   final Strings_ar _parent;
   const BootStrings_ar(this._parent) : super(_parent);
   String get boot_preparing => "نُجهّز سجلّك الصحي";
+  String get lost_t => "لا يمكن فتح بياناتك السابقة";
+  String lost_b(String app) =>
+      "لا يستطيع هذا الإصدار من $app قراءة ما حُفظ على هذا الهاتف من قبل. لم يُحذف أي شيء، لكن لا يمكن فتحه هنا. حسابك سليم: يمكنك تسجيل الدخول مجددًا وبدء سجل صحي جديد.";
+  String get lost_start => "البدء من جديد";
+  String get lost_confirm_t => "البدء من جديد؟";
+  String lost_confirm_b(String app) =>
+      "سيُفتح $app فارغًا على هذا الهاتف. البيانات التي لا يستطيع قراءتها تُحفظ جانبًا ولا تُحذف، وتبقى غير قابلة للقراءة.";
+  String get lost_confirm_yes => "نعم، ابدأ من جديد";
+  String get lost_cancel => "إلغاء";
+  String get lost_unavailable =>
+      "تعذّر فتح سجلك الصحي على هذا الهاتف. يُرجى إغلاق التطبيق وفتحه مجددًا.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -384,6 +395,22 @@ class BootStrings_ar extends BootStrings {
     switch (key) {
       case 'boot_preparing':
         return boot_preparing;
+      case 'lost_t':
+        return lost_t;
+      case 'lost_b':
+        return lost_b;
+      case 'lost_start':
+        return lost_start;
+      case 'lost_confirm_t':
+        return lost_confirm_t;
+      case 'lost_confirm_b':
+        return lost_confirm_b;
+      case 'lost_confirm_yes':
+        return lost_confirm_yes;
+      case 'lost_cancel':
+        return lost_cancel;
+      case 'lost_unavailable':
+        return lost_unavailable;
       default:
         return super[key];
     }

@@ -371,6 +371,17 @@ class BootStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const BootStrings(this._parent);
   String get boot_preparing => "Preparing your health record";
+  String get lost_t => "Your earlier data can't be opened";
+  String lost_b(String app) =>
+      "This version of $app can't read what was saved on this phone before it. Nothing has been deleted, but it can't be opened here. Your account is fine: you can sign in again and start a new health record.";
+  String get lost_start => "Start fresh";
+  String get lost_confirm_t => "Start fresh?";
+  String lost_confirm_b(String app) =>
+      "$app will open empty on this phone. The data it can't read is kept aside, not deleted, and stays unreadable.";
+  String get lost_confirm_yes => "Yes, start fresh";
+  String get lost_cancel => "Cancel";
+  String get lost_unavailable =>
+      "Your health record on this phone can't be opened. Close the app and open it again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -380,6 +391,22 @@ class BootStrings implements i69n.I69nMessageBundle {
     switch (key) {
       case 'boot_preparing':
         return boot_preparing;
+      case 'lost_t':
+        return lost_t;
+      case 'lost_b':
+        return lost_b;
+      case 'lost_start':
+        return lost_start;
+      case 'lost_confirm_t':
+        return lost_confirm_t;
+      case 'lost_confirm_b':
+        return lost_confirm_b;
+      case 'lost_confirm_yes':
+        return lost_confirm_yes;
+      case 'lost_cancel':
+        return lost_cancel;
+      case 'lost_unavailable':
+        return lost_unavailable;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
