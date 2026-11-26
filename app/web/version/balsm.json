@@ -28,6 +28,44 @@
           }
         ]
       }
+    },
+    "0.8.0": {
+      "force": false,
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "date": "2026-11-03",
+      "notes": {
+        "en": [
+          {
+            "title": "Delete check-in readings, medications and prescriptions"
+          },
+          {
+            "title": "Reports grouped by day"
+          },
+          {
+            "title": "Save your profile without signing in"
+          },
+          {
+            "title": "UX enhancements and bug fixes"
+          }
+        ],
+        "ar": [
+          {
+            "title": "حذف قراءات التسجيل اليومي والأدوية والوصفات"
+          },
+          {
+            "title": "تجميع التقارير حسب اليوم"
+          },
+          {
+            "title": "حفظ الملف الشخصي دون تسجيل الدخول"
+          },
+          {
+            "title": "تحسينات في تجربة الاستخدام وإصلاح الأخطاء"
+          }
+        ]
+      }
     }
   }
 }
