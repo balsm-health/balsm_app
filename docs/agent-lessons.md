@@ -13,6 +13,15 @@ Format — one entry per lesson, newest first:
 
 ---
 
+### A signing-team change moves the iOS keychain (2026-11-27)
+- **Mistake:** for the App Store transfer I replaced the Apple Team ID everywhere (#171) and checked signing, entitlements
+  and deep links, but not data. Keychain items are stored in an access group that starts with the Team ID, so builds of
+  the new team cannot read the database key the old team's builds saved: the app could not open its database and hung
+  after sign-in (#172), on the simulator and for every App Store user who updates.
+- **Rule:** before changing the Team ID, bundle id, App ID prefix or keychain/app-group entitlements, list what the app
+  keeps in the keychain (`SecureStorageWrapper`, the database and vault keys, sessions) and say what happens to each on
+  an installed copy that updates. Test it by installing the old build, then the new one over it, before merging.
+
 ### Check the Riverpod 3 rules before touching a provider (2026-11-25)
 - **Mistake:** I fixed a failing record test as "a stale assertion" and wrote `await _ref.refresh(...)` with no disposed
   check, without first reading what Riverpod 3 changed. The user had to remind me the project is on Riverpod 3. The

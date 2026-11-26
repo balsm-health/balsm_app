@@ -36,6 +36,7 @@ import '../../balsm_app/screens/care_team_screen.dart';
 import '../../balsm_app/shell.dart';
 import '../../balsm_app/storage_target.dart';
 import '../../balsm_app/vault/bind_file_store.dart';
+import '../../balsm_app/widgets/lost_data_screen.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads
 /// this, so an in-session sign-in / sign-out is reflected immediately (the
@@ -162,6 +163,12 @@ Future<void> bootstrap({
   // Opting in or out of analytics changes what PostHog may be asked.
   analyticsConsent.addListener(() => unawaited(flags.refresh()));
 
+  // An encrypted database whose key the keychain no longer returns (the iOS
+  // app moving Apple teams does this) can never be opened. Ask the patient
+  // first instead of starting on a database where every read fails (#172).
+  if (await checkDbKey() == DbKeyStatus.lost) {
+    await recoverLostData(lang: await PatientAppPrefs(globalKV).lang());
+  }
   // On-device encrypted PHI database (opened once, injected as a value).
   final db = await AppDatabase.open();
   // Map-pack downloads live here — see map_pack_download_controller.dart.

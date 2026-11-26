@@ -1,5 +1,23 @@
 import 'dart:math';
 
+/// The on-device database file, in the app's documents directory.
+const kDbFileName = 'balsm.db';
+
+/// The encrypted-files folder next to it (see `bind_file_store_io.dart`). Its
+/// per-account keys live in the same keychain as [kDbKeyStorageKey], so they
+/// are lost together.
+const kVaultDirName = 'vault';
+
+/// Whether the on-device database can be opened (see `checkDbKey`).
+enum DbKeyStatus {
+  /// The key is there, or there is no encrypted database that needs one.
+  ok,
+
+  /// An encrypted database is on disk but its key is gone from secure storage:
+  /// it can never be opened, and must not be silently replaced.
+  lost,
+}
+
 /// Secure-storage key for the SQLCipher key. `.v2` because the v1 key was
 /// never applied and was not random; it must not be reused.
 const kDbKeyStorageKey = 'balsm.db.key.v2';

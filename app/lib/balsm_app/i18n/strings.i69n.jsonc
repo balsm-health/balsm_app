@@ -78,7 +78,18 @@
     "unlock_forgot_confirm_body": "Without the password, the data on this phone can't be opened. Starting over deletes it permanently."
   },
   "boot": {
-    "boot_preparing": "Preparing your health record"
+    "boot_preparing": "Preparing your health record",
+    // Shown before the app starts when the on-device database is encrypted and
+    // its key is gone (e.g. after the iOS app moved Apple teams). No backup
+    // exists to restore from yet, so the copy promises none.
+    "lost_t": "Your earlier data can't be opened",
+    "lost_b(String app)": "This version of $app can't read what was saved on this phone before it. Nothing has been deleted, but it can't be opened here. Your account is fine: you can sign in again and start a new health record.",
+    "lost_start": "Start fresh",
+    "lost_confirm_t": "Start fresh?",
+    "lost_confirm_b(String app)": "$app will open empty on this phone. The data it can't read is kept aside, not deleted, and stays unreadable.",
+    "lost_confirm_yes": "Yes, start fresh",
+    "lost_cancel": "Cancel",
+    "lost_unavailable": "Your health record on this phone can't be opened. Close the app and open it again."
   },
   "care": {
     // Recenter found no device position: why, and the setting that fixes it.
