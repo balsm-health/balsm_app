@@ -2,19 +2,43 @@ import 'package:account/account.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart';
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
 import '../screens/auth_flow.dart' show kDisclosureId, kDisclosureVersion;
 
-/// Where a successful go-online verify leaves the account.
-enum GoOnlineOutcome {
+/// Where a go-online verify the server answered leaves the account.
+@immutable
+sealed class GoOnlineOutcome {
+  const GoOnlineOutcome();
+
   /// The device-only account is now the online account.
-  online,
+  static const online = GoOnlineOnline();
 
   /// The email already had a server account: the patient must choose to merge
   /// this device's data into it or discard it (the merge-or-discard screen).
-  needsMergeChoice,
+  static const needsMergeChoice = GoOnlineNeedsMergeChoice();
+}
+
+final class GoOnlineOnline extends GoOnlineOutcome {
+  const GoOnlineOnline();
+}
+
+final class GoOnlineNeedsMergeChoice extends GoOnlineOutcome {
+  const GoOnlineNeedsMergeChoice();
+}
+
+/// The server locked the address out until [until]; nothing changed.
+final class GoOnlineLockedOut extends GoOnlineOutcome {
+  const GoOnlineLockedOut(this.until);
+  final DateTime until;
+
+  @override
+  bool operator ==(Object other) => other is GoOnlineLockedOut && other.until == until;
+
+  @override
+  int get hashCode => until.hashCode;
 }
 
 /// Which way the patient resolved the merge-or-discard choice, persisted
@@ -87,13 +111,9 @@ class GoOnlineController {
   /// a restart.
   String? pendingTargetId;
 
-  /// Set when the last verify hit a server lockout; the sheet shows the wait.
-  DateTime? lockedUntil;
-
   Future<AppResult<void>> sendCode(String email) => _signIn.requestContinueOtp(email, _countryCode());
 
   Future<AppResult<GoOnlineOutcome>> verify({required String email, required String code}) async {
-    lockedUntil = null;
     // The device's own id, pinned before goOnline overwrites
     // balsm.user_id with the server's id when it persists the session.
     final localId = await _localId();
@@ -146,8 +166,8 @@ class GoOnlineController {
         await _storage.writeToken(kPendingMergeTarget, userId);
         return AppResult.success(GoOnlineOutcome.needsMergeChoice);
       case GoOnlineLockout(:final session):
-        lockedUntil = session.until;
-        return AppResult.failure(const UnauthorizedFailure('Account locked'));
+        // Nothing changed on the device; the sheet shows the wait.
+        return AppResult.success(GoOnlineLockedOut(session.until));
     }
 
     await _offline.markOnline();
