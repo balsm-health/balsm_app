@@ -319,7 +319,6 @@ void main() {
     verifyNever(() => offline.markOnline());
     expect(await owners(db), ['off-1']);
     expect(events.whereType<UserSignedIn>(), isEmpty);
-    expect(controller.pendingTargetId, 'srv-1');
     expect(storage.data['balsm.pending_merge_target'], 'srv-1');
     // The merge screen needs the device's own id; it stays pinned.
     expect(storage.data['balsm.offline.local_id'], 'off-1');

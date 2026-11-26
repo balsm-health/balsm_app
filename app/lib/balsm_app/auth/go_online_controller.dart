@@ -87,6 +87,9 @@ class GoOnlineController {
   final AccountProfileUseCase _profile;
 
   static const kUserId = 'balsm.user_id';
+  /// The existing server account a [GoOnlineOutcome.needsMergeChoice] verify
+  /// found. Kept in storage, not in memory, so the choice survives a restart
+  /// and the merge step reads one source.
   static const kPendingMergeTarget = 'balsm.pending_merge_target';
 
   /// The merge-or-discard choice in progress (`MergeChoice.name`). Written
@@ -105,11 +108,6 @@ class GoOnlineController {
   /// Set while the disclosure acceptance recorded offline has not reached
   /// the server yet; [retryPending] tries again at launch.
   static const kDisclosurePending = 'balsm.offline.disclosure_pending';
-
-  /// The existing server account a [GoOnlineOutcome.needsMergeChoice] verify
-  /// found. Also persisted under [kPendingMergeTarget] so the choice survives
-  /// a restart.
-  String? pendingTargetId;
 
   Future<AppResult<void>> sendCode(String email) => _signIn.requestContinueOtp(email, _countryCode());
 
@@ -162,7 +160,6 @@ class GoOnlineController {
         // The merge-or-discard screen finishes this; the account is
         // NOT online yet, and nobody is told it signed in.
         await _offline.setPendingMerge(true);
-        pendingTargetId = userId;
         await _storage.writeToken(kPendingMergeTarget, userId);
         return AppResult.success(GoOnlineOutcome.needsMergeChoice);
       case GoOnlineLockout(:final session):
@@ -266,7 +263,6 @@ class GoOnlineController {
     await _storage.deleteToken(kPendingMergeChoice);
     // Last: until this is cleared, boot routes back to the merge screen.
     await _offline.setPendingMerge(false);
-    pendingTargetId = null;
     if (resync) await _resyncDisclosure();
     return AppResult.success(null);
   }
