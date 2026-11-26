@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app_state.dart';
 import '../../kit.dart';
 import 'family_kit.dart';
+import 'member_form.dart';
 import 'member_medical_screen.dart';
 
 // Half the 4pt step bar height, so its ends are round.
@@ -78,15 +79,8 @@ class AddMemberScreen extends ConsumerStatefulWidget {
 class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   late final _name = TextEditingController(text: widget.editing?.displayName ?? '');
   final _newGroupName = TextEditingController();
-  late Relationship? _relationship = widget.editing?.relationship;
-  late Sex? _sex = widget.editing?.sex;
-  late DateTime? _dob = widget.editing?.dateOfBirth;
-  late BloodType? _blood = widget.editing?.bloodType;
-  bool _bloodUnsure = false;
-  late MemberGroupId? _groupId = widget.editing?.groupId;
-  bool _newGroup = false;
+  late final MemberFormKey _key = (form: Object(), editing: widget.editing);
   int _step = 1;
-  bool _consent = false;
   bool _saving = false;
 
   PatientAppState get s => AppScope.of(context);
@@ -99,25 +93,12 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     super.dispose();
   }
 
-  MemberDraft get _draft => MemberDraft(
-        displayName: _name.text,
-        relationship: _relationship,
-        dateOfBirth: _dob,
-        sex: _sex,
-        bloodType: _editing ? _storedBlood : (_bloodUnsure ? null : _blood),
-        groupId: _groupId,
-        newGroupName: _newGroup ? _newGroupName.text : null,
-      );
-
   /// Editing keeps the blood type as stored now: it is changed on the
   /// medical profile, which may have been opened from this form.
-  BloodType? get _storedBlood {
-    final id = widget.editing!.id;
-    final live = (ref.read(familyMembersProvider).value ?? const <FamilyMember>[]).where((x) => x.id == id);
-    return live.isEmpty ? widget.editing!.bloodType : live.first.bloodType;
+  BloodType? _storedBlood(FamilyMember editing) {
+    final live = (ref.read(familyMembersProvider).value ?? const <FamilyMember>[]).where((x) => x.id == editing.id);
+    return live.isEmpty ? editing.bloodType : live.first.bloodType;
   }
-
-  bool get _adult => !_editing && _draft.needsConsentOn(DateTime.now());
 
   Future<void> _save() async {
     final userId = ref.read(currentUserIdProvider);
@@ -126,9 +107,15 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     final use = ref.read(saveFamilyMemberUseCaseProvider);
     final now = DateTime.now();
     final editing = widget.editing;
+    final form = ref.read(memberFormProvider(_key));
     final result = editing == null
-        ? await use.add(_draft, userId: userId, now: now)
-        : await use.update(editing.id, _draft, userId: userId, now: now);
+        ? await use.add(form.toSave(editing: false), userId: userId, now: now)
+        : await use.update(
+            editing.id,
+            form.toSave(editing: true, storedBlood: _storedBlood(editing)),
+            userId: userId,
+            now: now,
+          );
     if (!mounted) return;
     setState(() => _saving = false);
     if (result.isFailure) {
@@ -144,87 +131,102 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     if (await confirmCloseMember(context, ref, m) && mounted) Navigator.pop(context, true);
   }
 
-  Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showBalsmDatePicker(
-      context,
-      initial: _dob ?? DateTime(now.year - 5, now.month, now.day),
-      firstDate: DateTime(now.year - 120),
-      lastDate: now,
-      title: s.strings.family.f_dob,
-      confirmLabel: s.strings.onboarding.dob_confirm,
-      months: s.strings.settings.cal_months.split('|'),
-      weekdays: s.strings.settings.cal_weekdays.split('|'),
-      rtl: s.rtl,
-      accent: s.accent.main,
-    );
-    if (picked != null && mounted) setState(() => _dob = picked);
-  }
-
   @override
   Widget build(BuildContext context) {
     final f = s.strings.family;
-    final ok = _draft.violations(DateTime.now()).isEmpty;
-    if (_step == 2) return _consentStep();
+    final now = DateTime.now();
+    final (ok, adult) = ref.watch(
+      memberFormProvider(_key).select((m) => (m.canSave(now), m.needsConsent(now, editing: _editing))),
+    );
+    if (_step == 2) {
+      return _ConsentStep(
+        formKey: _key,
+        saving: _saving,
+        onBack: () => setState(() => _step = 1),
+        onSave: _save,
+      );
+    }
     final editing = widget.editing;
-    final relation = _field(f.f_relation, _chips());
-    final name = _field(
-      f.f_name,
-      TextField(
+    final relation = _Labeled(label: f.f_relation, child: _RelationChips(formKey: _key));
+    final name = _Labeled(
+      label: f.f_name,
+      child: TextField(
         controller: _name,
-        onChanged: (_) => setState(() {}),
+        onChanged: (v) => ref.read(memberFormProvider(_key).notifier).setName(v),
         style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
-        decoration: _dec(f.f_name_ph(s.gender)),
+        decoration: _memberInputDecoration(s, f.f_name_ph(s.gender)),
       ),
     );
     return FamilyScaffold(
       title: _editing ? f.edit_title : f.add_member,
       footer: PButton(
-        _adult ? f.next : (_editing ? f.save_changes : f.save),
+        adult ? f.next : (_editing ? f.save_changes : f.save),
         large: true,
         block: true,
         accent: s.accent,
         ar: s.rtl,
-        onTap: ok && !_saving ? (_adult ? () => setState(() => _step = 2) : _save) : null,
+        onTap: ok && !_saving ? (adult ? () => setState(() => _step = 2) : _save) : null,
       ),
       children: [
-        if (editing == null) ...[_Steps(step: 1, two: _adult), relation, name] else ...[name, relation],
-        _field(f.f_group, _groups()),
-        _field(f.f_dob, _dobField()),
-        _field(
-          f.f_sex,
-          BalsmSegmented<Sex?>(
-            options: const [Sex.female, Sex.male],
-            labelOf: (x) => x == Sex.female ? f.sex_female : f.sex_male,
-            selected: _sex,
-            onChanged: (x) => setState(() => _sex = x),
-          ),
-        ),
-        if (editing == null) _field('${f.f_blood} · ${f.optional}', _bloodGrid()) else _medicalRow(editing),
+        if (editing == null) ...[_Steps(step: 1, two: adult), relation, name] else ...[name, relation],
+        _Labeled(label: f.f_group, child: _GroupPicker(formKey: _key, newGroupName: _newGroupName)),
+        _Labeled(label: f.f_dob, child: _DobField(formKey: _key)),
+        _Labeled(label: f.f_sex, child: _SexField(formKey: _key)),
+        if (editing == null)
+          _Labeled(label: '${f.f_blood} · ${f.optional}', child: _BloodField(formKey: _key))
+        else
+          _MedicalRow(member: editing),
         if (editing != null)
-          PButton(
-            f.close_member(_firstName(editing)),
-            icon: LucideIcons.archive,
-            variant: BtnVariant.ghost,
-            block: true,
-            ar: s.rtl,
-            color: AppColors.danger,
+          _CloseMemberButton(
+            formKey: _key,
+            member: editing,
             onTap: _saving ? null : () => _close(editing),
           ),
       ],
     );
   }
+}
 
-  /// The edit form's way to the member's medical profile (blood type,
-  /// allergies, long-term conditions), which used to be fields here.
-  Widget _medicalRow(FamilyMember m) {
+/// The edit form's "close profile" action, named with the first word of the
+/// name as typed (else the member's stored short name).
+class _CloseMemberButton extends ConsumerWidget {
+  const _CloseMemberButton({required this.formKey, required this.member, required this.onTap});
+  final MemberFormKey formKey;
+  final FamilyMember member;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final typed = ref.watch(memberFormProvider(formKey).select((m) => m.draft.displayName.trim().split(' ').first));
+    return PButton(
+      s.strings.family.close_member(typed.isEmpty ? member.shortName : typed),
+      icon: LucideIcons.archive,
+      variant: BtnVariant.ghost,
+      block: true,
+      ar: s.rtl,
+      color: AppColors.danger,
+      onTap: onTap,
+    );
+  }
+}
+
+/// The edit form's way to the member's medical profile (blood type,
+/// allergies, long-term conditions), which used to be fields here.
+class _MedicalRow extends StatelessWidget {
+  const _MedicalRow({required this.member});
+  final FamilyMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     final f = s.strings.family;
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Semantics(
         button: true,
         child: PCard(
-          onTap: () => openMemberMedical(context, m),
+          onTap: () => openMemberMedical(context, member),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
@@ -249,54 +251,76 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       ),
     );
   }
+}
 
-  /// The first word of the name as typed, else the member's stored short name.
-  String _firstName(FamilyMember m) {
-    final typed = _name.text.trim().split(' ').first;
-    return typed.isEmpty ? m.shortName : typed;
+/// A form field with its label above.
+class _Labeled extends StatelessWidget {
+  const _Labeled({required this.label, required this.child});
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
+    );
   }
+}
 
-  Widget _field(String label, Widget child) => Padding(
-        padding: const EdgeInsets.only(bottom: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 8),
-            child,
-          ],
-        ),
-      );
+class _RelationChips extends ConsumerWidget {
+  const _RelationChips({required this.formKey});
+  final MemberFormKey formKey;
 
-  Widget _chips() {
-    final selected = _Rel.of(_relationship, _sex);
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final selected = ref.watch(memberFormProvider(formKey).select((m) => _Rel.of(m.draft.relationship, m.draft.sex)));
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [
-        for (final r in _Rel.values)
-          BChip(
-            r.label(s),
-            active: selected == r,
-            accent: s.accent.main,
-            ar: s.rtl,
-            onTap: () => setState(() {
-              _relationship = r.relationship;
-              if (r.sex != null) _sex = r.sex;
-            }),
-          ),
-      ],
+      children: _Rel.values
+          .map(
+            (r) => BChip(
+              r.label(s),
+              active: selected == r,
+              accent: s.accent.main,
+              ar: s.rtl,
+              onTap: () =>
+                  ref.read(memberFormProvider(formKey).notifier).pickRelation(r.relationship, impliedSex: r.sex),
+            ),
+          )
+          .toList(),
     );
   }
+}
 
-  Widget _groups() {
+/// The member's group: an existing one, or a new one named here.
+class _GroupPicker extends ConsumerWidget {
+  const _GroupPicker({required this.formKey, required this.newGroupName});
+  final MemberFormKey formKey;
+  final TextEditingController newGroupName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
     final f = s.strings.family;
     final groups = ref.watch(memberGroupsProvider).value ?? const <MemberGroup>[];
+    final (groupId, newGroup) = ref.watch(memberFormProvider(formKey).select((m) => (m.draft.groupId, m.newGroup)));
     final fallback = groups.where((g) => g.defaultGroup == DefaultGroup.family).firstOrNull?.id;
-    final current = _groupId ?? fallback;
+    final current = groupId ?? fallback;
+    MemberFormNotifier notifier() => ref.read(memberFormProvider(formKey).notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -304,52 +328,81 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final g in groups)
-              BChip(
+            ...groups.map(
+              (g) => BChip(
                 groupLabel(s, g),
-                active: !_newGroup && current == g.id,
+                active: !newGroup && current == g.id,
                 accent: s.accent.main,
                 ar: s.rtl,
-                onTap: () => setState(() {
-                  _groupId = g.id;
-                  _newGroup = false;
-                }),
+                onTap: () => notifier().selectGroup(g.id),
               ),
+            ),
             BChip(
               '+ ${f.new_group}',
-              active: _newGroup,
+              active: newGroup,
               accent: s.accent.main,
               ar: s.rtl,
-              onTap: () => setState(() => _newGroup = true),
+              onTap: () => notifier().startNewGroup(newGroupName.text),
             ),
           ],
         ),
-        if (_newGroup) ...[
+        if (newGroup) ...[
           const SizedBox(height: 10),
           TextField(
-            controller: _newGroupName,
+            controller: newGroupName,
             autofocus: true,
             maxLength: MemberGroup.maxNameLength,
-            onChanged: (_) => setState(() {}),
+            onChanged: (v) => notifier().setNewGroupName(v),
             style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary),
-            decoration: _dec(f.new_group_ph).copyWith(counterText: ''),
+            decoration: _memberInputDecoration(s, f.new_group_ph).copyWith(counterText: ''),
           ),
         ],
       ],
     );
   }
+}
 
-  Widget _dobField() {
+/// Date of birth, with the age it gives (and, for an adult being added, that
+/// a consent step follows).
+class _DobField extends ConsumerWidget {
+  const _DobField({required this.formKey});
+  final MemberFormKey formKey;
+
+  Future<void> _pick(BuildContext context, WidgetRef ref, DateTime? dob) async {
+    final s = AppScope.of(context);
+    final now = DateTime.now();
+    final picked = await showBalsmDatePicker(
+      context,
+      initial: dob ?? DateTime(now.year - 5, now.month, now.day),
+      firstDate: DateTime(now.year - 120),
+      lastDate: now,
+      title: s.strings.family.f_dob,
+      confirmLabel: s.strings.onboarding.dob_confirm,
+      months: s.strings.settings.cal_months.split('|'),
+      weekdays: s.strings.settings.cal_weekdays.split('|'),
+      rtl: s.rtl,
+      accent: s.accent.main,
+    );
+    if (picked != null && context.mounted) ref.read(memberFormProvider(formKey).notifier).setDob(picked);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
     final f = s.strings.family;
-    final dob = _dob;
-    final age = dob == null ? null : MemberAge.between(dob, DateTime.now());
+    final now = DateTime.now();
+    final (dob, adult) = ref.watch(
+      memberFormProvider(formKey)
+          .select((m) => (m.draft.dateOfBirth, m.needsConsent(now, editing: formKey.editing != null))),
+    );
+    final age = dob == null ? null : MemberAge.between(dob, now);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: _pickDob,
+          onTap: () => _pick(context, ref, dob),
           child: InputDecorator(
-            decoration: _dec(null),
+            decoration: _memberInputDecoration(s, null),
             child: Row(
               children: [
                 const Icon(LucideIcons.calendar, size: 17, color: AppColors.textTertiary),
@@ -370,35 +423,78 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         ),
         if (age != null) ...[
           const SizedBox(height: 6),
-          Text([ageLabel(s, age), if (_adult) f.consent_next].join(' · '), style: Typo.meta(ar: s.rtl)),
+          Text([ageLabel(s, age), if (adult) f.consent_next].join(' · '), style: Typo.meta(ar: s.rtl)),
         ],
       ],
     );
   }
+}
 
-  Widget _bloodGrid() => BloodTypeGrid(
-        value: _blood,
-        unsure: _bloodUnsure,
-        onChanged: (b) => setState(() {
-          _blood = b;
-          _bloodUnsure = b == null;
-        }),
-      );
+class _SexField extends ConsumerWidget {
+  const _SexField({required this.formKey});
+  final MemberFormKey formKey;
 
-  Widget _consentStep() {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = AppScope.of(context).strings.family;
+    final sex = ref.watch(memberFormProvider(formKey).select((m) => m.draft.sex));
+    return BalsmSegmented<Sex?>(
+      options: const [Sex.female, Sex.male],
+      labelOf: (x) => x == Sex.female ? f.sex_female : f.sex_male,
+      selected: sex,
+      onChanged: (x) {
+        if (x != null) ref.read(memberFormProvider(formKey).notifier).setSex(x);
+      },
+    );
+  }
+}
+
+class _BloodField extends ConsumerWidget {
+  const _BloodField({required this.formKey});
+  final MemberFormKey formKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (blood, unsure) = ref.watch(memberFormProvider(formKey).select((m) => (m.draft.bloodType, m.bloodUnsure)));
+    return BloodTypeGrid(
+      value: blood,
+      unsure: unsure,
+      onChanged: (b) => ref.read(memberFormProvider(formKey).notifier).setBlood(b),
+    );
+  }
+}
+
+/// Step two for an adult: the account holder confirms the member's consent.
+class _ConsentStep extends ConsumerWidget {
+  const _ConsentStep({
+    required this.formKey,
+    required this.saving,
+    required this.onBack,
+    required this.onSave,
+  });
+  final MemberFormKey formKey;
+  final bool saving;
+  final VoidCallback onBack;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
     final f = s.strings.family;
-    final first = _name.text.trim().split(' ').first;
-    final female = _sex == Sex.female;
+    final (first, consent, female) = ref.watch(
+      memberFormProvider(formKey)
+          .select((m) => (m.draft.displayName.trim().split(' ').first, m.consent, m.draft.sex == Sex.female)),
+    );
     return FamilyScaffold(
       title: f.add_member,
-      onBack: () => setState(() => _step = 1),
+      onBack: onBack,
       footer: PButton(
         f.add_cta(first),
         large: true,
         block: true,
         accent: s.accent,
         ar: s.rtl,
-        onTap: _consent && !_saving ? _save : null,
+        onTap: consent && !saving ? onSave : null,
       ),
       children: [
         const _Steps(step: 2, two: true),
@@ -415,8 +511,8 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
           style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 16),
-        for (final line in [f.consent_stays, f.consent_close(s.gender)])
-          Padding(
+        ...[f.consent_stays, f.consent_close(s.gender)].map(
+          (line) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,6 +523,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
               ],
             ),
           ),
+        ),
         const SizedBox(height: 8),
         PCard(
           flat: true,
@@ -436,10 +533,10 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             children: [
               BCheck(
                 label: female ? f.consent_check_f(first) : f.consent_check_m(first),
-                checked: _consent,
+                checked: consent,
                 accent: s.accent,
                 ar: s.rtl,
-                onTap: () => setState(() => _consent = !_consent),
+                onTap: () => ref.read(memberFormProvider(formKey).notifier).toggleConsent(),
               ),
               Padding(
                 padding: const EdgeInsetsDirectional.only(start: 32, top: 4),
@@ -451,27 +548,27 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       ],
     );
   }
-
-  InputDecoration _dec(String? hint) => InputDecoration(
-        hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint),
-        filled: true,
-        fillColor: AppColors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: BorderSide(color: s.accent.main, width: 1.5),
-        ),
-      );
 }
+
+InputDecoration _memberInputDecoration(PatientAppState s, String? hint) => InputDecoration(
+      hintText: hint,
+      hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint),
+      filled: true,
+      fillColor: AppColors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: BorderSide(color: s.accent.main, width: 1.5),
+      ),
+    );
 
 /// Step indicator: one bar for a child, two once the member is an adult.
 class _Steps extends StatelessWidget {

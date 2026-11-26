@@ -153,23 +153,27 @@ void main() {
           history: history,
         );
     final state = PatientAppState();
+    final readings = [
+      reading('own', EntryHistory.none),
+      reading('theirs', EntryHistory([added])),
+    ];
+    // The day screen shows the day as stored, so the readings go in the store.
+    final ds = DriftCheckInsDataSource(db, () => const HealthProfileId.value('hp-1'));
+    for (final r in readings) {
+      await ds.put(r.id, r);
+    }
     await tester.pumpWidget(
       ProviderScope(
         retry: noProviderRetry,
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
+          checkInsDataSourceProvider.overrideWithValue(ds),
+          currentUserIdProvider.overrideWithValue(const UserId.value('user-1')),
         ],
         child: AppScope(
           state: state,
-          child: MaterialApp(
-            home: DayRecordsScreen(
-              checkIns: [
-                reading('own', EntryHistory.none),
-                reading('theirs', EntryHistory([added])),
-              ],
-            ),
-          ),
+          child: MaterialApp(home: DayRecordsScreen(checkIns: readings)),
         ),
       ),
     );

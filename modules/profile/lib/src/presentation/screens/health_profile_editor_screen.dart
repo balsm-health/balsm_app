@@ -1,18 +1,15 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../application/use_cases/add_allergy_use_case.dart';
-import '../../application/use_cases/add_chronic_condition_use_case.dart';
 import '../../application/use_cases/add_emergency_contact_use_case.dart';
-import '../../application/use_cases/remove_allergy_use_case.dart';
-import '../../application/use_cases/remove_chronic_condition_use_case.dart';
-import '../../application/use_cases/update_health_profile_use_case.dart';
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/allergy_severity.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 import '../i18n/i18n.dart';
+import '../providers/profile_edit.dart';
 
 /// Watches the current user's on-device [HealthProfile]. PHI stays on-device.
 final StreamProvider<HealthProfile?> _currentProfileProvider = StreamProvider.autoDispose<HealthProfile?>((ref) {
@@ -25,120 +22,16 @@ final StreamProvider<HealthProfile?> _currentProfileProvider = StreamProvider.au
 
 /// PHI editor — blood type, allergies, chronic conditions, emergency contacts.
 /// All data is on-device only (SQLCipher); nothing here is sent to the cloud.
-class HealthProfileEditorScreen extends ConsumerStatefulWidget {
+class HealthProfileEditorScreen extends ConsumerWidget {
   const HealthProfileEditorScreen({super.key});
 
   @override
-  ConsumerState<HealthProfileEditorScreen> createState() => _HealthProfileEditorScreenState();
-}
-
-class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorScreen> {
-  String? _errorMessage;
-
-  UserId? get _userId => ref.read(currentUserIdProvider);
-
-  void _showError(AppFailure failure) {
-    // PHI-safe: failure.message carries validation/storage text, never PHI values.
-    setState(() => _errorMessage = failure.message);
-  }
-
-  void _clearError() {
-    if (_errorMessage != null) setState(() => _errorMessage = null);
-  }
-
-  Future<void> _setBloodType(BloodType? bloodType) async {
-    final userId = _userId;
-    if (userId == null) return;
-    _clearError();
-    final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
-          userId: userId,
-          bloodType: bloodType,
-          clearBloodType: bloodType == null,
-        );
-    if (!result.isSuccess) _showError(result.error);
-  }
-
-  Future<void> _addAllergy() async {
-    final userId = _userId;
-    if (userId == null) return;
-    final input = await showModalBottomSheet<_AllergyInput>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const _AddAllergySheet(),
-    );
-    if (input == null) return;
-    _clearError();
-    final result = await ref.read(addAllergyUseCaseProvider).execute(
-          userId: userId,
-          name: input.name,
-          severity: input.severity,
-          isControlledSubstance: input.isControlled,
-        );
-    if (!result.isSuccess) _showError(result.error);
-  }
-
-  Future<void> _removeAllergy(AllergyId allergyId) async {
-    final userId = _userId;
-    if (userId == null) return;
-    _clearError();
-    final result = await ref.read(removeAllergyUseCaseProvider).execute(
-          userId: userId,
-          allergyId: allergyId,
-        );
-    if (!result.isSuccess) _showError(result.error);
-  }
-
-  Future<void> _addCondition() async {
-    final userId = _userId;
-    if (userId == null) return;
-    final name = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const _AddConditionSheet(),
-    );
-    if (name == null) return;
-    _clearError();
-    final result = await ref.read(addChronicConditionUseCaseProvider).execute(
-          userId: userId,
-          name: name,
-        );
-    if (!result.isSuccess) _showError(result.error);
-  }
-
-  Future<void> _removeCondition(ChronicConditionId conditionId) async {
-    final userId = _userId;
-    if (userId == null) return;
-    _clearError();
-    final result = await ref.read(removeChronicConditionUseCaseProvider).execute(
-          userId: userId,
-          conditionId: conditionId,
-        );
-    if (!result.isSuccess) _showError(result.error);
-  }
-
-  Future<void> _addContact() async {
-    final userId = _userId;
-    if (userId == null) return;
-    final input = await showModalBottomSheet<_ContactInput>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const _AddContactSheet(),
-    );
-    if (input == null) return;
-    _clearError();
-    final result = await ref.read(addEmergencyContactUseCaseProvider).execute(
-          userId: userId,
-          name: input.name,
-          phone: input.phone,
-          relation: input.relation,
-        );
-    if (!result.isSuccess) _showError(result.error);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(_currentProfileProvider);
     final m = ref.watch(profileStringsProvider);
+    // Watched here, not only in the list, so a change in flight survives its
+    // row scrolling away.
+    final failure = ref.watch(profileEditProvider);
 
     return Scaffold(
       backgroundColor: AppColors.cream50,
@@ -156,7 +49,7 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                   padding: const EdgeInsets.all(20),
                   child: BalsmErrorBanner(message: m.loadError),
                 ),
-                data: (profile) => _buildBody(context, profile),
+                data: (profile) => _ProfileBody(profile: profile, failure: failure),
               ),
             ),
           ],
@@ -164,18 +57,24 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
       ),
     );
   }
+}
 
-  Widget _buildBody(BuildContext context, HealthProfile? profile) {
+class _ProfileBody extends ConsumerWidget {
+  const _ProfileBody({required this.profile, required this.failure});
+
+  final HealthProfile? profile;
+  final AppFailure? failure;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(profileStringsProvider);
-    final allergies = profile?.allergies ?? const <Allergy>[];
-    final conditions = profile?.conditions ?? const <ChronicCondition>[];
-    final contacts = profile?.emergencyContacts ?? const <EmergencyContact>[];
-
+    final profile = this.profile;
     return ListView(
       padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
       children: [
-        if (_errorMessage case final errorMessage?) ...[
-          BalsmErrorBanner(message: errorMessage),
+        // PHI-safe: a failure's message carries validation/storage text, never PHI values.
+        if (failure case final failure?) ...[
+          BalsmErrorBanner(message: failure.message),
           const SizedBox(height: 16),
         ],
 
@@ -184,14 +83,58 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
         const SizedBox(height: 8),
         _BloodTypeDropdown(
           value: profile?.bloodType,
-          onChanged: _setBloodType,
+          onChanged: (bt) => unawaited(ref.read(profileEditProvider.notifier).setBloodType(bt)),
         ),
         const SizedBox(height: 24),
+        _AllergiesSection(allergies: profile?.allergies ?? const <Allergy>[]),
+        const SizedBox(height: 24),
+        _ConditionsSection(conditions: profile?.conditions ?? const <ChronicCondition>[]),
+        const SizedBox(height: 24),
+        _ContactsSection(contacts: profile?.emergencyContacts ?? const <EmergencyContact>[]),
+      ],
+    );
+  }
+}
 
-        // ---- Allergies ----
+class _AllergiesSection extends ConsumerWidget {
+  const _AllergiesSection({required this.allergies});
+
+  final List<Allergy> allergies;
+
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final input = await showModalBottomSheet<_AllergyInput>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _AddAllergySheet(),
+    );
+    if (input == null || !context.mounted) return;
+    await ref.read(profileEditProvider.notifier).addAllergy(
+          name: input.name,
+          severity: input.severity,
+          isControlled: input.isControlled,
+        );
+  }
+
+  /// The scale itself is domain (see [AllergySeverity]); how loud each level
+  /// looks is not. An unrecognised stored value keeps its raw text and a
+  /// neutral pill rather than being silently reclassified.
+  static String _severityLabel(Messages m, String severity) => AllergySeverity.fromWire(severity)?.label(m) ?? severity;
+
+  static BalsmPillVariant _severityVariant(String severity) => switch (AllergySeverity.fromWire(severity)) {
+        AllergySeverity.severe => BalsmPillVariant.danger,
+        AllergySeverity.moderate => BalsmPillVariant.warn,
+        AllergySeverity.mild || null => BalsmPillVariant.neutral,
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(profileStringsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         _SectionHeader(
           title: m.allergies.label,
-          trailing: _AddButton(onTap: _addAllergy),
+          trailing: _AddButton(onTap: () => unawaited(_add(context, ref))),
         ),
         const SizedBox(height: 8),
         if (allergies.isEmpty)
@@ -199,8 +142,8 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
         else
           BalsmListCard(
             children: [
-              ...allergies.map(
-                (a) => BalsmListRow(
+              for (final a in allergies)
+                BalsmListRow(
                   label: a.name,
                   showChevron: false,
                   trailing: Row(
@@ -215,26 +158,48 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                           ),
                         ),
                       BalsmPill(
-                        label: _severityLabel(a.severity),
+                        label: _severityLabel(m, a.severity),
                         variant: _severityVariant(a.severity),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, size: 18, color: AppColors.textHint),
-                        onPressed: () => _removeAllergy(a.id),
+                        onPressed: () => unawaited(ref.read(profileEditProvider.notifier).removeAllergy(a.id)),
                         tooltip: m.remove,
                       ),
                     ],
                   ),
                 ),
-              ),
             ],
           ),
-        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
 
-        // ---- Chronic conditions ----
+class _ConditionsSection extends ConsumerWidget {
+  const _ConditionsSection({required this.conditions});
+
+  final List<ChronicCondition> conditions;
+
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final name = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _AddConditionSheet(),
+    );
+    if (name == null || !context.mounted) return;
+    await ref.read(profileEditProvider.notifier).addCondition(name);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(profileStringsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         _SectionHeader(
           title: m.chronicConditions,
-          trailing: _AddButton(onTap: _addCondition),
+          trailing: _AddButton(onTap: () => unawaited(_add(context, ref))),
         ),
         const SizedBox(height: 8),
         if (conditions.isEmpty)
@@ -242,25 +207,54 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
         else
           BalsmListCard(
             children: [
-              ...conditions.map(
-                (c) => BalsmListRow(
+              for (final c in conditions)
+                BalsmListRow(
                   label: c.name,
                   showChevron: false,
                   trailing: IconButton(
                     icon: const Icon(Icons.close, size: 18, color: AppColors.textHint),
-                    onPressed: () => _removeCondition(c.id),
+                    onPressed: () => unawaited(ref.read(profileEditProvider.notifier).removeCondition(c.id)),
                     tooltip: m.remove,
                   ),
                 ),
-              ),
             ],
           ),
-        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
 
-        // ---- Emergency contacts (max 3) ----
+/// Emergency contacts, at most [AddEmergencyContactUseCase.maxContacts].
+class _ContactsSection extends ConsumerWidget {
+  const _ContactsSection({required this.contacts});
+
+  final List<EmergencyContact> contacts;
+
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final input = await showModalBottomSheet<_ContactInput>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _AddContactSheet(),
+    );
+    if (input == null || !context.mounted) return;
+    await ref.read(profileEditProvider.notifier).addContact(
+          name: input.name,
+          phone: input.phone,
+          relation: input.relation,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(profileStringsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         _SectionHeader(
           title: m.contacts,
-          trailing: contacts.length >= AddEmergencyContactUseCase.maxContacts ? null : _AddButton(onTap: _addContact),
+          trailing: contacts.length >= AddEmergencyContactUseCase.maxContacts
+              ? null
+              : _AddButton(onTap: () => unawaited(_add(context, ref))),
         ),
         const SizedBox(height: 8),
         if (contacts.isEmpty)
@@ -268,8 +262,8 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
         else
           BalsmListCard(
             children: [
-              ...contacts.map(
-                (c) => BalsmListRow(
+              for (final c in contacts)
+                BalsmListRow(
                   label: c.name,
                   sublabel: c.relation == null ? c.phone : '${c.relation} · ${c.phone}',
                   showChevron: false,
@@ -280,24 +274,11 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
                         )
                       : null,
                 ),
-              ),
             ],
           ),
       ],
     );
   }
-
-  /// The scale itself is domain (see [AllergySeverity]); how loud each level
-  /// looks is not. An unrecognised stored value keeps its raw text and a
-  /// neutral pill rather than being silently reclassified.
-  static String _severityLabel(String severity) =>
-      AllergySeverity.fromWire(severity)?.label(profileStrings.current) ?? severity;
-
-  static BalsmPillVariant _severityVariant(String severity) => switch (AllergySeverity.fromWire(severity)) {
-        AllergySeverity.severe => BalsmPillVariant.danger,
-        AllergySeverity.moderate => BalsmPillVariant.warn,
-        AllergySeverity.mild || null => BalsmPillVariant.neutral,
-      };
 }
 
 // ---------------------------------------------------------------------------
@@ -423,8 +404,9 @@ class _AddAllergySheet extends ConsumerStatefulWidget {
 
 class _AddAllergySheetState extends ConsumerState<_AddAllergySheet> {
   final _controller = TextEditingController();
-  String _severity = 'mild';
-  bool _controlled = false;
+
+  /// This sheet's draft key.
+  final _sheet = Object();
 
   @override
   void dispose() {
@@ -435,12 +417,14 @@ class _AddAllergySheetState extends ConsumerState<_AddAllergySheet> {
   @override
   Widget build(BuildContext context) {
     final m = ref.watch(profileStringsProvider);
+    final draft = ref.watch(allergyDraftProvider(_sheet));
+    final edit = ref.read(allergyDraftProvider(_sheet).notifier);
     return _SheetScaffold(
       title: m.allergies.add,
       onSave: () {
         final name = _controller.text.trim();
         if (name.isEmpty) return;
-        Navigator.pop(context, _AllergyInput(name, _severity, _controlled));
+        Navigator.pop(context, _AllergyInput(name, draft.severity, draft.controlled));
       },
       children: [
         BalsmField(label: m.allergen, controller: _controller, autofocus: true),
@@ -457,21 +441,20 @@ class _AddAllergySheetState extends ConsumerState<_AddAllergySheet> {
         Wrap(
           spacing: 8,
           children: [
-            ...kAllergySeverities.map(
-              (s) => ChoiceChip(
+            for (final s in kAllergySeverities)
+              ChoiceChip(
                 label: Text(AllergySeverity.fromWire(s)?.label(m) ?? s),
-                selected: _severity == s,
-                onSelected: (_) => setState(() => _severity = s),
+                selected: draft.severity == s,
+                onSelected: (_) => edit.setSeverity(s),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 8),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(m.controlledSubstance),
-          value: _controlled,
-          onChanged: (v) => setState(() => _controlled = v),
+          value: draft.controlled,
+          onChanged: (v) => edit.setControlled(value: v),
         ),
       ],
     );

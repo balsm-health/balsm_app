@@ -22,7 +22,6 @@ void main() {
     controller = _MockController();
     offline = _MockOffline();
     when(() => offline.pendingCredentials()).thenAnswer((_) async => (email: 'a@b.co', password: 'correct-horse'));
-    when(() => controller.lockedUntil).thenReturn(null);
   });
 
   /// Pumps a page with one button that runs [onTap] with a live context/ref.
@@ -131,6 +130,26 @@ void main() {
     await tester.enterText(find.byType(TextField), '654321');
     await tester.pumpAndSettle();
     verify(() => controller.verify(email: 'a@b.co', code: '654321')).called(1);
+  });
+
+  testWidgets('a lockout shows the wait, empties the boxes and stays on the code step', (tester) async {
+    when(() => controller.sendCode(any())).thenAnswer((_) async => AppResult.success(null));
+    when(() => controller.verify(email: any(named: 'email'), code: any(named: 'code'))).thenAnswer(
+      (_) async => AppResult.success(GoOnlineLockedOut(DateTime.now().add(const Duration(seconds: 90)))),
+    );
+    final state = await pump(tester, mode: AccountMode.deviceOnly, onTap: (context, _) => showGoOnlineSheet(context));
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(state.strings.offline.go_send));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining(state.strings.auth.auth_locked_retry('').split(' ').first), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, isEmpty);
+    expect(find.text(state.strings.offline.go_verify(Gender.other)), findsOneWidget);
+    expect(state.accountMode, AccountMode.deviceOnly);
   });
 
   testWidgets('requireOnline is true at once when already online', (tester) async {

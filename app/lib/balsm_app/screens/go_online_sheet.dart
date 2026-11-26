@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
-import '../auth/go_online_controller.dart';
+import '../auth/auth_flow_controllers.dart';
 import '../kit.dart';
 import '../maintenance/maintenance_guard.dart';
 import '../routes.dart';
@@ -36,7 +35,14 @@ Future<bool> requireOnline(BuildContext context) async {
   return s.accountMode == AccountMode.online;
 }
 
-enum _Step { email, code, done }
+/// The sheet's text for an [AuthError].
+String? _errorText(PatientAppState s, AuthError? e) => switch (e) {
+      null => null,
+      AuthError(kind: AuthErrorKind.lockout, :final lockoutSecs) =>
+        s.strings.auth.auth_locked_retry(lockoutSecs.toString()),
+      AuthError(kind: AuthErrorKind.server, :final message?) => message,
+      _ => s.strings.offline.go_failed(s.gender),
+    };
 
 class _GoOnlineSheet extends ConsumerStatefulWidget {
   const _GoOnlineSheet({required this.s});
@@ -45,40 +51,17 @@ class _GoOnlineSheet extends ConsumerStatefulWidget {
   ConsumerState<_GoOnlineSheet> createState() => _GoOnlineSheetState();
 }
 
+/// View state only: the two fields and the code focus. The step machine,
+/// errors and the resend countdown live in [GoOnlineSheetController].
 class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
-  static const _resendSecs = 28;
-
   final _email = TextEditingController();
   final _code = TextEditingController();
   final _codeFocus = FocusNode();
-  _Step _step = _Step.email;
-  bool _busy = false;
-  String? _error;
-  int _secs = 0;
-  Timer? _timer;
 
   PatientAppState get s => widget.s;
 
   @override
-  void initState() {
-    super.initState();
-    unawaited(_prefill());
-  }
-
-  /// The device-only account's email — the one it will be claimed under.
-  Future<void> _prefill() async {
-    try {
-      final creds = await ref.read(offlineAccountServiceProvider).pendingCredentials();
-      if (!mounted || creds == null || _email.text.isNotEmpty) return;
-      setState(() => _email.text = creds.email);
-    } on Object catch (_) {
-      // Prefill is a convenience; the field stays editable.
-    }
-  }
-
-  @override
   void dispose() {
-    _timer?.cancel();
     ContextMenuController.removeAny();
     _email.dispose();
     _code.dispose();
@@ -86,44 +69,14 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     super.dispose();
   }
 
-  bool get _emailOk => isPlausibleEmail(_email.text);
-
-  void _startCountdown() {
-    _timer?.cancel();
-    setState(() => _secs = _resendSecs);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted || _secs <= 1) {
-        t.cancel();
-        if (mounted) setState(() => _secs = 0);
-        return;
-      }
-      setState(() => _secs--);
-    });
-  }
-
   Future<void> _send() async {
-    if (!_emailOk || _busy) return;
-    setState(() {
-      _busy = true;
-      _error = null;
+    if (!isPlausibleEmail(_email.text)) return;
+    final sent = await ref.read(goOnlineSheetControllerProvider.notifier).sendCode(_email.text.trim());
+    if (!sent || !mounted) return;
+    _code.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _codeFocus.requestFocus();
     });
-    final r = await ref.read(goOnlineControllerProvider).sendCode(_email.text.trim());
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (r.isFailure) {
-        _error = r.error.message;
-        return;
-      }
-      _step = _Step.code;
-      _code.clear();
-    });
-    if (r.isSuccess) {
-      _startCountdown();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _codeFocus.requestFocus();
-      });
-    }
   }
 
   void _showCodeKeyboard() {
@@ -134,79 +87,47 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
   /// Fills the boxes from the clipboard; a whole code submits at once (#99).
   Future<void> _pasteCode() async {
     final code = await clipboardCode();
-    if (code == null || !mounted || _busy) return;
-    setState(() => _code.text = code);
+    if (code == null || !mounted || ref.read(goOnlineSheetControllerProvider).busy) return;
+    _code.text = code;
     if (code.length == 6) unawaited(_verify());
   }
 
   Future<void> _verify() async {
     final code = _code.text;
-    if (code.length != 6 || _busy) return;
-    final controller = ref.read(goOnlineControllerProvider);
+    if (code.length != 6) return;
     final nav = Navigator.of(context);
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final AppResult<GoOnlineOutcome> r;
-    try {
-      r = await controller.verify(email: _email.text.trim(), code: code);
-    } on Object catch (_) {
-      // Unexpected (e.g. a keychain error part-way). The account may already
-      // be online in storage — make the UI agree with it either way.
-      await _syncModeFromStorage();
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
+    final result =
+        await ref.read(goOnlineSheetControllerProvider.notifier).verify(email: _email.text.trim(), code: code);
+    switch (result) {
+      case null:
+        return;
+      case GoOnlineVerifyResult.online:
+        // Update the UI gates even if the sheet was dismissed mid-verify.
+        s.setAccountMode(AccountMode.online);
+        if (mounted) unawaited(HapticFeedback.lightImpact());
+      case GoOnlineVerifyResult.needsMergeChoice:
+        if (mounted) nav.pop();
+        s.go(AppRoutes.mergeOrDiscard);
+      case GoOnlineVerifyResult.failedButOnline:
+        s.setAccountMode(AccountMode.online);
+        if (mounted) _code.clear();
+      case GoOnlineVerifyResult.failed:
+        if (mounted) _code.clear();
+      case GoOnlineVerifyResult.refused:
+        if (!mounted) return;
+        unawaited(HapticFeedback.heavyImpact());
         _code.clear();
-        _error = s.strings.offline.go_failed(s.gender);
-      });
-      return;
     }
-    if (r.isSuccess) {
-      switch (r.value) {
-        case GoOnlineOutcome.online:
-          // Update the UI gates even if the sheet was dismissed mid-verify.
-          s.setAccountMode(AccountMode.online);
-          if (!mounted) return;
-          _timer?.cancel();
-          unawaited(HapticFeedback.lightImpact());
-          setState(() {
-            _busy = false;
-            _step = _Step.done;
-          });
-        case GoOnlineOutcome.needsMergeChoice:
-          if (mounted) nav.pop();
-          s.go(AppRoutes.mergeOrDiscard);
-      }
-      return;
-    }
-    if (!mounted) return;
-    unawaited(HapticFeedback.heavyImpact());
-    final until = controller.lockedUntil;
-    setState(() {
-      _busy = false;
-      _code.clear();
-      _error = switch (r.error) {
-        _ when until != null =>
-          s.strings.auth.auth_locked_retry(until.difference(DateTime.now()).inSeconds.clamp(0, 3600).toString()),
-        // Server text (invalid/expired code), display-safe as in sign-in.
-        NetworkFailure(:final message) => message,
-        _ => s.strings.offline.go_failed(s.gender),
-      };
-    });
-  }
-
-  Future<void> _syncModeFromStorage() async {
-    try {
-      final mode = await ref.read(offlineAccountServiceProvider).mode();
-      if (mode == AccountMode.online) s.setAccountMode(AccountMode.online);
-    } on Object catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final st = s.strings.offline;
+    // The device-only account's email, once storage has answered.
+    ref.listen(goOnlineSheetControllerProvider.select((st) => st.email), (_, email) {
+      if (email != null && _email.text.isEmpty) _email.text = email;
+    });
+    final step = ref.watch(goOnlineSheetControllerProvider.select((st) => st.step));
+    final error = ref.watch(goOnlineSheetControllerProvider.select((st) => st.error));
     return Directionality(
       textDirection: s.dir,
       child: Padding(
@@ -223,128 +144,198 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
             children: [
               const Center(child: SheetGrab()),
               const SizedBox(height: 16),
-              if (_step == _Step.done)
-                _done()
+              if (step == GoOnlineStep.done)
+                _DoneStep(s: s)
               else ...[
-                Text(st.go_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                Text(s.strings.offline.go_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                if (_step == _Step.email) ..._emailStep() else ..._codeStep(),
+                if (step == GoOnlineStep.email)
+                  _EmailStep(s: s, email: _email)
+                else
+                  _CodeStep(
+                    s: s,
+                    email: _email.text.trim(),
+                    code: _code,
+                    focus: _codeFocus,
+                    onShowKeyboard: _showCodeKeyboard,
+                    onPaste: _pasteCode,
+                    onComplete: () => unawaited(_verify()),
+                    onResend: () => unawaited(_send()),
+                  ),
               ],
-              if (_error case final error?)
+              if (_errorText(s, error) case final text?)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Semantics(
                     liveRegion: true,
                     child: Text(
-                      error,
+                      text,
                       style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
               const SizedBox(height: 20),
-              _primary(),
+              _PrimaryButton(
+                s: s,
+                email: _email,
+                code: _code,
+                onSend: _send,
+                onVerify: _verify,
+                onDone: () async => Navigator.pop(context),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  List<Widget> _emailStep() => [
-        Text(s.strings.offline.go_help, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
-        const SizedBox(height: 16),
-        AuthInput(
-          controller: _email,
-          hint: s.strings.emergency.em_ph,
-          keyboard: TextInputType.emailAddress,
-          forceLtr: true,
-          accent: s.accent,
-          autofillHints: const [AutofillHints.email],
-          onChanged: (_) => setState(() {}),
-        ),
-      ];
+class _EmailStep extends StatelessWidget {
+  const _EmailStep({required this.s, required this.email});
+  final PatientAppState s;
+  final TextEditingController email;
 
-  List<Widget> _codeStep() {
-    final code = _code.text;
-    return [
-      RichText(
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(s.strings.offline.go_help, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: 16),
+          AuthInput(
+            controller: email,
+            hint: s.strings.emergency.em_ph,
+            keyboard: TextInputType.emailAddress,
+            forceLtr: true,
+            accent: s.accent,
+            autofillHints: const [AutofillHints.email],
+          ),
+        ],
+      );
+}
+
+class _CodeStep extends StatelessWidget {
+  const _CodeStep({
+    required this.s,
+    required this.email,
+    required this.code,
+    required this.focus,
+    required this.onShowKeyboard,
+    required this.onPaste,
+    required this.onComplete,
+    required this.onResend,
+  });
+  final PatientAppState s;
+  final String email;
+  final TextEditingController code;
+  final FocusNode focus;
+  final VoidCallback onShowKeyboard;
+  final Future<void> Function() onPaste;
+  final VoidCallback onComplete;
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: TextSpan(
+              style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+              children: [
+                TextSpan(text: '${s.strings.offline.go_code_help(s.gender)} '),
+                TextSpan(
+                  text: email,
+                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Same shape as the sign-in code screen: six painted boxes over one
+          // hidden field; the group carries the label and the digit count.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: code,
+            builder: (context, value, _) => Semantics(
+              textField: true,
+              label: s.strings.common.a11y_code_field,
+              value: s.strings.common.a11y_code_progress('${value.text.length}'),
+              onTap: onShowKeyboard,
+              onPaste: onPaste,
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  // The gaps between boxes count as the field too.
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onShowKeyboard,
+                  onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, onPaste),
+                  child: OtpBoxRow(code: value.text, accent: s.accent),
+                ),
+              ),
+            ),
+          ),
+          Opacity(
+            opacity: 0,
+            child: SizedBox(
+              height: 1,
+              width: 1,
+              child: TextField(
+                controller: code,
+                focusNode: focus,
+                textDirection: TextDirection.ltr,
+                keyboardType: TextInputType.number,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                maxLength: 6,
+                inputFormatters: const [CodeInputFormatter()],
+                onChanged: (v) {
+                  if (v.length == 6) onComplete();
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(child: _ResendLine(s: s, onResend: onResend)),
+        ],
+      );
+}
+
+/// The resend countdown, then the Resend button once it reaches zero.
+class _ResendLine extends ConsumerWidget {
+  const _ResendLine({required this.s, required this.onResend});
+  final PatientAppState s;
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (secs, busy) = ref.watch(goOnlineSheetControllerProvider.select((st) => (st.secs, st.busy)));
+    if (secs > 0) {
+      return RichText(
         text: TextSpan(
-          style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+          style: Typo.meta(ar: s.rtl),
           children: [
-            TextSpan(text: '${s.strings.offline.go_code_help(s.gender)} '),
+            TextSpan(text: '${s.strings.auth.otp_in} '),
             TextSpan(
-              text: _email.text.trim(),
-              style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+              text: '${secs}s',
+              style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textTertiary),
             ),
           ],
         ),
-      ),
-      const SizedBox(height: 20),
-      // Same shape as the sign-in code screen: six painted boxes over one
-      // hidden field; the group carries the label and the digit count.
-      Semantics(
-        textField: true,
-        label: s.strings.common.a11y_code_field,
-        value: s.strings.common.a11y_code_progress('${code.length}'),
-        onTap: _showCodeKeyboard,
-        onPaste: _pasteCode,
-        child: ExcludeSemantics(
-          child: GestureDetector(
-            // The gaps between boxes count as the field too.
-            behavior: HitTestBehavior.opaque,
-            onTap: _showCodeKeyboard,
-            onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
-            child: OtpBoxRow(code: code, accent: s.accent),
-          ),
-        ),
-      ),
-      Opacity(
-        opacity: 0,
-        child: SizedBox(
-          height: 1,
-          width: 1,
-          child: TextField(
-            controller: _code,
-            focusNode: _codeFocus,
-            textDirection: TextDirection.ltr,
-            keyboardType: TextInputType.number,
-            autofillHints: const [AutofillHints.oneTimeCode],
-            maxLength: 6,
-            inputFormatters: const [CodeInputFormatter()],
-            onChanged: (v) {
-              setState(() {});
-              if (v.length == 6) unawaited(_verify());
-            },
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      Center(
-        child: _secs > 0
-            ? RichText(
-                text: TextSpan(
-                  style: Typo.meta(ar: s.rtl),
-                  children: [
-                    TextSpan(text: '${s.strings.auth.otp_in} '),
-                    TextSpan(
-                      text: '${_secs}s',
-                      style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textTertiary),
-                    ),
-                  ],
-                ),
-              )
-            : PButton(
-                s.strings.auth.otp_resend,
-                variant: BtnVariant.ghost,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: _busy ? null : _send,
-              ),
-      ),
-    ];
+      );
+    }
+    return PButton(
+      s.strings.auth.otp_resend,
+      variant: BtnVariant.ghost,
+      accent: s.accent,
+      ar: s.rtl,
+      onTap: busy ? null : onResend,
+    );
   }
+}
 
-  Widget _done() => Column(
+class _DoneStep extends StatelessWidget {
+  const _DoneStep({required this.s});
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 8),
@@ -371,24 +362,50 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
           ),
         ],
       );
+}
 
-  Widget _primary() {
+/// Send / Verify / Done, enabled by the step, the busy flag and the field
+/// the step needs.
+class _PrimaryButton extends ConsumerWidget {
+  const _PrimaryButton({
+    required this.s,
+    required this.email,
+    required this.code,
+    required this.onSend,
+    required this.onVerify,
+    required this.onDone,
+  });
+  final PatientAppState s;
+  final TextEditingController email;
+  final TextEditingController code;
+  final Future<void> Function() onSend;
+  final Future<void> Function() onVerify;
+  final Future<void> Function() onDone;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (step, busy) = ref.watch(goOnlineSheetControllerProvider.select((st) => (st.step, st.busy)));
     final st = s.strings.offline;
-    final (label, enabled, onTap) = switch (_step) {
-      _Step.email => (st.go_send, _emailOk && !_busy, _send),
-      _Step.code => (st.go_verify(s.gender), _code.text.length == 6 && !_busy, _verify),
-      _Step.done => (st.go_done, true, () async => Navigator.pop(context)),
-    };
-    return Opacity(
-      opacity: enabled ? 1 : 0.4,
-      child: PButton(
-        label,
-        large: true,
-        block: true,
-        accent: s.accent,
-        ar: s.rtl,
-        onTap: enabled ? () => unawaited(onTap()) : null,
-      ),
+    return ListenableBuilder(
+      listenable: Listenable.merge([email, code]),
+      builder: (context, _) {
+        final (label, enabled, onTap) = switch (step) {
+          GoOnlineStep.email => (st.go_send, isPlausibleEmail(email.text) && !busy, onSend),
+          GoOnlineStep.code => (st.go_verify(s.gender), code.text.length == 6 && !busy, onVerify),
+          GoOnlineStep.done => (st.go_done, true, onDone),
+        };
+        return Opacity(
+          opacity: enabled ? 1 : 0.4,
+          child: PButton(
+            label,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: enabled ? () => unawaited(onTap()) : null,
+          ),
+        );
+      },
     );
   }
 }

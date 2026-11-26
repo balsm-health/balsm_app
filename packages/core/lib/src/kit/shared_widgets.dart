@@ -33,9 +33,10 @@ class BalsmButton extends StatelessWidget {
             : Colors.transparent;
     final fg = (isPrimary || isDanger) ? AppColors.white : AppColors.hueBlue;
 
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
+    // 56 is a floor, not a fixed height: with large system text a long label
+    // wraps onto a second line instead of overflowing (CODING_STANDARDS §15).
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 56),
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
@@ -55,7 +56,13 @@ class BalsmButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-                  Text(label, style: const TextStyle(fontSize: FontSizes.body, fontWeight: FontWeight.w600)),
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: FontSizes.body, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ],
               ),
       ),

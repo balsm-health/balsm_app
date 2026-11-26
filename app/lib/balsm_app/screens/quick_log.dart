@@ -18,6 +18,7 @@ import '../maintenance/maintenance_guard.dart';
 import '../vault/vault_blob.dart';
 import 'family/family_kit.dart';
 import 'metric_log.dart';
+import 'quick_log_entry.dart';
 import 'records_detail.dart';
 import 'records_screen.dart';
 import 'report_flow.dart';
@@ -213,15 +214,22 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
 
   bool saving = false;
 
-  /// What the open flow holds, and whether it may be saved — the header's
-  /// Save reads these (quicklog.jsx `FlowSubmit` binds them to the sheet).
-  MetricLogCapture? _capture;
-  bool _valid = false;
+  /// The open flow's [quickLogEntryProvider] key: a new token per flow, so a
+  /// flow opened again starts empty; null on the list. An edit opens straight
+  /// on its flow.
+  late Object? _entryKey = widget.edit == null ? null : Object();
 
-  /// The flow as it opened; leaving asks first only once the entry differs
-  /// from it, so undoing an edit needs no prompt.
-  MetricLogCapture? _initial;
-  bool get _dirty => _capture != null && _initial != null && !_sameEntry(_capture!, _initial!);
+  bool get _dirty => switch (_entryKey) {
+        final flow? => ref.read(quickLogEntryProvider(flow)).dirty,
+        null => false,
+      };
+
+  /// The header's Save: stores what the open flow holds, once it is complete.
+  void _saveEntry() {
+    final flow = _entryKey;
+    if (flow == null) return;
+    if (ref.read(quickLogEntryProvider(flow)).saveable case final capture?) unawaited(_save(capture));
+  }
 
   /// Where the discard prompt leads once confirmed; null while it is hidden.
   _Leave? _confirm;
@@ -436,19 +444,13 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   void _openList() {
     active = null;
     activeSymptom = null;
-    _capture = null;
-    _initial = null;
-    _valid = false;
+    // Unwatched, the flow's entry disposes, and the PHI in it with it.
+    _entryKey = null;
     _confirm = null;
   }
 
   void _onChanged(MetricLogCapture capture, {required bool valid}) {
-    setState(() {
-      // The first report is the flow's starting state, not an edit.
-      _initial ??= capture;
-      _capture = capture;
-      _valid = valid;
-    });
+    if (_entryKey case final flow?) ref.read(quickLogEntryProvider(flow).notifier).report(capture, valid: valid);
   }
 
   /// An edit opens straight on its form, so stepping back out of it closes.
@@ -482,6 +484,11 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   @override
   Widget build(BuildContext context) {
     final inFlow = active != null || activeSymptom != null;
+    // Watching the flow's entry also keeps it alive while the flow is open.
+    final valid = switch (_entryKey) {
+      final flow? => ref.watch(quickLogEntryProvider(flow).select((e) => e.valid)),
+      null => false,
+    };
     final accent = s.accent.main;
     return PopScope(
       canPop: !inFlow && _confirm == null,
@@ -546,11 +553,11 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
                                   RoundBtn(
                                     icon: LucideIcons.check,
                                     semanticLabel: s.strings.checkin.ql_save,
-                                    bg: _valid ? accent : AppColors.ink100,
-                                    fg: _valid ? AppColors.white : AppColors.textHint,
+                                    bg: valid ? accent : AppColors.ink100,
+                                    fg: valid ? AppColors.white : AppColors.textHint,
                                     outlined: false,
                                     iconSize: 19,
-                                    onTap: _valid && !saving && _capture != null ? () => _save(_capture!) : null,
+                                    onTap: valid && !saving ? _saveEntry : null,
                                   )
                                 else
                                   RoundBtn(
@@ -743,7 +750,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
           // quicklog.jsx: documents are their own group, right after Vitals —
           // or last, when a search leaves no vitals.
           for (final g in _groupItems(filtered)) ...[
-            _groupCard(g),
+            _QlGroupCard(s: s, group: g, onOpen: _openItem),
             if (g.kind == _QlKind.vital && records.isNotEmpty) _documentsGroup(records),
           ],
           if (records.isNotEmpty && !filtered.any((it) => it.kind == _QlKind.vital)) _documentsGroup(records),
@@ -890,66 +897,18 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         ),
       );
 
-  Widget _groupCard(_QlGroup g) {
-    final label = switch (g.kind) {
-      _QlKind.vital => s.strings.checkin.ql_vitals,
-      _QlKind.wellbeing => s.strings.checkin.ql_wellbeing,
-      _QlKind.symptom => s.strings.checkin.symptoms,
-    };
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _GroupLabel(label),
-          PCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: g.items.indexed.map((e) {
-                final last = e.$1 == g.items.length - 1;
-                return _itemRow(e.$2, last: last);
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _itemRow(_QlItem item, {required bool last}) {
-    return PressHighlight(
-      onTap: () {
-        setState(() {
-          if (item.symptom != null) {
-            activeSymptom = item.symptom;
-          } else {
-            active = item.metric;
-          }
-          _flowOpenedAt = DateTime.now();
-        });
-        _track(ProductEvent.quickLogItemOpened, {'category': _category});
-      },
-      radius: last ? AppRadii.lg : 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        decoration: BoxDecoration(
-          border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink50)),
-        ),
-        child: Row(
-          children: [
-            IconSquare(item.icon, bg: item.bg, fg: item.color, size: 40),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                item.label,
-                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              ),
-            ),
-            Chevron(rtl: ar),
-          ],
-        ),
-      ),
-    );
+  /// Opens [item]'s flow, with a fresh entry.
+  void _openItem(_QlItem item) {
+    setState(() {
+      if (item.symptom != null) {
+        activeSymptom = item.symptom;
+      } else {
+        active = item.metric;
+      }
+      _entryKey = Object();
+      _flowOpenedAt = DateTime.now();
+    });
+    _track(ProductEvent.quickLogItemOpened, {'category': _category});
   }
 
   Widget _recordRow(List<RecordType> types) {
@@ -1167,14 +1126,6 @@ class _DiscardPrompt extends StatelessWidget {
   }
 }
 
-/// Whether two captures hold the same entry — [MetricLogCapture]'s own `==`
-/// leaves out the time, the photo and the symptom details.
-bool _sameEntry(MetricLogCapture a, MetricLogCapture b) =>
-    a == b &&
-    a.when == b.when &&
-    identical(a.photoBytes, b.photoBytes) &&
-    const MapEquality<SymptomId, SymptomDetail>().equals(a.symptomDetails, b.symptomDetails);
-
 /// `text-transform: uppercase` on the group header (quicklog.jsx). Applied
 /// here, not baked into the bundle: `symptoms` is shared with rows and chips
 /// that must stay sentence case.
@@ -1221,6 +1172,84 @@ class _LabelledRule extends StatelessWidget {
           ),
           const Expanded(child: Divider(height: 1, color: AppColors.ink100)),
         ],
+      ),
+    );
+  }
+}
+
+/// One group of the quick-log list — Vitals, Wellbeing or Symptoms — as a card
+/// of rows.
+class _QlGroupCard extends StatelessWidget {
+  const _QlGroupCard({required this.s, required this.group, required this.onOpen});
+  final PatientAppState s;
+  final _QlGroup group;
+  final ValueChanged<_QlItem> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (group.kind) {
+      _QlKind.vital => s.strings.checkin.ql_vitals,
+      _QlKind.wellbeing => s.strings.checkin.ql_wellbeing,
+      _QlKind.symptom => s.strings.checkin.symptoms,
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _GroupLabel(label),
+          PCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: group.items.indexed
+                  .map(
+                    (e) => _QlItemRow(
+                      s: s,
+                      item: e.$2,
+                      last: e.$1 == group.items.length - 1,
+                      onTap: () => onOpen(e.$2),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QlItemRow extends StatelessWidget {
+  const _QlItemRow({required this.s, required this.item, required this.last, required this.onTap});
+  final PatientAppState s;
+  final _QlItem item;
+  final bool last;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = s.rtl;
+    return PressHighlight(
+      onTap: onTap,
+      radius: last ? AppRadii.lg : 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink50)),
+        ),
+        child: Row(
+          children: [
+            IconSquare(item.icon, bg: item.bg, fg: item.color, size: 40),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                item.label,
+                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              ),
+            ),
+            Chevron(rtl: ar),
+          ],
+        ),
       ),
     );
   }

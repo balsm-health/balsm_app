@@ -15,6 +15,8 @@ import '../app_state.dart';
 import '../assets.dart';
 import '../auth/auth_flow_controllers.dart';
 import '../auth/go_online_controller.dart';
+import '../auth/handle_check_controller.dart';
+import '../auth/profile_setup_draft.dart';
 import '../dev/shake_to_dev_config.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -47,84 +49,8 @@ class AuthRouter extends StatelessWidget {
 }
 
 // ── Welcome ──────────────────────────────────────────────────
-class _WelcomeScreen extends ConsumerStatefulWidget {
+class _WelcomeScreen extends ConsumerWidget {
   const _WelcomeScreen();
-  @override
-  ConsumerState<_WelcomeScreen> createState() => _WelcomeScreenState();
-}
-
-class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
-  bool _busyGoogle = false;
-  String? _error;
-
-  /// Google sign-in ships on Android and macOS only. Web is off until the
-  /// Google Identity Services button is wired: google_sign_in's `signIn()` on
-  /// web returns no ID token, so the Balsm token exchange cannot run. iOS deliberately
-  /// has NO third-party sign-in: offering one there triggers App Review
-  /// guideline 4.8 (Sign in with Apple becomes mandatory), and the Apple
-  /// provider stays off until team ownership is settled (account ids are
-  /// team-scoped — a transfer would strand every Apple user). Windows/Linux
-  /// have no google_sign_in SDK implementation yet.
-  bool get _googleAvailable {
-    if (!FlavorConfig.current.socialSignInEnabled) return false;
-    if (FlavorConfig.current.googleServerClientId.isEmpty) return false;
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.macOS;
-  }
-
-  /// Native Google flow, then the Balsm token exchange. A new account enters
-  /// the app directly — the Profile tab's gaps card owns completion, and
-  /// everything DOB-gated stays fail-closed until details are saved.
-  Future<void> _signInGoogle(PatientAppState s) async {
-    if (_busyGoogle) return;
-    setState(() {
-      _busyGoogle = true;
-      _error = null;
-    });
-
-    final credentials = await ref.read(googleCredentialsPortProvider).obtain();
-    if (!mounted) return;
-
-    switch (credentials) {
-      case SocialCredentialsCancelled():
-        // The user backed out of the provider sheet — say nothing.
-        setState(() => _busyGoogle = false);
-        return;
-      case SocialCredentialsFailure(:final missingToken):
-        setState(() {
-          _busyGoogle = false;
-          _error = missingToken ? s.strings.auth.social_unavailable : s.strings.auth.social_failed;
-        });
-        return;
-      case SocialCredentials():
-        break;
-    }
-
-    final result = await ref.read(signInUseCaseProvider).signInWithGoogle(
-          idToken: credentials.idToken,
-          email: credentials.email,
-          countryCode: s.country.value,
-        );
-    if (!mounted) return;
-    setState(() => _busyGoogle = false);
-
-    result.fold(
-      (signInResult) {
-        switch (signInResult) {
-          case SignInSuccess(:final isNewUser):
-            if (isNewUser) {
-              // Google hands the name over now — prefill Personal details.
-              s.setSocialName(givenName: credentials.givenName, familyName: credentials.familyName);
-            }
-            unawaited(enterAfterSignIn(context, ref, s));
-          case SignInLockout(:final session):
-            final secsLeft = session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
-            setState(() => _error = s.strings.auth.auth_locked_retry(secsLeft.toString()));
-        }
-      },
-      (failure) => setState(() => _error = failure.message),
-    );
-  }
 
   void _start(PatientAppState s, AuthIntent intent) {
     s
@@ -133,7 +59,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     // The design's 168px lockup fits a tall phone. Below 860 high (a Galaxy
     // A17 is 832, less its status and navigation bars) the bottom-anchored
@@ -232,34 +158,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                                 onTap: () => _start(s, AuthIntent.deviceOnly),
                               ),
                               const SizedBox(height: 16),
-                              if (_googleAvailable) ...[
-                                _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
-                                const SizedBox(height: 14),
-                                _SocialButton(
-                                  label: s.strings.onboarding.w_google,
-                                  dark: false,
-                                  googleG: true,
-                                  busy: _busyGoogle,
-                                  onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s)),
-                                ),
-                                const SizedBox(height: 14),
-                              ],
                               // No social button on this platform, so no separator and
                               // no space held for one: the design dropped both with the
                               // buttons (auth.jsx WelcomeScreen). Holding 18px here left
                               // an empty band under the CTAs that pushed the block up.
-                              if (_error case final error?) ...[
-                                Semantics(
-                                  liveRegion: true,
-                                  child: Text(
-                                    error,
-                                    textAlign: TextAlign.center,
-                                    style: Typo.meta(ar: s.rtl)
-                                        .copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
+                              if (_googleAvailable) const _GoogleSignInBlock(),
                             ],
                           ),
                         ),
@@ -293,7 +196,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                         // simulators, desktop and web. A real phone or tablet shakes,
                         // and the pill there is clutter (hidden while the check runs).
                         if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).value == false)
-                          _DevConfigPill(onClosed: () => setState(() {})),
+                          const _DevConfigPill(),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -319,15 +222,28 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
 /// all, and which one it is decides whether anything works. Shown only where
 /// the server can be switched — dev and staging — so it never reaches a
 /// patient.
-class _DevConfigPill extends ConsumerWidget {
-  const _DevConfigPill({required this.onClosed});
-
-  /// Dev Config can repoint the client while this pill is showing where it
-  /// points, so the caller rebuilds when it closes.
-  final VoidCallback onClosed;
+///
+/// Dev Config can repoint the client while this pill shows where it points.
+/// [BalsmApiController] changes its client's base URL in place, so watching
+/// the provider does not hear it: the pill rebuilds itself once Dev Config
+/// closes (and only itself, not the whole welcome screen).
+class _DevConfigPill extends ConsumerStatefulWidget {
+  const _DevConfigPill();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DevConfigPill> createState() => _DevConfigPillState();
+}
+
+class _DevConfigPillState extends ConsumerState<_DevConfigPill> {
+  Future<void> _open() async {
+    await openDevConfig(context);
+    if (!mounted) return;
+    // View refresh only: re-reads the base URL the controller just changed.
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // The live client where there is one, the configured default where there
     // is not: a widget test or a docshots run builds this screen in a scope
     // that never overrode the controller, and a dev affordance must not be
@@ -346,10 +262,7 @@ class _DevConfigPill extends ConsumerWidget {
       label: 'Dev config',
       child: MinTapTarget(
         child: Pressable(
-          onTap: () async {
-            await openDevConfig(context);
-            onClosed();
-          },
+          onTap: _open,
           child: Container(
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -379,6 +292,79 @@ class _DevConfigPill extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Google sign-in ships on Android and macOS only. Web is off until the
+/// Google Identity Services button is wired: google_sign_in's `signIn()` on
+/// web returns no ID token, so the Balsm token exchange cannot run. iOS deliberately
+/// has NO third-party sign-in: offering one there triggers App Review
+/// guideline 4.8 (Sign in with Apple becomes mandatory), and the Apple
+/// provider stays off until team ownership is settled (account ids are
+/// team-scoped — a transfer would strand every Apple user). Windows/Linux
+/// have no google_sign_in SDK implementation yet.
+bool get _googleAvailable {
+  if (!FlavorConfig.current.socialSignInEnabled) return false;
+  if (FlavorConfig.current.googleServerClientId.isEmpty) return false;
+  if (kIsWeb) return false;
+  return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.macOS;
+}
+
+/// The welcome screen's "or" + Google button, and the line that says why a
+/// Google sign-in did not go through.
+class _GoogleSignInBlock extends ConsumerWidget {
+  const _GoogleSignInBlock();
+
+  /// Native Google flow, then the Balsm token exchange. A new account enters
+  /// the app directly — the Profile tab's gaps card owns completion, and
+  /// everything DOB-gated stays fail-closed until details are saved.
+  Future<void> _signIn(BuildContext context, WidgetRef ref, PatientAppState s) async {
+    final done = await ref.read(googleSignInControllerProvider.notifier).signIn(countryCode: s.country.value);
+    if (done == null || !context.mounted) return;
+    if (done.isNewUser) {
+      // Google hands the name over now — prefill Personal details.
+      s.setSocialName(givenName: done.givenName, familyName: done.familyName);
+    }
+    unawaited(enterAfterSignIn(context, ref, s));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final st = ref.watch(googleSignInControllerProvider);
+    final error = switch (st.error) {
+      null => null,
+      AuthError(kind: AuthErrorKind.lockout, :final lockoutSecs) =>
+        s.strings.auth.auth_locked_retry(lockoutSecs.toString()),
+      AuthError(kind: AuthErrorKind.socialUnavailable) => s.strings.auth.social_unavailable,
+      AuthError(kind: AuthErrorKind.server, :final message) => message,
+      _ => s.strings.auth.social_failed,
+    };
+    return Column(
+      children: [
+        _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+        const SizedBox(height: 14),
+        _SocialButton(
+          label: s.strings.onboarding.w_google,
+          dark: false,
+          googleG: true,
+          busy: st.busy,
+          onTap: st.busy ? null : () => unawaited(_signIn(context, ref, s)),
+        ),
+        const SizedBox(height: 14),
+        if (error != null) ...[
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              error,
+              textAlign: TextAlign.center,
+              style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
     );
   }
 }
@@ -555,22 +541,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
 
-  /// True while [_createOnDevice] is in flight. Separate from [_submitting] —
-  /// that one reflects [credentialsControllerProvider], which the device-only
-  /// path never touches.
-  bool _creating = false;
-
-  /// Set when [_createOnDevice] fails (e.g. secure-storage write failed).
-  /// Never the exception's own text — a generic retry prompt only.
-  String? _deviceError;
-
   AuthIntent get _intent => AppScope.of(context).authIntent;
   bool get _device => _intent == AuthIntent.deviceOnly;
   bool get _signUp => _intent == AuthIntent.signUp;
-
-  /// The error line to show under the fields: the device-only failure while
-  /// in that mode, the online controller's error otherwise.
-  String? get _displayError => _device ? _deviceError : _error;
 
   bool _seeded = false;
 
@@ -590,19 +563,17 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 
   bool _showPw = false;
 
-  bool get _submitting => ref.read(credentialsControllerProvider).submitting;
-
-  String? get _error {
-    final e = ref.read(credentialsControllerProvider).error;
-    if (e == null) return null;
-    final s = AppScope.of(context);
-    return switch (e.kind) {
-      AuthErrorKind.lockout => s.strings.auth.auth_locked_retry(e.lockoutSecs.toString()),
-      AuthErrorKind.invalidCredentials => s.strings.auth.pw_invalid_creds,
-      AuthErrorKind.emailRegistered => s.strings.auth.signup_email_registered,
-      AuthErrorKind.server => e.message,
-    };
-  }
+  /// The error line under the fields. [AuthErrorKind.failed] only comes from
+  /// the device-only create (a generic retry prompt, never the exception).
+  String? _errorText(PatientAppState s, AuthError? e) => switch (e) {
+        null => null,
+        AuthError(kind: AuthErrorKind.lockout, :final lockoutSecs) =>
+          s.strings.auth.auth_locked_retry(lockoutSecs.toString()),
+        AuthError(kind: AuthErrorKind.invalidCredentials) => s.strings.auth.pw_invalid_creds,
+        AuthError(kind: AuthErrorKind.emailRegistered) => s.strings.auth.signup_email_registered,
+        AuthError(kind: AuthErrorKind.server, :final message) => message,
+        _ => s.strings.auth.device_create_failed,
+      };
 
   @override
   void dispose() {
@@ -619,7 +590,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     return emailOk && pwCtrl.text.length >= OfflineAccountService.minPasswordLength;
   }
 
-  bool get _busy => _submitting || _creating;
+  bool get _busy => ref.read(credentialsControllerProvider).submitting;
 
   void _showForgotPassword(String email) {
     final s = AppScope.of(context);
@@ -710,61 +681,25 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// goes through — while device-only, the disclosure API call is refused
   /// locally by the interceptor and tolerated; acceptance is stored on-device.
   Future<void> _createOnDevice(PatientAppState s) async {
-    if (_creating) return;
-    setState(() {
-      _creating = true;
-      _deviceError = null;
-    });
-    try {
-      await ref.read(offlineAccountServiceProvider).create(email: ctrl.text.trim(), password: pwCtrl.text);
-      if (!mounted) return;
-      s.setAccountMode(AccountMode.deviceOnly);
-      TextInput.finishAutofillContext();
-      await enterAfterSignIn(context, ref, s);
-    } on Object catch (_) {
-      // Never the exception's own text (could be a secure-storage failure —
-      // no reason to surface or log its message); a generic retry is enough.
-      if (mounted) setState(() => _deviceError = s.strings.auth.device_create_failed);
-    } finally {
-      if (mounted) setState(() => _creating = false);
-    }
-  }
-
-  /// "New to Balsm? Create an account" / "Have an account? Sign in".
-  Widget _switchLine(PatientAppState s, {required String prompt, required String action, required AuthIntent to}) {
-    final style = Typo.meta(ar: s.rtl);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Flexible(child: Text('$prompt ', style: style)),
-        Semantics(
-          button: true,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _busy ? null : () => _switchTo(s, to),
-            // 48pt tall, only as wide as the words, so it stays on the prompt's line.
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: BalsmWindow.touchTarget, minHeight: BalsmWindow.touchTarget),
-              child: Align(
-                widthFactor: 1,
-                child: Text(action, style: style.copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+    final created = await ref
+        .read(credentialsControllerProvider.notifier)
+        .createOnDevice(email: ctrl.text.trim(), password: pwCtrl.text);
+    if (!created || !mounted) return;
+    s.setAccountMode(AccountMode.deviceOnly);
+    TextInput.finishAutofillContext();
+    await enterAfterSignIn(context, ref, s);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final a = s.strings.auth;
-    // Subscribe: the bridge getters above read this provider's current state.
-    ref.watch(credentialsControllerProvider);
+    final cred = ref.watch(credentialsControllerProvider);
+    final busy = cred.submitting;
+    final error = _errorText(s, cred.error);
     final (title, help, cta) = switch (s.authIntent) {
       AuthIntent.signUp => (a.signup_title, a.signup_help, a.signup_send),
-      AuthIntent.signIn => (a.signin_title, a.signin_help, _submitting ? a.pw_signing_in : a.pw_signin),
+      AuthIntent.signIn => (a.signin_title, a.signin_help, busy ? a.pw_signing_in : a.pw_signin),
       AuthIntent.deviceOnly => (a.device_title, a.device_help, a.device_create),
     };
     return ColoredBox(
@@ -814,7 +749,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                             if (s.authIntent == AuthIntent.signIn)
                               GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
+                                onTap: busy ? null : () => _showForgotPassword(ctrl.text.trim()),
                                 // 48pt target around 13pt text: the label row grows, the
                                 // link does not look any bigger.
                                 child: MinTapTarget(
@@ -876,13 +811,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                   padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 24),
                   child: Column(
                     children: [
-                      if (_displayError case final displayError?)
+                      if (error != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Semantics(
                             liveRegion: true,
                             child: Text(
-                              displayError,
+                              error,
                               textAlign: TextAlign.center,
                               style:
                                   Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
@@ -890,22 +825,28 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                           ),
                         ),
                       Opacity(
-                        opacity: ok && !_busy ? 1 : 0.4,
+                        opacity: ok && !busy ? 1 : 0.4,
                         child: PButton(
                           cta,
                           large: true,
                           block: true,
                           accent: s.accent,
                           ar: s.rtl,
-                          onTap: ok && !_busy ? () => _submit(s) : null,
+                          onTap: ok && !busy ? () => _submit(s) : null,
                         ),
                       ),
                       const SizedBox(height: 8),
                       switch (s.authIntent) {
-                        AuthIntent.signUp =>
-                          _switchLine(s, prompt: a.have_account, action: a.pw_signin, to: AuthIntent.signIn),
-                        AuthIntent.signIn =>
-                          _switchLine(s, prompt: a.new_here, action: a.create_account, to: AuthIntent.signUp),
+                        AuthIntent.signUp => _SwitchLine(
+                            prompt: a.have_account,
+                            action: a.pw_signin,
+                            onTap: busy ? null : () => _switchTo(s, AuthIntent.signIn),
+                          ),
+                        AuthIntent.signIn => _SwitchLine(
+                            prompt: a.new_here,
+                            action: a.create_account,
+                            onTap: busy ? null : () => _switchTo(s, AuthIntent.signUp),
+                          ),
                         AuthIntent.deviceOnly => const SizedBox.shrink(),
                       },
                       if (s.authIntent != AuthIntent.signIn) ...[
@@ -920,6 +861,43 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "New to Balsm? Create an account" / "Have an account? Sign in".
+class _SwitchLine extends StatelessWidget {
+  const _SwitchLine({required this.prompt, required this.action, required this.onTap});
+  final String prompt;
+  final String action;
+
+  /// Null while a submit is in flight.
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final style = Typo.meta(ar: s.rtl);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(child: Text('$prompt ', style: style)),
+        Semantics(
+          button: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            // 48pt tall, only as wide as the words, so it stays on the prompt's line.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: BalsmWindow.touchTarget, minHeight: BalsmWindow.touchTarget),
+              child: Align(
+                widthFactor: 1,
+                child: Text(action, style: style.copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -940,102 +918,29 @@ class _UnlockScreen extends ConsumerStatefulWidget {
 }
 
 class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
+  // View state only: the field and its visibility toggle. The unlock call,
+  // its errors and the lockout countdown live in [UnlockController].
   final _pwCtrl = TextEditingController();
   bool _showPw = false;
-  bool _busy = false;
-
-  /// Set when [OfflineAccountService.unlock] refuses the password. Cleared on
-  /// the next attempt.
-  String? _error;
-
-  /// Non-null while locked out; cleared once the countdown reaches zero.
-  DateTime? _lockedUntil;
-  int _secsLeft = 0;
-  Timer? _timer;
-
-  bool get _locked => _lockedUntil != null;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_checkLockout());
-  }
-
-  Future<void> _checkLockout() async {
-    final locked = await ref.read(offlineAccountServiceProvider).lockout();
-    if (!mounted || locked == null) return;
-    _startLockout(locked.until);
-  }
-
-  /// Seeds the countdown from a single `DateTime.now()` read, then ticks the
-  /// local counter down once a second rather than re-reading the clock on
-  /// every tick. The seconds remaining round UP (a 29.9s wait still reads
-  /// "30s") — never show less time than is actually left.
-  void _startLockout(DateTime until) {
-    _timer?.cancel();
-    final ms = until.difference(DateTime.now().toUtc()).inMilliseconds;
-    final secs = ms <= 0 ? 0 : (ms / 1000).ceil();
-    if (secs <= 0) {
-      setState(() => _lockedUntil = null);
-      return;
-    }
-    setState(() {
-      _lockedUntil = until;
-      _secsLeft = secs;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _secsLeft -= 1;
-        if (_secsLeft <= 0) {
-          _lockedUntil = null;
-          _timer?.cancel();
-        }
-      });
-    });
-  }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _pwCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (_locked || _busy || _pwCtrl.text.isEmpty) return;
     final s = AppScope.of(context);
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final result = await ref.read(offlineAccountServiceProvider).unlock(_pwCtrl.text);
-      if (!mounted) return;
-      switch (result) {
-        case Unlocked():
-          _pwCtrl.clear();
-          // A go-online that found an existing account is still waiting for
-          // its merge-or-discard choice: that screen, not the app.
-          final pendingMerge = await ref.read(offlineAccountServiceProvider).pendingMerge();
-          if (!mounted) return;
-          s.go(pendingMerge ? AppRoutes.mergeOrDiscard : AppRoutes.app);
-        case WrongPassword():
-          _pwCtrl.clear();
-          setState(() => _error = s.strings.auth.unlock_wrong);
-        case LockedUntil(:final until):
-          _pwCtrl.clear();
-          _startLockout(until);
-      }
-    } on Object catch (_) {
-      // Never the exception's own text (could be a secure-storage failure —
-      // no reason to surface or log its message); a generic retry is enough.
-      if (mounted) {
-        _pwCtrl.clear();
-        setState(() => _error = s.strings.auth.unlock_failed);
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
+    final outcome = await ref.read(unlockControllerProvider.notifier).unlock(_pwCtrl.text);
+    if (outcome == null || !mounted) return;
+    _pwCtrl.clear();
+    switch (outcome) {
+      case UnlockOutcome.app:
+        s.go(AppRoutes.app);
+      case UnlockOutcome.mergeOrDiscard:
+        s.go(AppRoutes.mergeOrDiscard);
+      case UnlockOutcome.refused:
+        break;
     }
   }
 
@@ -1043,25 +948,23 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
   /// §1, out of scope), so the only way forward is to delete the account and
   /// its data. Two explicit confirmations first.
   Future<void> _startOver() async {
-    if (_busy) return;
+    if (ref.read(unlockControllerProvider).busy) return;
     final s = AppScope.of(context);
     if (!await confirmRemoveDeviceAccount(context, s, forgotPassword: true) || !mounted) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final ok = await removeDeviceAccount(ref, s);
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (!ok) _error = s.strings.offline.merge_failed(s.gender);
-    });
+    await ref.read(unlockControllerProvider.notifier).startOver(() => removeDeviceAccount(ref, s));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final ok = _pwCtrl.text.isNotEmpty && !_locked && !_busy;
+    final st = ref.watch(unlockControllerProvider);
+    final error = switch (st.error) {
+      null => null,
+      AuthError(kind: AuthErrorKind.invalidCredentials) => s.strings.auth.unlock_wrong,
+      AuthError(kind: AuthErrorKind.removeFailed) => s.strings.offline.merge_failed(s.gender),
+      _ => s.strings.auth.unlock_failed,
+    };
+    final ok = _pwCtrl.text.isNotEmpty && !st.locked && !st.busy;
     return ColoredBox(
       color: AppColors.cream50,
       child: SafeArea(
@@ -1116,19 +1019,19 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
                 padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 24),
                 child: Column(
                   children: [
-                    if (_locked)
+                    if (st.locked)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Semantics(
                           liveRegion: true,
                           child: Text(
-                            s.strings.auth.unlock_locked(_secsLeft.toString()),
+                            s.strings.auth.unlock_locked(st.lockSecs.toString()),
                             textAlign: TextAlign.center,
                             style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
                           ),
                         ),
                       )
-                    else if (_error case final error?)
+                    else if (error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Semantics(
@@ -1158,7 +1061,7 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: _busy ? null : _startOver,
+                      onTap: st.busy ? null : _startOver,
                     ),
                   ],
                 ),
@@ -1187,76 +1090,41 @@ class _MergeOrDiscardScreen extends ConsumerStatefulWidget {
 }
 
 class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
-  bool _busy = false;
-  String? _error;
-
-  /// A choice a previous attempt started and did not finish. Once one has
-  /// begun only it is offered — e.g. after a merge's rows committed, Remove
-  /// would delete the merged records' attachments.
-  MergeChoice? _started;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadStarted());
-  }
-
-  Future<void> _loadStarted() async {
-    MergeChoice? c;
-    try {
-      c = await ref.read(goOnlineControllerProvider).pendingChoice();
-    } on Object catch (_) {
-      return;
-    }
-    if (mounted && c != _started) setState(() => _started = c);
-  }
-
-  Future<void> _merge() => _run((c) => c.merge());
+  Future<void> _merge() => _run(MergeChoice.merge);
 
   /// Destructive: a second, explicit confirmation before anything is deleted
   /// (also when finishing a discard that already started).
   Future<void> _discard() async {
-    if (_busy) return;
+    if (ref.read(mergeOrDiscardControllerProvider).busy) return;
     final s = AppScope.of(context);
     final ok = await showAppSheet<bool>(context, builder: (_) => _DiscardConfirmSheet(s: s));
     if (ok != true || !mounted) return;
-    await _run((c) => c.discard());
+    await _run(MergeChoice.discard);
   }
 
-  Future<void> _run(Future<AppResult<void>> Function(GoOnlineController c) action) async {
-    if (_busy) return;
+  Future<void> _run(MergeChoice choice) async {
+    if (ref.read(mergeOrDiscardControllerProvider).busy) return;
     final s = AppScope.of(context);
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    AppResult<void>? r;
-    try {
-      r = await action(ref.read(goOnlineControllerProvider));
-    } on Object catch (_) {
-      // Never the exception's text; the choice can simply be made again.
-      r = null;
-    }
+    final controller = ref.read(mergeOrDiscardControllerProvider.notifier);
+    final online = await controller.run(choice);
     if (!mounted) return;
-    if (r != null && r.isSuccess) {
-      s.setAccountMode(AccountMode.online);
-      unawaited(HapticFeedback.lightImpact());
-      await enterAfterSignIn(context, ref, s);
-      if (mounted) setState(() => _busy = false);
+    if (!online) {
+      unawaited(HapticFeedback.heavyImpact());
       return;
     }
-    unawaited(HapticFeedback.heavyImpact());
-    setState(() {
-      _busy = false;
-      _error = s.strings.offline.merge_failed(s.gender);
-    });
-    await _loadStarted();
+    s.setAccountMode(AccountMode.online);
+    unawaited(HapticFeedback.lightImpact());
+    await enterAfterSignIn(context, ref, s);
+    if (mounted) controller.settle();
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final st = s.strings.offline;
+    final state = ref.watch(mergeOrDiscardControllerProvider);
+    final busy = state.busy;
+    final started = state.started;
     return ColoredBox(
       color: AppColors.cream50,
       child: SafeArea(
@@ -1285,33 +1153,33 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
                 padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 24),
                 child: Column(
                   children: [
-                    if (_error case final error?)
+                    if (state.error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Semantics(
                           liveRegion: true,
                           child: Text(
-                            error,
+                            st.merge_failed(s.gender),
                             textAlign: TextAlign.center,
                             style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
                     Opacity(
-                      opacity: _busy ? 0.4 : 1,
+                      opacity: busy ? 0.4 : 1,
                       child: Column(
                         children: [
-                          if (_started != MergeChoice.discard)
+                          if (started != MergeChoice.discard)
                             PButton(
                               st.merge_btn,
                               large: true,
                               block: true,
                               accent: s.accent,
                               ar: s.rtl,
-                              onTap: _busy ? null : _merge,
+                              onTap: busy ? null : _merge,
                             ),
-                          if (_started == null) const SizedBox(height: 10),
-                          if (_started != MergeChoice.merge)
+                          if (started == null) const SizedBox(height: 10),
+                          if (started != MergeChoice.merge)
                             PButton(
                               st.discard_btn,
                               variant: BtnVariant.secondary,
@@ -1319,7 +1187,7 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
                               block: true,
                               accent: s.accent,
                               ar: s.rtl,
-                              onTap: _busy ? null : _discard,
+                              onTap: busy ? null : _discard,
                             ),
                         ],
                       ),
@@ -1509,10 +1377,6 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
   final ctrl = TextEditingController();
   final focus = FocusNode();
 
-  /// Set when the session is fine but something after it was not — a password
-  /// that failed to save. Not an auth error, so it does not clear the boxes.
-  String? _notice;
-
   /// Asks whether to adopt the password typed before the code was requested.
   /// Null when the sheet is dismissed, which means no.
   Future<bool?> _askAdoptPassword(PatientAppState s) => showAppSheet<bool>(
@@ -1520,19 +1384,8 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
         builder: (_) => _AdoptPasswordSheet(s: s),
       );
 
-  int get secs => ref.read(otpControllerProvider).secs;
+  /// For callbacks; the build watches the provider itself.
   bool get _verifying => ref.read(otpControllerProvider).verifying;
-
-  String? get _error {
-    final e = ref.read(otpControllerProvider).error;
-    if (e == null) return null;
-    final s = AppScope.of(context);
-    return switch (e.kind) {
-      AuthErrorKind.lockout => s.strings.auth.auth_locked_retry(e.lockoutSecs.toString()),
-      AuthErrorKind.emailRegistered => s.strings.auth.signup_email_registered,
-      _ => e.message,
-    };
-  }
 
   /// A fresh code makes whatever is in the boxes stale, so they empty.
   Future<void> _resend(PatientAppState s) async {
@@ -1605,15 +1458,10 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
       final apply = isNewUser || (await _askAdoptPassword(s) ?? false);
       if (!mounted) return;
       if (apply) {
-        final result = await ref.read(signInUseCaseProvider).setPassword(password: pw);
-        if (!mounted) return;
-        if (result.isFailure) {
-          // The account exists and the session is live; only the password did
-          // not stick. Say so rather than let them find out next launch.
-          setState(
-            () => _notice = isNewUser ? s.strings.emergency.em_pw_set_failed : s.strings.emergency.em_adopt_failed,
-          );
-        }
+        // The account exists and the session is live; if only the password
+        // does not stick, the controller says so (a notice) rather than let
+        // them find out next launch.
+        await ref.read(otpControllerProvider.notifier).applyPassword(pw, isNewUser: isNewUser);
       }
     }
     if (!mounted) return;
@@ -1635,8 +1483,22 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(otpControllerProvider); // bridge getters read current state
+    // Not the countdown: it ticks every second, and only [_OtpResendLine] shows it.
+    final (errorState, verifying, noticeState) =
+        ref.watch(otpControllerProvider.select((st) => (st.error, st.verifying, st.notice)));
     final s = AppScope.of(context);
+    final error = switch (errorState) {
+      null => null,
+      AuthError(kind: AuthErrorKind.lockout, :final lockoutSecs) =>
+        s.strings.auth.auth_locked_retry(lockoutSecs.toString()),
+      AuthError(kind: AuthErrorKind.emailRegistered) => s.strings.auth.signup_email_registered,
+      AuthError(:final message) => message,
+    };
+    final notice = switch (noticeState) {
+      null => null,
+      OtpNotice.passwordNotSet => s.strings.emergency.em_pw_set_failed,
+      OtpNotice.passwordNotAdopted => s.strings.emergency.em_adopt_failed,
+    };
     final code = ctrl.text;
     final contact = s.authEmail.isEmpty ? s.strings.auth.otp_your_email : s.authEmail;
     return ColoredBox(
@@ -1675,7 +1537,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                       ),
                       const SizedBox(height: 8),
                       Text(s.strings.auth.otp_existing_note, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
-                      if (_notice case final notice?) ...[
+                      if (notice != null) ...[
                         const SizedBox(height: 12),
                         Text(
                           notice,
@@ -1724,7 +1586,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                           ),
                         ),
                       ),
-                      if (_error case final error?)
+                      if (error != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
                           child: Semantics(
@@ -1738,32 +1600,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                           ),
                         ),
                       const SizedBox(height: 24),
-                      Center(
-                        child: secs > 0
-                            ? RichText(
-                                text: TextSpan(
-                                  style: Typo.meta(ar: s.rtl),
-                                  children: [
-                                    TextSpan(text: '${s.strings.auth.otp_in} '),
-                                    TextSpan(
-                                      text: '${secs}s',
-                                      style: Typo.num(
-                                        size: FontSizes.meta,
-                                        weight: FontWeight.w700,
-                                        color: AppColors.textTertiary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : PButton(
-                                s.strings.auth.otp_resend,
-                                variant: BtnVariant.ghost,
-                                accent: s.accent,
-                                ar: s.rtl,
-                                onTap: ref.read(otpControllerProvider).resending ? null : () => _resend(s),
-                              ),
-                      ),
+                      Center(child: _OtpResendLine(onResend: () => _resend(s))),
                     ],
                   ),
                 ),
@@ -1771,14 +1608,14 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 24),
                 child: Opacity(
-                  opacity: code.length == 6 && !_verifying ? 1 : 0.4,
+                  opacity: code.length == 6 && !verifying ? 1 : 0.4,
                   child: PButton(
-                    _verifying ? s.strings.auth.otp_verifying : s.strings.auth.verify,
+                    verifying ? s.strings.auth.otp_verifying : s.strings.auth.verify,
                     large: true,
                     block: true,
                     accent: s.accent,
                     ar: s.rtl,
-                    onTap: code.length == 6 && !_verifying
+                    onTap: code.length == 6 && !verifying
                         ? () {
                             unawaited(_verify(code));
                           }
@@ -1790,6 +1627,40 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The resend countdown, then the Resend button once it reaches zero. The only
+/// part of the code step that rebuilds every second.
+class _OtpResendLine extends ConsumerWidget {
+  const _OtpResendLine({required this.onResend});
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final (secs, resending) = ref.watch(otpControllerProvider.select((st) => (st.secs, st.resending)));
+    if (secs > 0) {
+      return RichText(
+        text: TextSpan(
+          style: Typo.meta(ar: s.rtl),
+          children: [
+            TextSpan(text: '${s.strings.auth.otp_in} '),
+            TextSpan(
+              text: '${secs}s',
+              style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textTertiary),
+            ),
+          ],
+        ),
+      );
+    }
+    return PButton(
+      s.strings.auth.otp_resend,
+      variant: BtnVariant.ghost,
+      accent: s.accent,
+      ar: s.rtl,
+      onTap: resending ? null : onResend,
     );
   }
 }
@@ -1815,8 +1686,6 @@ class _DisclosureGateScreen extends ConsumerStatefulWidget {
 class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
   final _scroll = ScrollController();
   bool _readToEnd = false;
-  bool _submitting = false;
-  String? _error;
 
   @override
   void initState() {
@@ -1850,32 +1719,23 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
   Future<void> _accept() async {
     final s = widget.state;
     final registry = ref.read(countryRegistryProvider);
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
     // Real use-case: on-device persist (FR-040 snapshots) + cloud sync + event.
-    final result = await ref.read(acceptDisclosureUseCaseProvider).execute(
-          disclosureId: const DisclosureId.value(kDisclosureId),
-          version: kDisclosureVersion,
+    final accepted = await ref.read(disclosureAcceptControllerProvider.notifier).accept(
           countryCode: s.country.value,
           supervisoryAuthority: registry.supervisoryAuthority(s.country.value),
           preferredLanguage: s.lang.value,
         );
-    if (!mounted) return;
-    result.fold(
-      (_) => Navigator.of(context).pop(true), // persisted → unlock 'app'
-      (failure) => setState(() {
-        _submitting = false;
-        _error = failure.message;
-      }),
-    );
+    if (!accepted || !mounted) return;
+    Navigator.of(context).pop(true); // persisted → unlock 'app'
   }
 
   @override
   Widget build(BuildContext context) {
     final s = widget.state;
     final authority = ref.watch(countryRegistryProvider).supervisoryAuthority(s.country.value);
+    final accept = ref.watch(disclosureAcceptControllerProvider);
+    final submitting = accept.submitting;
+    final error = accept.error?.message;
     return Scaffold(
       backgroundColor: AppColors.cream50,
       body: SafeArea(
@@ -1973,7 +1833,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                 padding: const EdgeInsetsDirectional.fromSTEB(24, 12, 24, 24),
                 child: Column(
                   children: [
-                    if (_error case final error?)
+                    if (error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Semantics(
@@ -1986,14 +1846,14 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                         ),
                       ),
                     Opacity(
-                      opacity: _readToEnd && !_submitting ? 1 : 0.4,
+                      opacity: _readToEnd && !submitting ? 1 : 0.4,
                       child: PButton(
-                        _submitting ? (s.strings.privacy.pv_saving) : (s.strings.privacy.pv_agree),
+                        submitting ? (s.strings.privacy.pv_saving) : (s.strings.privacy.pv_agree),
                         large: true,
                         block: true,
                         accent: s.accent,
                         ar: s.rtl,
-                        onTap: _readToEnd && !_submitting ? _accept : null,
+                        onTap: _readToEnd && !submitting ? _accept : null,
                       ),
                     ),
                   ],
@@ -2018,50 +1878,18 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   final first = TextEditingController();
   final last = TextEditingController();
   final handle = TextEditingController();
+
+  /// Shows the picked date; the date itself is in the draft.
   final dob = TextEditingController();
-  DateTime? _dobDate;
-  Gender gender = Gender.female;
-  UsernameStatus unStatus = UsernameStatus.idle;
-  Timer? debounce;
-  static const _taken = {
-    'layla',
-    'hassan',
-    'balsm',
-    'admin',
-    'doctor',
-    'health',
-    'user',
-    'omar',
-    'sara',
-    'mona',
-    'ahmed',
-  };
 
-  void _setHandle(String raw) {
-    final v = raw.toLowerCase().replaceAll(RegExp('[^a-z0-9_]'), '');
-    if (handle.text != v) {
-      handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
-    }
-    debounce?.cancel();
-    if (v.isEmpty) {
-      setState(() => unStatus = UsernameStatus.idle);
-      return;
-    }
-    if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(v)) {
-      setState(() => unStatus = UsernameStatus.invalid);
-      return;
-    }
-    setState(() => unStatus = UsernameStatus.checking);
-    debounce = Timer(
-      const Duration(milliseconds: 700),
-      () => setState(() => unStatus = _taken.contains(v) ? UsernameStatus.taken : UsernameStatus.available),
-    );
-  }
+  /// Keys this form's draft and handle check, so another open form never
+  /// shares them.
+  final Object _form = Object();
 
-  bool get ok =>
-      '${first.text} ${last.text}'.trim().length > 1 &&
-      _dobDate != null &&
-      (unStatus == UsernameStatus.available || unStatus == UsernameStatus.idle);
+  ProfileSetupDraftNotifier get _draft => ref.read(profileSetupDraftProvider(_form).notifier);
+
+  /// Optional at setup: an empty handle is no handle yet, not an error.
+  HandleCheckKey get _handleKey => (form: _form, required: false);
 
   String _fmtDob(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
@@ -2077,7 +1905,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
     final now = DateTime.now();
     final picked = await showBalsmDatePicker(
       context,
-      initial: _dobDate,
+      initial: ref.read(profileSetupDraftProvider(_form)).dob,
       firstDate: DateTime(now.year - 120),
       lastDate: now,
       title: s.strings.onboarding.dob_title,
@@ -2088,10 +1916,8 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
       accent: s.accent.main,
     );
     if (picked == null || !mounted) return;
-    setState(() {
-      _dobDate = picked;
-      dob.text = _fmtDob(picked);
-    });
+    dob.text = _fmtDob(picked);
+    _draft.setDob(picked);
   }
 
   /// Design-aligned age gate: it runs HERE, on a NEW account, not before the
@@ -2101,7 +1927,8 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   Future<void> _createAccount() async {
     if (_creating) return;
     final s = AppScope.of(context);
-    final d = _dobDate;
+    final draft = ref.read(profileSetupDraftProvider(_form));
+    final d = draft.dob;
     if (d == null) return;
     final ageResult = ref.read(ageGateUseCaseProvider).validate(d);
     if (ageResult.isFailure) {
@@ -2121,7 +1948,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
           UpdateProfileInput(
             firstName: first.text.trim(),
             lastName: last.text.trim(),
-            gender: gender,
+            gender: draft.gender,
             dateOfBirth: _isoDob(d),
           ),
         );
@@ -2141,6 +1968,9 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final draft = ref.watch(profileSetupDraftProvider(_form));
+    final handleOk = ref.watch(handleCheckProvider(_handleKey).select((h) => h.acceptable));
+    final ok = '${first.text} ${last.text}'.trim().length > 1 && draft.dob != null && handleOk;
     return ColoredBox(
       color: AppColors.cream50,
       child: SafeArea(
@@ -2191,7 +2021,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      _UsernameField(controller: handle, status: unStatus, onChanged: _setHandle, s: s),
+                      _UsernameField(controller: handle, checkKey: _handleKey, s: s),
                       const SizedBox(height: 16),
                       _Field(
                         label: s.strings.onboarding.pf_dob,
@@ -2220,8 +2050,8 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                           right: s.strings.onboarding.pf_male,
                           leftValue: Gender.female,
                           rightValue: Gender.male,
-                          value: gender,
-                          onChanged: (g) => setState(() => gender = g),
+                          value: draft.gender,
+                          onChanged: _draft.setGender,
                         ),
                       ),
                     ],
@@ -2263,14 +2093,22 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   }
 }
 
-class _UsernameField extends StatelessWidget {
-  const _UsernameField({required this.controller, required this.status, required this.onChanged, required this.s});
+class _UsernameField extends ConsumerWidget {
+  const _UsernameField({required this.controller, required this.checkKey, required this.s});
   final TextEditingController controller;
-  final UsernameStatus status;
-  final ValueChanged<String> onChanged;
+  final HandleCheckKey checkKey;
   final PatientAppState s;
+
+  void _onChanged(WidgetRef ref, String raw) {
+    final v = ref.read(handleCheckProvider(checkKey).notifier).changed(raw);
+    if (controller.text != v) {
+      controller.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(handleCheckProvider(checkKey).select((h) => h.status));
     final (icon, col, msg) = switch (status) {
       UsernameStatus.checking => (LucideIcons.loader, AppColors.textTertiary, s.strings.auth.un_checking),
       UsernameStatus.available => (LucideIcons.checkCircle2, AppColors.hueMint600, s.strings.auth.un_avail),
@@ -2294,7 +2132,7 @@ class _UsernameField extends StatelessWidget {
                 forceLtr: true,
                 accent: s.accent,
                 prefix: '@',
-                onChanged: onChanged,
+                onChanged: (raw) => _onChanged(ref, raw),
               ),
               if (status == UsernameStatus.checking)
                 const PositionedDirectional(end: 12, child: Spinner(size: 16, stroke: 2, color: AppColors.textTertiary))

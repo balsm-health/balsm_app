@@ -11,5 +11,6 @@ export 'src/i18n/strings.dart';
 // gate reads acceptance to decide whether the consolidated disclosure must be
 // shown). Acceptance rows are PHI-free regardless of who reads the DAO.
 export 'src/infrastructure/drift/disclosure_dao.dart';
+export 'src/presentation/providers/disclosure_providers.dart' show acceptDisclosureUseCaseProvider;
 export 'src/presentation/routes.dart';
 export 'src/presentation/screens/consolidated_disclosure_screen.dart';

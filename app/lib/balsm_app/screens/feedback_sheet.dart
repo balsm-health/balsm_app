@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../widgets/balsm_mark.dart';
+import 'feedback_draft.dart';
 
 /// In-app rating + feedback.
 ///
@@ -43,39 +44,9 @@ class _FeedbackSheet extends ConsumerStatefulWidget {
 }
 
 class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
-  int _rating = 0;
-  final _selected = <String>{};
   final _note = TextEditingController();
   bool _sent = false;
   bool _sending = false;
-  DateTime? _lastSentAt;
-
-  /// Guards the one-shot load below — `didChangeDependencies` runs again on
-  /// every inherited-widget change (a language switch, for one).
-  bool _loaded = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // NOT initState: this reads `AppScope`, and an inherited lookup there
-    // throws before initState completes — which left the "last sent" line
-    // permanently blank instead of failing visibly.
-    if (_loaded) return;
-    _loaded = true;
-    unawaited(_loadLast());
-  }
-
-  Future<void> _loadLast() async {
-    final prefs = AppScope.of(context).prefs;
-    if (prefs == null) return;
-    final rating = await prefs.feedbackRating();
-    final at = await prefs.feedbackSentAt();
-    if (!mounted) return;
-    setState(() {
-      _rating = rating ?? 0;
-      _lastSentAt = at;
-    });
-  }
 
   @override
   void dispose() {
@@ -84,18 +55,12 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
   }
 
   Future<void> _submit() async {
-    if (_rating == 0 || _sending) return;
+    if (_sending) return;
     final s = AppScope.of(context);
     setState(() => _sending = true);
-    final ok = await ref.read(feedbackReporterProvider).send(
-          UserFeedback(
-            rating: _rating,
-            topics: [
-              for (final (id, _) in _topics)
-                if (_selected.contains(id)) id,
-            ],
-            note: _note.text,
-          ),
+    final ok = await ref.read(feedbackDraftProvider(s.prefs).notifier).submit(
+          note: _note.text,
+          topicOrder: _topics.map((t) => t.$1).toList(),
         );
     if (!mounted) return;
     if (!ok) {
@@ -103,19 +68,8 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(s.strings.feedback.fb_failed(s.gender))));
       return;
     }
-    await s.prefs?.setFeedbackRating(_rating);
-    await s.prefs?.setFeedbackSentAt(DateTime.now());
-    if (mounted) setState(() => _sent = true);
+    setState(() => _sent = true);
   }
-
-  String _ratingLabel(PatientAppState s) => switch (_rating) {
-        1 => s.strings.feedback.fb_r1,
-        2 => s.strings.feedback.fb_r2,
-        3 => s.strings.feedback.fb_r3,
-        4 => s.strings.feedback.fb_r4,
-        5 => s.strings.feedback.fb_r5,
-        _ => s.strings.feedback.fb_rate_q(s.gender),
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -154,16 +108,52 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
           Flexible(
             child: SingleChildScrollView(
               padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, sheetBottomInset(context, base: 34)),
-              child: _sent ? _Thanks(s) : _form(s),
+              child: _sent ? _Thanks(s) : _FeedbackForm(note: _note, sending: _sending, onSubmit: _submit),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _form(PatientAppState s) {
+/// The rating, topics and note. Watches the draft (loaded with the last
+/// rating), so a tap rebuilds the form and not the sheet.
+class _FeedbackForm extends ConsumerWidget {
+  const _FeedbackForm({required this.note, required this.sending, required this.onSubmit});
+  final TextEditingController note;
+  final bool sending;
+  final VoidCallback onSubmit;
+
+  static String _ratingLabel(PatientAppState s, int rating) => switch (rating) {
+        1 => s.strings.feedback.fb_r1,
+        2 => s.strings.feedback.fb_r2,
+        3 => s.strings.feedback.fb_r3,
+        4 => s.strings.feedback.fb_r4,
+        5 => s.strings.feedback.fb_r5,
+        _ => s.strings.feedback.fb_rate_q(s.gender),
+      };
+
+  static String _fmt(DateTime d) {
+    final l = d.toLocal();
+    String p(int n) => n.toString().padLeft(2, '0');
+    return '${p(l.day)}/${p(l.month)}/${l.year}';
+  }
+
+  static OutlineInputBorder _b(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: BorderSide(color: c, width: 1.5),
+      );
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
     final f = s.strings.feedback;
+    final provider = feedbackDraftProvider(s.prefs);
+    final draft = ref.watch(provider).value ?? FeedbackDraft();
+    final notifier = ref.read(provider.notifier);
+    final rating = draft.rating;
+    final lastSentAt = draft.lastSentAt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -174,7 +164,7 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 for (var n = 1; n <= 5; n++) ...[
-                  _RateMark(lit: n <= _rating, label: '$n/5', onTap: () => setState(() => _rating = n)),
+                  _RateMark(lit: n <= rating, label: '$n/5', onTap: () => notifier.rate(n)),
                   if (n < 5) const SizedBox(width: 8),
                 ],
               ],
@@ -183,18 +173,18 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
             SizedBox(
               height: 20,
               child: Text(
-                _ratingLabel(s),
+                _ratingLabel(s, rating),
                 style: Typo.bodySm(ar: s.rtl).copyWith(
                   fontWeight: FontWeight.w700,
-                  color: _rating > 0 ? AppColors.textSecondary : AppColors.textTertiary,
+                  color: rating > 0 ? AppColors.textSecondary : AppColors.textTertiary,
                 ),
               ),
             ),
-            if (_lastSentAt != null)
+            if (lastSentAt != null)
               Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Text(
-                  '${f.fb_last} ${_fmt(_lastSentAt!)}',
+                  '${f.fb_last} ${_fmt(lastSentAt)}',
                   style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.eyebrow),
                 ),
               ),
@@ -210,12 +200,13 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
           spacing: 10,
           runSpacing: 10,
           children: [
-            for (final (id, label) in _topics)
-              _TopicChip(
-                label: label(s),
-                selected: _selected.contains(id),
-                onTap: () => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id)),
+            ..._topics.map(
+              (t) => _TopicChip(
+                label: t.$2(s),
+                selected: draft.topics.contains(t.$1),
+                onTap: () => notifier.toggleTopic(t.$1),
               ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -230,7 +221,7 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
         ),
         const SizedBox(height: 10),
         TextField(
-          controller: _note,
+          controller: note,
           maxLines: null,
           // A multi-line field's return key adds a line, so tapping anywhere
           // else is the only way to put the keyboard away (it covers Send).
@@ -268,22 +259,11 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
           accent: s.accent,
           ar: s.rtl,
           // Disabled until a rating is picked — the note alone is not a signal.
-          onTap: _rating == 0 || _sending ? null : _submit,
+          onTap: rating == 0 || sending ? null : onSubmit,
         ),
       ],
     );
   }
-
-  static String _fmt(DateTime d) {
-    final l = d.toLocal();
-    String p(int n) => n.toString().padLeft(2, '0');
-    return '${p(l.day)}/${p(l.month)}/${l.year}';
-  }
-
-  OutlineInputBorder _b(Color c) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        borderSide: BorderSide(color: c, width: 1.5),
-      );
 }
 
 /// One tappable mark — the brand mark in full colour when lit, flat ink when

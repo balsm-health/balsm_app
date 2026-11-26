@@ -771,35 +771,30 @@ class _DoseActionSheet extends StatelessWidget {
 ///
 /// With [initial] it is Edit medication: the fields start from it and saving
 /// replaces it under the same id.
-class _AddMedSheet extends StatefulWidget {
+class _AddMedSheet extends ConsumerStatefulWidget {
   const _AddMedSheet({required this.s, required this.userId, required this.onSave, this.initial});
   final PatientAppState s;
   final UserId userId;
   final Medication? initial;
   final Future<void> Function(Medication med) onSave;
   @override
-  State<_AddMedSheet> createState() => _AddMedSheetState();
+  ConsumerState<_AddMedSheet> createState() => _AddMedSheetState();
 }
 
-class _AddMedSheetState extends State<_AddMedSheet> {
-  late final MedPlanDraft _draft =
-      switch (widget.initial) { final initial? => MedPlanDraft.fromMedication(initial), _ => MedPlanDraft() };
+class _AddMedSheetState extends ConsumerState<_AddMedSheet> {
+  /// This sheet's own draft, gone when it closes.
+  late final MedPlanKey _key = (form: Object(), initial: widget.initial);
   bool get _editing => widget.initial != null;
   bool _saving = false;
   bool _done = false;
 
   PatientAppState get s => widget.s;
 
-  @override
-  void dispose() {
-    _draft.dispose();
-    super.dispose();
-  }
-
   Future<void> _submit() async {
-    if (!_draft.isNamed || _saving) return;
+    final draft = ref.read(medPlanDraftProvider(_key));
+    if (!draft.isNamed || _saving) return;
     setState(() => _saving = true);
-    await widget.onSave(_draft.toMedication(widget.userId));
+    await widget.onSave(draft.toMedication(widget.userId));
     if (!mounted) return;
     setState(() => _done = true);
     await Future<void>.delayed(const Duration(milliseconds: 1200));
@@ -812,7 +807,8 @@ class _AddMedSheetState extends State<_AddMedSheet> {
     if (_done) {
       return _SheetChrome(s: s, title: '', child: _Added(s: s, label: _editing ? m.med_changes_saved : m.med_added));
     }
-    final ready = _draft.isNamed && !_saving;
+    final draft = ref.watch(medPlanDraftProvider(_key));
+    final ready = draft.isNamed && !_saving;
     return _SheetChrome(
       s: s,
       title: _editing ? m.med_edit_title : m.med_add_title,
@@ -840,7 +836,7 @@ class _AddMedSheetState extends State<_AddMedSheet> {
             ),
           ),
           const SizedBox(height: 18),
-          MedPlanCard(draft: _draft, onChanged: () => setState(() {})),
+          MedPlanCard(draft: draft, onChanged: ref.read(medPlanDraftProvider(_key).notifier).update),
           const SizedBox(height: 18),
           Opacity(
             opacity: ready ? 1 : 0.4,

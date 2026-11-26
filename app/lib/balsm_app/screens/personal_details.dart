@@ -19,6 +19,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../app_state.dart';
+import '../auth/handle_check_controller.dart';
 import '../kit.dart';
 import '../qr/qr_share_controller.dart';
 import '../responsive.dart';
@@ -27,6 +28,7 @@ import '../widgets/balsm_mark.dart';
 import '../widgets/permission_denied.dart';
 import '../widgets/phone_field.dart';
 import 'go_online_sheet.dart';
+import 'profile_edit_draft.dart';
 import 'profile_screen.dart' show ProfileScreen;
 import 'profile_subscreens.dart';
 
@@ -67,9 +69,6 @@ final FutureProvider<EmergencyCardSnapshot?> _emergencySnapshotProvider =
   return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
 });
 
-/// The signed-in user's full editable profile (PHI-carrying: DOB, national ID).
-/// Screen-local — the PHI never enters the app-wide AccountSummary. Re-fetched
-/// after a save so the head + fields reflect the server.
 /// A mandatory profile field the completion card can report as missing.
 enum ProfileGap { name, dateOfBirth, gender, bloodType }
 
@@ -94,12 +93,6 @@ final FutureProvider<Set<ProfileGap>> profileGapsProvider = FutureProvider.autoD
   };
 });
 
-final FutureProvider<ProfileDetails?> _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return null;
-  return ref.watch(accountProfileUseCaseProvider).load();
-});
-
 /// Connected accounts (Apple / Google) on Account details. Off until Apple ID
 /// and Google sign-in are configured — the rows could only ever show
 /// "disconnected" and a Connect button that links nothing.
@@ -112,6 +105,10 @@ class PersonalDetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
 }
 
+/// The text fields, and the save button's in-flight and "saved" flags (view
+/// state). Gender, nationality, date of birth, the new contact's relationship
+/// and the claimed handle are in [ProfileEditDraft]; the handle's
+/// availability is [handleCheckProvider].
 class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   // Profile fields — all seeded ONCE from the real /account/self on first load
   // (no prototype sample identity). display name, phone, national ID, etc. are
@@ -123,81 +120,36 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final _lastCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _nidCtrl = TextEditingController(); // national ID (PHI/PII)
-  CountryCode? _nationality; // picked from a bottom sheet (stored as ISO code)
-  Gender? _gender; // null until loaded / chosen
-  DateTime? _dob; // PHI
 
   // Emergency-contact fields feed the real AddEmergencyContactUseCase, so
   // they start empty (an "add new contact" form) rather than seeded sample PHI.
   final emName = TextEditingController();
-  Relationship? _emRelation; // picked from the relationship selector
   final emPhone = TextEditingController();
 
   bool saved = false;
   bool _saving = false;
-  bool _loaded = false; // controllers seeded from the profile fetch
+  bool _fieldsSeeded = false; // text controllers seeded from the profile fetch
 
-  // Handle availability — validated against the real /handle/check endpoint.
-  // `_origHandle` is the currently-claimed handle; an unchanged handle is 'idle'.
-  String _origHandle = '';
-  // Backend handle format: 3–30 chars, a–z 0–9 _ or . (mirrors kHandleFormat).
-  static final _handleFormat = RegExp(r'^[a-z0-9_.]{3,30}$');
-  UsernameStatus unStatus = UsernameStatus.idle;
-  Timer? _debounce;
+  /// Keys this screen's draft and handle check.
+  final Object _form = Object();
+
+  /// A profile always has a handle: clearing it is an error, not "none".
+  HandleCheckKey get _handleKey => (form: _form, required: true);
 
   PatientAppState get s => widget.s;
 
-  /// Block save only while the handle is mid-check or resolved bad — other
-  /// profile fields are always saveable. A changed+available handle also claims.
-  bool get _canSave => unStatus == UsernameStatus.idle || unStatus == UsernameStatus.available;
-
-  String? _fmtDob() => _dob == null
-      ? null
-      : '${_dob!.year.toString().padLeft(4, '0')}-'
-          '${_dob!.month.toString().padLeft(2, '0')}-'
-          '${_dob!.day.toString().padLeft(2, '0')}';
+  ProfileEditDraftNotifier get _draft => ref.read(profileEditDraftProvider(_form).notifier);
+  HandleCheckController get _handleCheck => ref.read(handleCheckProvider(_handleKey).notifier);
 
   void _setHandle(String raw) {
-    final v = raw.toLowerCase().replaceAll(RegExp('[^a-z0-9_.]'), '');
+    final v = _handleCheck.changed(raw, original: ref.read(profileEditDraftProvider(_form)).origHandle);
     if (handle.text != v) {
       handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
-    }
-    _debounce?.cancel();
-    // A profile always has a handle: clearing it is not "unchanged".
-    if (v.isEmpty) {
-      setState(() => unStatus = UsernameStatus.required);
-      return;
-    }
-    if (v == _origHandle) {
-      setState(() => unStatus = UsernameStatus.idle);
-      return;
-    }
-    if (!_handleFormat.hasMatch(v)) {
-      setState(() => unStatus = UsernameStatus.invalid);
-      return;
-    }
-    setState(() => unStatus = UsernameStatus.checking);
-    _debounce = Timer(const Duration(milliseconds: 500), () => _check(v));
-  }
-
-  /// Live availability check against the real account API.
-  Future<void> _check(String v) async {
-    try {
-      final res = await ref.read(accountApiProvider).checkHandleAvailability(v);
-      if (!mounted || handle.text != v) return; // stale response — ignore
-      setState(() => unStatus = res.available ? UsernameStatus.available : UsernameStatus.taken);
-    } on Object catch (_) {
-      // Network / server error — treat as "couldn't verify" (idle), never
-      // block on a false-available. A genuinely-taken handle still fails at
-      // claim time (409 → ConflictFailure).
-      if (!mounted || handle.text != v) return;
-      setState(() => unStatus = UsernameStatus.idle);
     }
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     handle.dispose();
     _firstCtrl.dispose();
     _lastCtrl.dispose();
@@ -224,37 +176,40 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   /// Save entry point. A changed handle retires the patient's public link, so
   /// it is confirmed first (`hc_*` sheet) rather than swapped silently.
   Future<void> _requestSave() async {
-    if (_saving || !_loaded) return;
+    final draft = ref.read(profileEditDraftProvider(_form));
+    if (_saving || !draft.loaded) return;
     final next = handle.text.trim();
     if (next.isEmpty) {
-      setState(() => unStatus = UsernameStatus.required);
+      _handleCheck.markRequired();
       return;
     }
-    if (!_canSave) return;
-    if (next == _origHandle) return _save();
-    final confirmed = await _confirmHandleChange(next);
+    if (!ref.read(handleCheckProvider(_handleKey)).acceptable) return;
+    if (next == draft.origHandle) return _save();
+    final confirmed = await _confirmHandleChange(draft.origHandle, next);
+    if (!mounted) return;
     if (!confirmed) {
       // Cancelling restores the claimed handle so the field never lies about
       // what the account actually resolves to.
-      handle.text = _origHandle;
-      if (mounted) setState(() => unStatus = UsernameStatus.idle);
+      handle.text = draft.origHandle;
+      _handleCheck.settle(draft.origHandle);
       return;
     }
     await _save();
   }
 
-  Future<bool> _confirmHandleChange(String next) async =>
+  Future<bool> _confirmHandleChange(String from, String next) async =>
       await showAppSheet<bool>(
         context,
         textDirection: s.dir,
-        builder: (_) => _HandleChangeSheet(s: s, from: _origHandle, to: next),
+        builder: (_) => _HandleChangeSheet(s: s, from: from, to: next),
       ) ??
       false;
 
   Future<void> _save() async {
     // Never submit before the profile has loaded — empty controllers would
     // clear the user's data server-side.
-    if (!_canSave || _saving || !_loaded) return;
+    final draft = ref.read(profileEditDraftProvider(_form));
+    if (!ref.read(handleCheckProvider(_handleKey)).acceptable || _saving || !draft.loaded) return;
     setState(() => _saving = true);
 
     // 1) Profile fields (display name, bio, gender, nationality, phone, DOB,
@@ -263,10 +218,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           UpdateProfileInput(
             firstName: _firstCtrl.text.trim(),
             lastName: _lastCtrl.text.trim(),
-            gender: _gender,
-            nationality: _nationality?.value,
+            gender: draft.gender,
+            nationality: draft.nationality?.value,
             phone: _phoneCtrl.text.trim(),
-            dateOfBirth: _fmtDob(),
+            dateOfBirth: draft.isoDob,
             nationalId: _nidCtrl.text.trim(),
             // Kept on the device for a device-only account, which cannot claim
             // one on the server; online, the claim below sets it.
@@ -283,35 +238,33 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     // 2) Handle claim, only when the handle actually changed and is available.
     final newHandle = handle.text.trim();
     // A device-only account has just stored it on the device; nothing to claim.
-    if (s.accountMode == AccountMode.deviceOnly) _origHandle = newHandle;
-    if (newHandle != _origHandle && unStatus == UsernameStatus.available) {
+    if (s.accountMode == AccountMode.deviceOnly) _draft.handleClaimed(newHandle);
+    final available = ref.read(handleCheckProvider(_handleKey)).status == UsernameStatus.available;
+    if (newHandle != ref.read(profileEditDraftProvider(_form)).origHandle && available) {
       final claim = await ref.read(claimHandleUseCaseProvider).execute(newHandle);
       if (!mounted) return;
-      final claimFailed = claim.isFailure;
-      if (claimFailed) {
-        setState(() {
-          _saving = false;
-          unStatus = UsernameStatus.taken;
-        });
+      if (claim.isFailure) {
+        _handleCheck.markTaken();
+        setState(() => _saving = false);
         _snack(_failureText(claim.error));
         return;
       }
-      _origHandle = newHandle;
+      _draft.handleClaimed(newHandle);
     }
 
     await refreshAccountSummary(ref);
     ref
-      ..invalidate(_profileProvider)
+      ..invalidate(profileDetailsProvider)
       // Re-derive the completion card from the freshly saved fields.
       ..invalidate(profileGapsProvider);
     if (!mounted) return;
     // Gendered copy and the body map follow the saved gender straight away. The
     // seeding above runs once per open, so without this a gender changed here
     // only reached the rest of the app the next time this screen was opened.
-    s.setGender(_gender ?? Gender.other);
+    s.setGender(draft.gender ?? Gender.other);
+    _handleCheck.settle(newHandle);
     setState(() {
       _saving = false;
-      unStatus = UsernameStatus.idle;
       saved = true;
     });
     Future.delayed(const Duration(seconds: 2), () {
@@ -331,96 +284,69 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           userId: userId,
           name: name,
           phone: contactPhone,
-          relation: _emRelation?.wire,
+          relation: ref.read(profileEditDraftProvider(_form)).emRelation?.wire,
         );
     if (!mounted) return;
     if (result.isSuccess) {
       emName.clear();
-      setState(() => _emRelation = null);
       emPhone.clear();
+      _draft.setEmRelation(null);
       ref.invalidate(_emergencyContactsProvider);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error.message)));
     }
   }
 
-  /// Read-only styled row for an existing emergency contact (prototype look).
-  Widget _contactRow(EmergencyContact c) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.md)),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          c.name,
-                          style:
-                              Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                        ),
-                      ),
-                      if (c.isPrimary) ...[
-                        const SizedBox(width: 7),
-                        Pill(
-                          s.strings.profile.pd_primary,
-                          kind: PillKind.info,
-                          dot: false,
-                          ar: s.rtl,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Builder(
-                    builder: (_) {
-                      final rel = _relationLabel(c.relation);
-                      return Text(
-                        rel == null ? c.phone : '$rel · ${c.phone}',
-                        textDirection: c.relation == null ? TextDirection.ltr : s.dir,
-                        style: Typo.meta(ar: s.rtl),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final current = ref.read(profileEditDraftProvider(_form)).dob;
+    final picked = await showBalsmDatePicker(
+      context,
+      initial: current ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(now.year - 120),
+      lastDate: now,
+      title: s.strings.onboarding.dob_title,
+      confirmLabel: s.strings.onboarding.dob_confirm,
+      months: s.strings.settings.cal_months.split('|'),
+      weekdays: s.strings.settings.cal_weekdays.split('|'),
+      rtl: s.rtl,
+      accent: s.accent.main,
+    );
+    if (picked != null && mounted) _draft.setDob(picked);
+  }
 
-  Color get _handleStatusColor => switch (unStatus) {
-        UsernameStatus.available => AppColors.hueMint600,
-        UsernameStatus.taken || UsernameStatus.required => AppColors.danger,
-        UsernameStatus.invalid => AppColors.sun500,
-        _ => s.accent.main,
-      };
+  Future<void> _pickNationality() async {
+    final picked = await showAppSheet<CountryCode>(
+      context,
+      textDirection: s.dir,
+      builder: (_) => _NationalitySheet(current: ref.read(profileEditDraftProvider(_form)).nationality, s: s),
+    );
+    if (picked != null && mounted) _draft.setNationality(picked);
+  }
 
-  String? get _handleMsg => switch (unStatus) {
-        UsernameStatus.checking => s.strings.auth.un_checking,
-        UsernameStatus.available => s.strings.auth.un_avail,
-        UsernameStatus.taken => s.strings.auth.un_taken,
-        UsernameStatus.invalid => s.strings.auth.un_invalid,
-        UsernameStatus.required => s.strings.auth.un_required,
-        _ => null,
-      };
+  Future<void> _pickRelationship() async {
+    final picked = await showAppSheet<Relationship>(
+      context,
+      textDirection: s.dir,
+      builder: (_) => _RelationshipSheet(current: ref.read(profileEditDraftProvider(_form)).emRelation, s: s),
+    );
+    if (picked != null && mounted) _draft.setEmRelation(picked);
+  }
 
-  Widget? _handleSuffix() {
-    if (unStatus == UsernameStatus.checking) {
-      return const Center(widthFactor: 1, child: Spinner(size: 16, stroke: 2, color: AppColors.textTertiary));
-    }
-    final ico = switch (unStatus) {
-      UsernameStatus.available => LucideIcons.checkCircle2,
-      UsernameStatus.taken => LucideIcons.xCircle,
-      UsernameStatus.invalid || UsernameStatus.required => LucideIcons.alertCircle,
-      _ => null,
-    };
-    if (ico == null) return null;
-    return Icon(ico, size: 18, color: _handleStatusColor);
+  /// Seeds the text fields ONCE from the real /account/self on first load
+  /// (no prototype sample identity). Name comes back as split first/last.
+  void _seedFields(ProfileDetails profile) {
+    _fieldsSeeded = true;
+    handle.text = profile.handle ?? '';
+    _firstCtrl.text = profile.firstName ?? '';
+    _lastCtrl.text = profile.lastName ?? '';
+    _phoneCtrl.text = profile.phone ?? '';
+    _nidCtrl.text = profile.nationalId ?? '';
+    // setGender notifies AppScope, which may not be marked dirty mid-build.
+    final g = profile.gender ?? Gender.other;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) s.setGender(g);
+    });
   }
 
   @override
@@ -429,28 +355,11 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final contacts = ref.watch(_emergencyContactsProvider).value ?? const <EmergencyContact>[];
     final atMaxContacts = contacts.length >= AddEmergencyContactUseCase.maxContacts;
 
-    // Seed every editable field ONCE from the real /account/self on first load
-    // (no prototype sample identity). Name comes back as split first/last.
-    final profile = ref.watch(_profileProvider).value;
-    if (!_loaded && profile != null) {
-      _loaded = true;
-      _origHandle = profile.handle ?? '';
-      handle.text = _origHandle;
-      _firstCtrl.text = profile.firstName ?? '';
-      _lastCtrl.text = profile.lastName ?? '';
-      _phoneCtrl.text = profile.phone ?? '';
-      _nidCtrl.text = profile.nationalId ?? '';
-      // Stored as an ISO country code; legacy free-text values won't parse and
-      // simply show the placeholder until re-selected.
-      _nationality = (profile.nationality?.isNotEmpty ?? false) ? CountryCode.tryFromCode(profile.nationality!) : null;
-      _gender = profile.gender;
-      // setGender notifies AppScope, which may not be marked dirty mid-build.
-      final g = profile.gender ?? Gender.other;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) s.setGender(g);
-      });
-      _dob = (profile.dateOfBirth?.isNotEmpty ?? false) ? DateTime.tryParse(profile.dateOfBirth!) : null;
-    }
+    final profile = ref.watch(profileDetailsProvider).value;
+    if (!_fieldsSeeded && profile != null) _seedFields(profile);
+    final loaded = ref.watch(profileEditDraftProvider(_form).select((d) => d.loaded));
+    final handleOk = ref.watch(handleCheckProvider(_handleKey).select((h) => h.acceptable));
+    final canSave = handleOk && !_saving && loaded;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -493,90 +402,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                     ),
                   ),
                   // Account (handle + QR share)
-                  _section(LucideIcons.atSign, s.strings.profile.pd_account),
-                  _Card([
-                    _labeled(
-                      s.strings.auth.un_label,
-                      TextField(
-                        controller: handle,
-                        textDirection: TextDirection.ltr,
-                        onChanged: _setHandle,
-                        style: Typo.num(size: FontSizes.subhead),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          // `UsernameField` paints the "@" as an always-on glyph inside
-                          // the input. `prefixText` only appears once the field is focused
-                          // or non-empty, so an empty handle lost the affordance entirely;
-                          // prefixIcon renders unconditionally.
-                          prefixIcon: Padding(
-                            padding: const EdgeInsetsDirectional.only(start: 14, end: 2),
-                            child: Text(
-                              '@',
-                              style: Typo.num(
-                                size: FontSizes.subhead,
-                                weight: FontWeight.w700,
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                          ),
-                          prefixIconConstraints: const BoxConstraints(),
-                          // Status icon: spinner while checking, then check / x / alert.
-                          suffixIcon: _handleSuffix(),
-                          suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                          filled: true, fillColor: AppColors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          // InputDecorator animates the border colour over ~200ms as the
-                          // handle validates (border tints mint / red / amber).
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadii.md),
-                            borderSide: BorderSide(
-                              color: unStatus == UsernameStatus.idle ? AppColors.border : _handleStatusColor,
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadii.md),
-                            borderSide: BorderSide(
-                              color: unStatus == UsernameStatus.idle ? s.accent.main : _handleStatusColor,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Validation message — slides in/out smoothly as status changes.
-                    AnimatedSize(
-                      duration: Motion.base,
-                      curve: Motion.easeOut,
-                      alignment: AlignmentDirectional.topStart,
-                      child: switch (_handleMsg) {
-                        final handleMsg? => Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              handleMsg,
-                              style:
-                                  Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: _handleStatusColor),
-                            ),
-                          ),
-                        _ => const SizedBox(width: double.infinity)
-                      },
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(LucideIcons.info, size: 12, color: AppColors.textTertiary),
-                        const SizedBox(width: 5),
-                        Text(
-                          s.strings.profile.pd_handle_hint,
-                          style: Typo.num(size: FontSizes.meta, color: AppColors.textTertiary),
-                        ),
-                      ],
-                    ),
-                  ]),
+                  _Section(icon: LucideIcons.atSign, title: s.strings.profile.pd_account, s: s),
+                  _Card([_HandleField(controller: handle, checkKey: _handleKey, onChanged: _setHandle, s: s)]),
                   // Connected accounts — visual match of home.jsx. Hidden behind
                   // [_showConnectedAccounts] until Apple/Google sign-in is set up.
                   if (_showConnectedAccounts) ...[
-                    _section(LucideIcons.link, s.strings.profile.conn_accounts),
+                    _Section(icon: LucideIcons.link, title: s.strings.profile.conn_accounts, s: s),
                     Container(
                       margin: const EdgeInsets.only(bottom: 4),
                       decoration: BoxDecoration(
@@ -588,53 +419,77 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       clipBehavior: Clip.antiAlias,
                       child: Column(
                         children: [
-                          _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
-                          _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
+                          _ConnectedRow(apple: true, label: s.strings.profile.conn_apple, last: false, s: s),
+                          _ConnectedRow(apple: false, label: s.strings.profile.conn_google, last: true, s: s),
                         ],
                       ),
                     ),
                   ],
                   // Basic info — name (→ display_name), date of birth (PHI, 18+),
                   // gender. All persisted via PATCH /account/profile.
-                  _section(LucideIcons.user, s.strings.profile.pd_basic_info),
+                  _Section(icon: LucideIcons.user, title: s.strings.profile.pd_basic_info, s: s),
                   _Card([
                     Row(
                       children: [
-                        Expanded(child: _field(s.strings.onboarding.pf_fname, _firstCtrl)),
+                        Expanded(
+                          child: _TextFieldRow(label: s.strings.onboarding.pf_fname, controller: _firstCtrl, s: s),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _field(s.strings.onboarding.pf_lname, _lastCtrl)),
+                        Expanded(
+                          child: _TextFieldRow(label: s.strings.onboarding.pf_lname, controller: _lastCtrl, s: s),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _labeled(s.strings.onboarding.pf_dob, _dobField()),
+                    _Labeled(
+                      label: s.strings.onboarding.pf_dob,
+                      s: s,
+                      child: _DobField(form: _form, onTap: _pickDob),
+                    ),
                     const SizedBox(height: 14),
-                    _labeled(s.strings.onboarding.pf_gender, _genderSeg()),
+                    _Labeled(
+                      label: s.strings.onboarding.pf_gender,
+                      s: s,
+                      child: _GenderSeg(form: _form, s: s),
+                    ),
                   ]),
                   // Contact — phone, national ID (PHI/PII, encrypted), nationality.
-                  _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
+                  _Section(icon: LucideIcons.phone, title: s.strings.profile.pd_contact_section, s: s),
                   _Card([
-                    _phoneField(s.strings.profile.pd_phone, _phoneCtrl),
+                    _Labeled(label: s.strings.profile.pd_phone, s: s, child: PhoneField(controller: _phoneCtrl)),
                     const SizedBox(height: 14),
-                    _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
+                    _TextFieldRow(label: s.strings.profile.pd_nid, controller: _nidCtrl, mono: true, s: s),
                     const SizedBox(height: 14),
-                    _labeled(s.strings.profile.pd_nationality, _nationalityField()),
+                    _Labeled(
+                      label: s.strings.profile.pd_nationality,
+                      s: s,
+                      child: _NationalityField(form: _form, onTap: _pickNationality, s: s),
+                    ),
                   ]),
 
                   // Emergency contact (real on-device PHI; up to 3 contacts).
-                  _section(LucideIcons.phoneCall, s.strings.profile.pd_emergency),
+                  _Section(icon: LucideIcons.phoneCall, title: s.strings.profile.pd_emergency, s: s),
                   _Card([
-                    for (var i = 0; i < contacts.length; i++) ...[
-                      _contactRow(contacts[i]),
-                      if (i < contacts.length - 1 || !atMaxContacts) const SizedBox(height: 12),
-                    ],
+                    ...contacts.indexed.map(
+                      (e) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: e.$1 < contacts.length - 1 || !atMaxContacts ? 12 : 0,
+                        ),
+                        child: _ContactRow(contact: e.$2, s: s),
+                      ),
+                    ),
                     if (!atMaxContacts) ...[
-                      _field(s.strings.profile.pd_em_name, emName),
+                      _TextFieldRow(label: s.strings.profile.pd_em_name, controller: emName, s: s),
                       const SizedBox(height: 14),
                       // Stacked, not side by side: the phone field carries a
                       // country-code picker and needs the full card width.
-                      _labeled(s.strings.profile.pd_em_rel, _relationField()),
+                      _Labeled(
+                        label: s.strings.profile.pd_em_rel,
+                        s: s,
+                        child: _RelationField(form: _form, onTap: _pickRelationship, s: s),
+                      ),
                       const SizedBox(height: 14),
-                      _phoneField(s.strings.profile.pd_em_phone, emPhone),
+                      _Labeled(label: s.strings.profile.pd_em_phone, s: s, child: PhoneField(controller: emPhone)),
                       const SizedBox(height: 14),
                       PButton(
                         s.strings.profile.pd_add_contact,
@@ -651,7 +506,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   // Saves the profile (and claims a changed+available handle).
                   // Disabled until loaded and while a handle is mid-check / bad.
                   Opacity(
-                    opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
+                    opacity: canSave ? 1 : 0.4,
                     child: PButton(
                       saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save,
                       icon: saved ? LucideIcons.check : LucideIcons.save,
@@ -659,7 +514,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: _canSave && !_saving && _loaded ? _requestSave : null,
+                      onTap: canSave ? _requestSave : null,
                     ),
                   ),
                 ],
@@ -671,7 +526,203 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     );
   }
 
-  Widget _connectedRow({required bool apple, required String label, required bool last}) {
+  /// Two-letter initials from the display name (first letters of up to two
+  /// words); '?' when the name is unknown.
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    final a = parts.first.substring(0, 1);
+    final b = parts.length > 1 ? parts[1].substring(0, 1) : '';
+    return (a + b).toUpperCase();
+  }
+}
+
+/// Localized label for a stored relation wire-code; falls back to the raw
+/// stored string for legacy free-text values (returns null when unset).
+String? _relationLabel(String? code, PatientAppState s) {
+  if (code == null || code.isEmpty) return null;
+  final rel = Relationship.tryFromCode(code);
+  return rel == null ? code : rel.label(kCatalog, locale: s.lang.value);
+}
+
+/// Read-only styled row for an existing emergency contact (prototype look).
+class _ContactRow extends StatelessWidget {
+  const _ContactRow({required this.contact, required this.s});
+  final EmergencyContact contact;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = contact;
+    final rel = _relationLabel(c.relation, s);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.md)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        c.name,
+                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                    ),
+                    if (c.isPrimary) ...[
+                      const SizedBox(width: 7),
+                      Pill(
+                        s.strings.profile.pd_primary,
+                        kind: PillKind.info,
+                        dot: false,
+                        ar: s.rtl,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  rel == null ? c.phone : '$rel · ${c.phone}',
+                  textDirection: c.relation == null ? TextDirection.ltr : s.dir,
+                  style: Typo.meta(ar: s.rtl),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The handle field with its live availability: border tint, status icon and
+/// message follow [handleCheckProvider].
+class _HandleField extends ConsumerWidget {
+  const _HandleField({required this.controller, required this.checkKey, required this.onChanged, required this.s});
+  final TextEditingController controller;
+  final HandleCheckKey checkKey;
+  final ValueChanged<String> onChanged;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(handleCheckProvider(checkKey).select((h) => h.status));
+    final statusColor = switch (status) {
+      UsernameStatus.available => AppColors.hueMint600,
+      UsernameStatus.taken || UsernameStatus.required => AppColors.danger,
+      UsernameStatus.invalid => AppColors.sun500,
+      _ => s.accent.main,
+    };
+    final message = switch (status) {
+      UsernameStatus.checking => s.strings.auth.un_checking,
+      UsernameStatus.available => s.strings.auth.un_avail,
+      UsernameStatus.taken => s.strings.auth.un_taken,
+      UsernameStatus.invalid => s.strings.auth.un_invalid,
+      UsernameStatus.required => s.strings.auth.un_required,
+      _ => null,
+    };
+    final icon = switch (status) {
+      UsernameStatus.available => LucideIcons.checkCircle2,
+      UsernameStatus.taken => LucideIcons.xCircle,
+      UsernameStatus.invalid || UsernameStatus.required => LucideIcons.alertCircle,
+      _ => null,
+    };
+    return _Labeled(
+      label: s.strings.auth.un_label,
+      s: s,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            textDirection: TextDirection.ltr,
+            onChanged: onChanged,
+            style: Typo.num(size: FontSizes.subhead),
+            decoration: InputDecoration(
+              isDense: true,
+              // `UsernameField` paints the "@" as an always-on glyph inside
+              // the input. `prefixText` only appears once the field is focused
+              // or non-empty, so an empty handle lost the affordance entirely;
+              // prefixIcon renders unconditionally.
+              prefixIcon: Padding(
+                padding: const EdgeInsetsDirectional.only(start: 14, end: 2),
+                child: Text(
+                  '@',
+                  style: Typo.num(size: FontSizes.subhead, weight: FontWeight.w700, color: AppColors.textTertiary),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(),
+              // Status icon: spinner while checking, then check / x / alert.
+              suffixIcon: status == UsernameStatus.checking
+                  ? const Center(widthFactor: 1, child: Spinner(size: 16, stroke: 2, color: AppColors.textTertiary))
+                  : (icon == null ? null : Icon(icon, size: 18, color: statusColor)),
+              suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              filled: true, fillColor: AppColors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              // InputDecorator animates the border colour over ~200ms as the
+              // handle validates (border tints mint / red / amber).
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: BorderSide(
+                  color: status == UsernameStatus.idle ? AppColors.border : statusColor,
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: BorderSide(
+                  color: status == UsernameStatus.idle ? s.accent.main : statusColor,
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+          // Validation message — slides in/out smoothly as status changes.
+          AnimatedSize(
+            duration: Motion.base,
+            curve: Motion.easeOut,
+            alignment: AlignmentDirectional.topStart,
+            child: switch (message) {
+              final message? => Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    message,
+                    style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: statusColor),
+                  ),
+                ),
+              _ => const SizedBox(width: double.infinity)
+            },
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(LucideIcons.info, size: 12, color: AppColors.textTertiary),
+              const SizedBox(width: 5),
+              Text(
+                s.strings.profile.pd_handle_hint,
+                style: Typo.num(size: FontSizes.meta, color: AppColors.textTertiary),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectedRow extends StatelessWidget {
+  const _ConnectedRow({required this.apple, required this.label, required this.last, required this.s});
+  final bool apple;
+  final String label;
+  final bool last;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink100))),
@@ -709,8 +760,16 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       ),
     );
   }
+}
 
-  Widget _section(IconData icon, String title) => Padding(
+class _Section extends StatelessWidget {
+  const _Section({required this.icon, required this.title, required this.s});
+  final IconData icon;
+  final String title;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(0, 18, 0, 10),
         child: Row(
           children: [
@@ -723,8 +782,16 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           ],
         ),
       );
+}
 
-  Widget _labeled(String label, Widget child) => Column(
+class _Labeled extends StatelessWidget {
+  const _Labeled({required this.label, required this.child, required this.s});
+  final String label;
+  final Widget child;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -740,11 +807,21 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           child,
         ],
       );
+}
 
-  Widget _field(String label, TextEditingController c, {bool mono = false}) => _labeled(
-        label,
-        TextField(
-          controller: c,
+class _TextFieldRow extends StatelessWidget {
+  const _TextFieldRow({required this.label, required this.controller, required this.s, this.mono = false});
+  final String label;
+  final TextEditingController controller;
+  final PatientAppState s;
+  final bool mono;
+
+  @override
+  Widget build(BuildContext context) => _Labeled(
+        label: label,
+        s: s,
+        child: TextField(
+          controller: controller,
           textDirection: mono ? TextDirection.ltr : s.dir,
           style: mono
               ? Typo.num(size: FontSizes.subhead)
@@ -765,14 +842,19 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           ),
         ),
       );
+}
 
-  /// Phone entry with its country picker. Every number the patient gives us is
-  /// captured this way — a bare text field left the country code to guesswork.
-  Widget _phoneField(String label, TextEditingController c) => _labeled(label, PhoneField(controller: c));
+/// A tappable 52px box that opens a picker and shows its choice ([child]),
+/// with the picker's icon at the end.
+class _PickerBox extends StatelessWidget {
+  const _PickerBox({required this.onTap, required this.trailing, required this.child});
+  final VoidCallback onTap;
+  final IconData trailing;
+  final Widget child;
 
-  /// Date-of-birth field — opens a date picker; shows dd / mm / yyyy.
-  Widget _dobField() => GestureDetector(
-        onTap: _pickDob,
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: 52,
@@ -784,162 +866,147 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           ),
           child: Row(
             children: [
-              Expanded(
-                child: Text(
-                  _dob == null
-                      ? '—'
-                      : '${_dob!.day.toString().padLeft(2, '0')} / '
-                          '${_dob!.month.toString().padLeft(2, '0')} / ${_dob!.year}',
-                  textDirection: TextDirection.ltr,
-                  style: Typo.num(
-                    size: FontSizes.subhead,
-                    color: _dob == null ? AppColors.textHint : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const Icon(LucideIcons.calendar, size: 18, color: AppColors.textHint),
+              Expanded(child: child),
+              Icon(trailing, size: 18, color: AppColors.textHint),
             ],
           ),
         ),
       );
+}
 
-  Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showBalsmDatePicker(
-      context,
-      initial: _dob ?? DateTime(now.year - 25, now.month, now.day),
-      firstDate: DateTime(now.year - 120),
-      lastDate: now,
-      title: s.strings.onboarding.dob_title,
-      confirmLabel: s.strings.onboarding.dob_confirm,
-      months: s.strings.settings.cal_months.split('|'),
-      weekdays: s.strings.settings.cal_weekdays.split('|'),
-      rtl: s.rtl,
-      accent: s.accent.main,
+/// Date-of-birth field — opens a date picker; shows dd / mm / yyyy.
+class _DobField extends ConsumerWidget {
+  const _DobField({required this.form, required this.onTap});
+  final Object form;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dob = ref.watch(profileEditDraftProvider(form).select((d) => d.dob));
+    return _PickerBox(
+      onTap: onTap,
+      trailing: LucideIcons.calendar,
+      child: Text(
+        switch (dob) {
+          final d? => '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}',
+          null => '—',
+        },
+        textDirection: TextDirection.ltr,
+        style: Typo.num(size: FontSizes.subhead, color: dob == null ? AppColors.textHint : AppColors.textPrimary),
+      ),
     );
-    if (picked != null && mounted) setState(() => _dob = picked);
   }
+}
 
-  /// Nationality field — opens a bottom-sheet country selector; shows the
-  /// localized demonym (e.g. "Egyptian" / "مصري") of the picked country.
-  Widget _nationalityField() => GestureDetector(
-        onTap: _pickNationality,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 52,
-          padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: AppColors.border, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              if (_nationality case final nationality?) ...[
-                Text(_flagEmoji(nationality.value), style: const TextStyle(fontSize: _flagEmojiSize)),
-                const SizedBox(width: 10),
-              ],
-              Expanded(
-                child: Text(
-                  switch (_nationality) {
-                    final nationality? => nationality.demonym(kCatalog, locale: s.lang.value),
-                    _ => '—'
-                  },
-                  style: Typo.body(ar: s.rtl).copyWith(
-                    fontSize: FontSizes.subhead,
-                    fontWeight: FontWeight.w600,
-                    color: _nationality == null ? AppColors.textHint : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textHint),
-            ],
-          ),
-        ),
-      );
+/// Nationality field — opens a bottom-sheet country selector; shows the
+/// localized demonym (e.g. "Egyptian" / "مصري") of the picked country.
+class _NationalityField extends ConsumerWidget {
+  const _NationalityField({required this.form, required this.onTap, required this.s});
+  final Object form;
+  final VoidCallback onTap;
+  final PatientAppState s;
 
-  Future<void> _pickNationality() async {
-    final picked = await showAppSheet<CountryCode>(
-      context,
-      textDirection: s.dir,
-      builder: (_) => _NationalitySheet(current: _nationality, s: s),
-    );
-    if (picked != null && mounted) setState(() => _nationality = picked);
-  }
-
-  /// Localized label for a stored relation wire-code; falls back to the raw
-  /// stored string for legacy free-text values (returns null when unset).
-  String? _relationLabel(String? code) {
-    if (code == null || code.isEmpty) return null;
-    final rel = Relationship.tryFromCode(code);
-    return rel == null ? code : rel.label(kCatalog, locale: s.lang.value);
-  }
-
-  /// Relationship field — opens a bottom-sheet selector of [Relationship]
-  /// values, shown as localized labels.
-  Widget _relationField() => GestureDetector(
-        onTap: _pickRelationship,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 52,
-          padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: AppColors.border, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  switch (_emRelation) {
-                    final emRelation? => emRelation.label(kCatalog, locale: s.lang.value),
-                    _ => '—'
-                  },
-                  overflow: TextOverflow.ellipsis,
-                  style: Typo.body(ar: s.rtl).copyWith(
-                    fontSize: FontSizes.subhead,
-                    fontWeight: FontWeight.w600,
-                    color: _emRelation == null ? AppColors.textHint : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textHint),
-            ],
-          ),
-        ),
-      );
-
-  Future<void> _pickRelationship() async {
-    final picked = await showAppSheet<Relationship>(
-      context,
-      textDirection: s.dir,
-      builder: (_) => _RelationshipSheet(current: _emRelation, s: s),
-    );
-    if (picked != null && mounted) setState(() => _emRelation = picked);
-  }
-
-  Widget _genderSeg() => Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: AppColors.ink50,
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            _seg(
-              s.strings.onboarding.pf_female,
-              _gender == Gender.female,
-              () => setState(() => _gender = Gender.female),
-            ),
-            const SizedBox(width: 6),
-            _seg(s.strings.onboarding.pf_male, _gender == Gender.male, () => setState(() => _gender = Gender.male)),
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nationality = ref.watch(profileEditDraftProvider(form).select((d) => d.nationality));
+    return _PickerBox(
+      onTap: onTap,
+      trailing: LucideIcons.chevronDown,
+      child: Row(
+        children: [
+          if (nationality != null) ...[
+            Text(_flagEmoji(nationality.value), style: const TextStyle(fontSize: _flagEmojiSize)),
+            const SizedBox(width: 10),
           ],
-        ),
-      );
+          Expanded(
+            child: Text(
+              nationality?.demonym(kCatalog, locale: s.lang.value) ?? '—',
+              style: Typo.body(ar: s.rtl).copyWith(
+                fontSize: FontSizes.subhead,
+                fontWeight: FontWeight.w600,
+                color: nationality == null ? AppColors.textHint : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-  Widget _seg(String label, bool active, VoidCallback onTap) => Expanded(
+/// Relationship field — opens a bottom-sheet selector of [Relationship]
+/// values, shown as localized labels.
+class _RelationField extends ConsumerWidget {
+  const _RelationField({required this.form, required this.onTap, required this.s});
+  final Object form;
+  final VoidCallback onTap;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final relation = ref.watch(profileEditDraftProvider(form).select((d) => d.emRelation));
+    return _PickerBox(
+      onTap: onTap,
+      trailing: LucideIcons.chevronDown,
+      child: Text(
+        relation?.label(kCatalog, locale: s.lang.value) ?? '—',
+        overflow: TextOverflow.ellipsis,
+        style: Typo.body(ar: s.rtl).copyWith(
+          fontSize: FontSizes.subhead,
+          fontWeight: FontWeight.w600,
+          color: relation == null ? AppColors.textHint : AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+}
+
+class _GenderSeg extends ConsumerWidget {
+  const _GenderSeg({required this.form, required this.s});
+  final Object form;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gender = ref.watch(profileEditDraftProvider(form).select((d) => d.gender));
+    final draft = ref.read(profileEditDraftProvider(form).notifier);
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: AppColors.ink50,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          _Seg(
+            label: s.strings.onboarding.pf_female,
+            active: gender == Gender.female,
+            onTap: () => draft.setGender(Gender.female),
+            s: s,
+          ),
+          const SizedBox(width: 6),
+          _Seg(
+            label: s.strings.onboarding.pf_male,
+            active: gender == Gender.male,
+            onTap: () => draft.setGender(Gender.male),
+            s: s,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Seg extends StatelessWidget {
+  const _Seg({required this.label, required this.active, required this.onTap, required this.s});
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
         child: GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
@@ -963,16 +1030,6 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           ),
         ),
       );
-
-  /// Two-letter initials from the display name (first letters of up to two
-  /// words); '?' when the name is unknown.
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return '?';
-    final a = parts.first.substring(0, 1);
-    final b = parts.length > 1 ? parts[1].substring(0, 1) : '';
-    return (a + b).toUpperCase();
-  }
 }
 
 /// Regional-indicator flag emoji from a 2-letter ISO country code.
@@ -1247,7 +1304,9 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     super.dispose();
   }
 
+  /// Called after awaits (saving the image), when the sheet may be gone.
   void _showToast(String msg) {
+    if (!mounted) return;
     setState(() => toast = msg);
     _toastTimer?.cancel();
     _toastTimer = Timer(const Duration(milliseconds: 1800), () {

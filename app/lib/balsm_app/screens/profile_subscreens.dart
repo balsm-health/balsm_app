@@ -159,6 +159,24 @@ final FutureProviderFamily<HealthProfile?, HealthProfileId> memberHealthProfileP
   return ref.watch(profileDataSourceProvider).resolveProfile(userId, profileId: profileId);
 });
 
+/// Whether the patient answered "Not sure" for blood type on one open
+/// medical-profile screen (the key is a token its State creates once). The
+/// stored profile only knows the type is unset; this keeps the answer showing
+/// while the screen is open. Auto-disposed with the screen.
+class BloodUnsureNotifier extends Notifier<bool> {
+  BloodUnsureNotifier(this.form);
+  final Object form;
+
+  @override
+  bool build() => false;
+
+  /// A type clears "Not sure"; null is "Not sure" (the type is cleared).
+  void picked(BloodType? type) => state = type == null;
+}
+
+final NotifierProviderFamily<BloodUnsureNotifier, bool, Object> bloodUnsureProvider =
+    NotifierProvider.autoDispose.family<BloodUnsureNotifier, bool, Object>(BloodUnsureNotifier.new);
+
 class MedicalProfileScreen extends ConsumerStatefulWidget {
   const MedicalProfileScreen({required this.s, super.key, this.profileId, this.title});
   final PatientAppState s;
@@ -190,8 +208,8 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   bool saved = false;
   bool _measurementsSeeded = false;
 
-  /// The patient chose "Not sure" (the blood type is cleared): the choice shows, as an unset type would not.
-  bool _bloodUnsure = false;
+  /// Keys this screen's "Not sure" answer ([bloodUnsureProvider]).
+  final Object _form = Object();
 
   @override
   void dispose() {
@@ -217,7 +235,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     if (userId == null) return;
     final current = ref.read(_source).value?.bloodType;
     final toClear = bt == null || current == bt;
-    setState(() => _bloodUnsure = bt == null);
+    ref.read(bloodUnsureProvider(_form).notifier).picked(bt);
     final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
           userId: userId,
           profileId: widget.profileId,
@@ -414,10 +432,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           onRemoveAt: (i) => _removeAllergy(allergyList[i].id),
         ),
         _SectionHead(LucideIcons.droplet, s.strings.profile.pd_blood, s: s),
-        PCard(
-          padding: const EdgeInsets.all(12),
-          child: BloodTypeGrid(value: selectedBlood, unsure: _bloodUnsure, onChanged: _setBloodType),
-        ),
+        _BloodTypeCard(form: _form, value: selectedBlood, onChanged: _setBloodType),
         _SectionHead(LucideIcons.ruler, s.strings.profile.pd_measurements, s: s),
         PCard(
           padding: const EdgeInsets.all(16),
@@ -425,9 +440,23 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
             children: [
               Row(
                 children: [
-                  Expanded(child: _numField('${s.strings.profile.pd_weight} (${s.strings.profile.pd_kg})', weight)),
+                  Expanded(
+                    child: _NumField(
+                      label: '${s.strings.profile.pd_weight} (${s.strings.profile.pd_kg})',
+                      controller: weight,
+                      onChanged: _measurementsChanged,
+                      s: s,
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: _numField('${s.strings.profile.pd_height} (${s.strings.profile.pd_cm})', height)),
+                  Expanded(
+                    child: _NumField(
+                      label: '${s.strings.profile.pd_height} (${s.strings.profile.pd_cm})',
+                      controller: height,
+                      onChanged: _measurementsChanged,
+                      s: s,
+                    ),
+                  ),
                 ],
               ),
               if (bmi != null) ...[
@@ -526,7 +555,35 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     );
   }
 
-  Widget _numField(String label, TextEditingController c) => Column(
+  /// Re-reads the typed measurements for the live BMI (text-field view state).
+  void _measurementsChanged() => setState(() {});
+}
+
+/// Blood type grid with the "Not sure" answer, which [bloodUnsureProvider]
+/// holds: a cleared type alone cannot tell "not sure" from "never answered".
+class _BloodTypeCard extends ConsumerWidget {
+  const _BloodTypeCard({required this.form, required this.value, required this.onChanged});
+  final Object form;
+  final BloodType? value;
+  final ValueChanged<BloodType?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => PCard(
+        padding: const EdgeInsets.all(12),
+        child: BloodTypeGrid(value: value, unsure: ref.watch(bloodUnsureProvider(form)), onChanged: onChanged),
+      );
+}
+
+/// A labelled number field (weight, height).
+class _NumField extends StatelessWidget {
+  const _NumField({required this.label, required this.controller, required this.onChanged, required this.s});
+  final String label;
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -540,10 +597,10 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: c,
+            controller: controller,
             textDirection: TextDirection.ltr,
             keyboardType: TextInputType.number,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => onChanged(),
             style: Typo.num(size: FontSizes.subhead),
             decoration: InputDecoration(
               isDense: true,

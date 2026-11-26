@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../application/ports/reauth_port.dart';
 import '../i18n/i18n.dart';
+import '../providers/deletion_flow.dart';
 
 // ReauthChannel / ReauthCredentials live in the application layer, beside the
 // port that consumes them — a port must not import presentation.
@@ -12,36 +15,27 @@ export '../../application/ports/reauth_port.dart' show ReauthChannel, ReauthCred
 /// Self-contained 3-channel re-auth form used by the public (no-session)
 /// deletion + cancellation routes.
 ///
-/// Works identically on web and mobile (no platform-specific deps).
-/// [onRequestChallenge] sends the one-time code; [onSubmit] carries the code
-/// back for verification. Neither the identifier nor the code is logged.
+/// Works identically on web and mobile (no platform-specific deps). The chosen
+/// channel, the in-flight flag and the last failure live in the
+/// [deletionFlowProvider] for [entry]; the identifier and the code stay in this
+/// form's text fields and pass straight through to the port. Neither is logged.
 class ReauthForm extends ConsumerStatefulWidget {
   const ReauthForm({
-    required this.onSubmit,
-    required this.onRequestChallenge,
+    required this.entry,
     required this.submitLabel,
     super.key,
     this.submitVariant = BalsmButtonVariant.primary,
-    this.submitting = false,
-    this.error,
   });
 
-  final ValueChanged<ReauthCredentials> onSubmit;
-
-  /// Sends the one-time code to the identifier the person typed.
-  final void Function(ReauthChannel channel, String identifier) onRequestChallenge;
-
+  final DeletionEntry entry;
   final String submitLabel;
   final BalsmButtonVariant submitVariant;
-  final bool submitting;
-  final String? error;
 
   @override
   ConsumerState<ReauthForm> createState() => _ReauthFormState();
 }
 
 class _ReauthFormState extends ConsumerState<ReauthForm> {
-  ReauthChannel _channel = ReauthChannel.email;
   final _identifier = TextEditingController();
   final _secret = TextEditingController();
 
@@ -57,19 +51,23 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
   bool get _hasIdentifier => _identifier.text.trim().isNotEmpty;
   bool get _valid => _hasIdentifier && _secret.text.isNotEmpty;
 
+  DeletionFlowNotifier get _flow => ref.read(deletionFlowProvider(widget.entry).notifier);
+
   void _requestCode() {
     if (!_hasIdentifier) return;
     setState(() => _codeSent = true);
-    widget.onRequestChallenge(_channel, _identifier.text.trim());
+    unawaited(_flow.sendCode(_identifier.text.trim()));
   }
 
-  void _submit() {
+  void _submit(ReauthChannel channel) {
     if (!_valid) return;
-    widget.onSubmit(
-      ReauthCredentials(
-        channel: _channel,
-        identifier: _identifier.text.trim(),
-        secret: _secret.text,
+    unawaited(
+      _flow.verify(
+        ReauthCredentials(
+          channel: channel,
+          identifier: _identifier.text.trim(),
+          secret: _secret.text,
+        ),
       ),
     );
   }
@@ -77,6 +75,9 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
   @override
   Widget build(BuildContext context) {
     final m = ref.watch(deletionStringsProvider);
+    final (:channel, :submitting, :failure) = ref.watch(
+      deletionFlowProvider(widget.entry).select((f) => (channel: f.channel, submitting: f.submitting, failure: f.failure)),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -98,26 +99,26 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
           spacing: 8,
           children: [
             ...ReauthChannel.values.map(
-              (channel) => ChoiceChip(
-                label: Text(channel.label),
-                selected: _channel == channel,
-                onSelected: (_) => setState(() => _channel = channel),
+              (c) => ChoiceChip(
+                label: Text(c.label),
+                selected: channel == c,
+                onSelected: (_) => _flow.selectChannel(c),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         BalsmTextField(
-          label: _channel.label,
+          label: channel.label,
           controller: _identifier,
-          keyboardType: _channel.keyboardType,
+          keyboardType: channel.keyboardType,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 12),
         BalsmButton(
           label: _codeSent ? m.sendCodeAgain : m.sendCode,
           variant: BalsmButtonVariant.secondary,
-          onPressed: _hasIdentifier && !widget.submitting ? _requestCode : null,
+          onPressed: _hasIdentifier && !submitting ? _requestCode : null,
         ),
         if (_codeSent) ...[
           const SizedBox(height: 12),
@@ -128,16 +129,16 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
             onChanged: (_) => setState(() {}),
           ),
         ],
-        if (widget.error case final error?) ...[
+        if (failure case final failure?) ...[
           const SizedBox(height: 16),
-          BalsmErrorBanner(message: error),
+          BalsmErrorBanner(message: failure.message),
         ],
         const SizedBox(height: 20),
         BalsmButton(
           label: widget.submitLabel,
           variant: widget.submitVariant,
-          loading: widget.submitting,
-          onPressed: (_valid && !widget.submitting) ? _submit : null,
+          loading: submitting,
+          onPressed: (_valid && !submitting) ? () => _submit(channel) : null,
         ),
       ],
     );

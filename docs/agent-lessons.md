@@ -13,6 +13,24 @@ Format — one entry per lesson, newest first:
 
 ---
 
+### An `autoDispose` draft needs a holder that lives as long as the form (2026-11-27)
+- **Mistake:** the add-member sheet kept its draft in an `autoDispose` family, but only the child bodies for the manual
+  and found modes watched it. Switching to the scan mode left no listener, so the draft was disposed and the typed name
+  was lost on the way back. The notifier tests passed because the test container held a listener for the whole run.
+- **Rule:** the widget that owns a form (its `State`) holds its draft with `ref.listenManual(provider, (_, __) {})` or a
+  `select` that never changes, not only the leaf widgets that read fields. A notifier test that listens for the whole run
+  cannot see this; test a form that changes mode or step through the widget, or check it on a device. Related: a
+  per-account provider that outlives the route (`mapViewProvider`, `careSearchProvider`) must `ref.watch(currentUserIdProvider)`
+  so it resets on sign-out like the other per-account state; the same goes for any new session-long provider.
+
+### An agreed plan is a go, not a stopping point (2026-11-27)
+- **Mistake:** asked to replace data-bearing `setState` with Riverpod 3, I read the rules, classified all 486 calls,
+  agreed the scope and PR shape with the user, then stopped and handed back a TODO and three questions. When asked
+  "did we finish?", no call had been migrated.
+- **Rule:** once the user has agreed scope and shape, execute it to the end in the same session. Open questions that
+  have a safe default (keep existing behaviour, do not delete, do not add persistence) are decided by that default and
+  listed in the PR body, not blocking. Report "done" only with the counts before and after and the analyze/test output.
+
 ### Check the Riverpod 3 rules before touching a provider (2026-11-25)
 - **Mistake:** I fixed a failing record test as "a stale assertion" and wrote `await _ref.refresh(...)` with no disposed
   check, without first reading what Riverpod 3 changed. The user had to remind me the project is on Riverpod 3. The

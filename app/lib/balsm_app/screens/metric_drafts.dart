@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart' show MapEquality, SetEquality;
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show NotifierProviderFamily;
@@ -12,10 +13,81 @@ import '../widgets/photo_attach.dart';
 /// (so they are unit-tested without a widget); each form watches one
 /// auto-disposing provider, and the draft is gone when the form closes.
 
+/// What a metric template currently holds. PHI — never log these values.
+///
+/// Equal only when every field is: Riverpod 3 filters provider updates with
+/// `==`, so a capture that left out the time or the symptom details would hide
+/// those edits from whoever watches it.
+@immutable
+class MetricLogCapture {
+  const MetricLogCapture({
+    this.summary = '',
+    this.note,
+    this.mood,
+    this.painLevel = PainLevel.none,
+    this.painSites = const {},
+    this.symptoms = const {},
+    this.symptomDetails = const {},
+    this.vitals = Vitals.empty,
+    this.when,
+    this.photoBytes,
+  });
+
+  final String summary;
+  final String? note;
+  final Mood? mood;
+  final PainLevel painLevel;
+  final Set<PainSite> painSites;
+  final Set<SymptomId> symptoms;
+
+  /// Per-symptom observations (`quicklog.jsx` QuickSymptomDetail). Sparse.
+  final Map<SymptomId, SymptomDetail> symptomDetails;
+
+  final Vitals vitals;
+  final DateTime? when;
+
+  /// Local preview bytes for a note photo. Never log these.
+  final List<int>? photoBytes;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MetricLogCapture &&
+      other.summary == summary &&
+      other.note == note &&
+      other.mood == mood &&
+      other.painLevel == painLevel &&
+      other.vitals == vitals &&
+      other.when == when &&
+      // The photo by identity: a form keeps the one picked object until a new
+      // pick replaces it, and comparing megabytes on every keypress buys nothing.
+      identical(other.photoBytes, photoBytes) &&
+      const SetEquality<PainSite>().equals(other.painSites, painSites) &&
+      const SetEquality<SymptomId>().equals(other.symptoms, symptoms) &&
+      const MapEquality<SymptomId, SymptomDetail>().equals(other.symptomDetails, symptomDetails);
+
+  @override
+  int get hashCode => Object.hash(
+        summary,
+        note,
+        mood,
+        painLevel,
+        vitals,
+        when,
+        identityHashCode(photoBytes),
+        Object.hashAllUnordered(painSites),
+        Object.hashAllUnordered(symptoms),
+        Object.hashAllUnordered(symptomDetails.entries.map((e) => Object.hash(e.key, e.value))),
+      );
+}
+
 /// One form instance: `form` is a token the form's State creates once, so two
 /// forms open at once never share a draft; `initial` is the stored reading an
 /// edit opens on (null for a new entry).
 typedef DraftKey = ({Object form, Vitals? initial});
+
+/// Like [DraftKey], for the forms that edit more than vitals (mood, pain,
+/// symptoms): `initial` is the whole stored entry the form opens on.
+typedef CaptureDraftKey = ({Object form, MetricLogCapture? initial});
 
 // ── Blood pressure ───────────────────────────────────────────
 
@@ -55,6 +127,12 @@ class BpDraft {
   bool get valid => VitalLimits.bloodPressureOk(int.tryParse(sys), int.tryParse(dia));
 
   Vitals get vitals => valid ? Vitals(systolic: int.parse(sys), diastolic: int.parse(dia)) : Vitals.empty;
+
+  @override
+  bool operator ==(Object other) => other is BpDraft && other.sys == sys && other.dia == dia && other.onSys == onSys;
+
+  @override
+  int get hashCode => Object.hash(sys, dia, onSys);
 }
 
 class BpDraftNotifier extends Notifier<BpDraft> {
@@ -108,6 +186,12 @@ class GlucoseDraft {
       glucoseRandom: context == GlucoseContext.random ? value : null,
     );
   }
+
+  @override
+  bool operator ==(Object other) => other is GlucoseDraft && other.digits == digits && other.context == context;
+
+  @override
+  int get hashCode => Object.hash(digits, context);
 }
 
 class GlucoseDraftNotifier extends Notifier<GlucoseDraft> {
@@ -166,6 +250,13 @@ class WeightDraft {
   bool get valid => VitalLimits.weightKgOk(double.tryParse(display));
 
   Vitals get vitals => valid ? Vitals(weightKg: double.parse(display)) : Vitals.empty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WeightDraft && other.kg == kg && other.decimals == decimals && other.hasDot == hasDot;
+
+  @override
+  int get hashCode => Object.hash(kg, decimals, hasDot);
 }
 
 class WeightDraftNotifier extends Notifier<WeightDraft> {
@@ -207,6 +298,12 @@ class Spo2Draft {
   bool get valid => VitalLimits.spo2Ok(percent);
 
   Vitals get vitals => valid ? Vitals(spo2: percent) : Vitals.empty;
+
+  @override
+  bool operator ==(Object other) => other is Spo2Draft && other.digits == digits;
+
+  @override
+  int get hashCode => digits.hashCode;
 }
 
 class Spo2DraftNotifier extends Notifier<Spo2Draft> {
@@ -270,6 +367,17 @@ class PulseDraft {
   bool get valid => !counting && VitalLimits.heartRateOk(bpm);
 
   Vitals get vitals => valid ? Vitals(heartRate: bpm) : Vitals.empty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PulseDraft &&
+      other.digits == digits &&
+      other.counting == counting &&
+      other.beats == beats &&
+      other.left == left;
+
+  @override
+  int get hashCode => Object.hash(digits, counting, beats, left);
 }
 
 class PulseDraftNotifier extends Notifier<PulseDraft> {
@@ -302,6 +410,12 @@ class EntryExtras {
   EntryExtras withWhen(DateTime v) => EntryExtras(when: v, photo: photo);
 
   EntryExtras withPhoto(PickedAttach? p) => EntryExtras(when: when, photo: p);
+
+  @override
+  bool operator ==(Object other) => other is EntryExtras && other.when == when && identical(other.photo, photo);
+
+  @override
+  int get hashCode => Object.hash(when, identityHashCode(photo));
 }
 
 /// Key for [entryExtrasProvider]: the form's token and the stored entry's time
@@ -321,3 +435,196 @@ class EntryExtrasNotifier extends Notifier<EntryExtras> {
 
 final NotifierProviderFamily<EntryExtrasNotifier, EntryExtras, ExtrasKey> entryExtrasProvider =
     NotifierProvider.autoDispose.family<EntryExtrasNotifier, EntryExtras, ExtrasKey>(EntryExtrasNotifier.new);
+
+// ── Mood, pain and symptoms ──────────────────────────────────
+//
+// Sets in these drafts are unmodifiable and compared by value, so a toggle is
+// a new draft that Riverpod 3's `==` filter lets through, and a widget can
+// never change a draft in place.
+
+Set<E> _toggled<E>(Set<E> set, E item) =>
+    Set.unmodifiable(set.contains(item) ? set.difference({item}) : {...set, item});
+
+@immutable
+class MoodDraft {
+  const MoodDraft([this.score = 0]);
+
+  factory MoodDraft.from(MetricLogCapture? c) => MoodDraft(c?.mood?.score ?? 0);
+
+  /// 1–5; 0 until a face is picked.
+  final int score;
+
+  MoodDraft pick(int s) => MoodDraft(s);
+
+  bool get valid => score > 0;
+
+  Mood? get mood => valid ? Mood(score) : null;
+
+  @override
+  bool operator ==(Object other) => other is MoodDraft && other.score == score;
+
+  @override
+  int get hashCode => score.hashCode;
+}
+
+class MoodDraftNotifier extends Notifier<MoodDraft> {
+  MoodDraftNotifier(this.args);
+  final CaptureDraftKey args;
+
+  @override
+  MoodDraft build() => MoodDraft.from(args.initial);
+
+  void pick(int score) => state = state.pick(score);
+}
+
+final NotifierProviderFamily<MoodDraftNotifier, MoodDraft, CaptureDraftKey> moodDraftProvider =
+    NotifierProvider.autoDispose.family<MoodDraftNotifier, MoodDraft, CaptureDraftKey>(MoodDraftNotifier.new);
+
+@immutable
+class PainDraft {
+  PainDraft({this.level = 0, Set<PainSite> sites = const {}}) : sites = Set.unmodifiable(sites);
+
+  factory PainDraft.from(MetricLogCapture? c) =>
+      PainDraft(level: c?.painLevel.value ?? 0, sites: c?.painSites ?? const {});
+
+  /// 0–10, as the slider stops on whole steps.
+  final int level;
+  final Set<PainSite> sites;
+
+  PainDraft withLevel(int v) => PainDraft(level: v, sites: sites);
+
+  /// A site of another tissue than the ones already picked is refused
+  /// ([canToggleSite]).
+  PainDraft toggleSite(PainSite site) =>
+      canToggleSite(sites, site) ? PainDraft(level: level, sites: _toggled(sites, site)) : this;
+
+  bool get valid => level > 0 || sites.isNotEmpty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PainDraft && other.level == level && const SetEquality<PainSite>().equals(other.sites, sites);
+
+  @override
+  int get hashCode => Object.hash(level, Object.hashAllUnordered(sites));
+}
+
+class PainDraftNotifier extends Notifier<PainDraft> {
+  PainDraftNotifier(this.args);
+  final CaptureDraftKey args;
+
+  @override
+  PainDraft build() => PainDraft.from(args.initial);
+
+  void setLevel(int v) => state = state.withLevel(v);
+  void toggleSite(PainSite site) => state = state.toggleSite(site);
+}
+
+final NotifierProviderFamily<PainDraftNotifier, PainDraft, CaptureDraftKey> painDraftProvider =
+    NotifierProvider.autoDispose.family<PainDraftNotifier, PainDraft, CaptureDraftKey>(PainDraftNotifier.new);
+
+@immutable
+class SymptomsDraft {
+  SymptomsDraft({Set<SymptomId> symptoms = const {}, this.none = false, Set<PainSite> sites = const {}})
+      : symptoms = Set.unmodifiable(symptoms),
+        sites = Set.unmodifiable(sites);
+
+  final Set<SymptomId> symptoms;
+
+  /// "No symptoms" ticked — clears every symptom and site.
+  final bool none;
+  final Set<PainSite> sites;
+
+  /// The body map shows once a symptom the design locates is picked.
+  bool get showMap => symptoms.any((id) => id.hasLocation);
+
+  /// [multi] in the full check-in; one at a time in the one-metric quick log.
+  SymptomsDraft select(SymptomId id, {required bool multi}) {
+    final next = symptoms.contains(id) ? symptoms.difference({id}) : {if (multi) ...symptoms, id};
+    final draft = SymptomsDraft(symptoms: next, sites: sites);
+    return draft.showMap ? draft : SymptomsDraft(symptoms: next);
+  }
+
+  SymptomsDraft toggleNone() => none ? SymptomsDraft(symptoms: symptoms, sites: sites) : SymptomsDraft(none: true);
+
+  SymptomsDraft toggleSite(PainSite site) =>
+      canToggleSite(sites, site) ? SymptomsDraft(symptoms: symptoms, none: none, sites: _toggled(sites, site)) : this;
+
+  bool get valid => symptoms.isNotEmpty || none;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SymptomsDraft &&
+      other.none == none &&
+      const SetEquality<SymptomId>().equals(other.symptoms, symptoms) &&
+      const SetEquality<PainSite>().equals(other.sites, sites);
+
+  @override
+  int get hashCode => Object.hash(none, Object.hashAllUnordered(symptoms), Object.hashAllUnordered(sites));
+}
+
+class SymptomsDraftNotifier extends Notifier<SymptomsDraft> {
+  SymptomsDraftNotifier(this.args);
+  final CaptureDraftKey args;
+
+  /// Opens empty, edit or not: the multi-symptom form has never prefilled,
+  /// and an edit of one symptom opens [OneSymptomDraft] instead.
+  @override
+  SymptomsDraft build() => SymptomsDraft();
+
+  void select(SymptomId id, {required bool multi}) => state = state.select(id, multi: multi);
+  void toggleNone() => state = state.toggleNone();
+  void toggleSite(PainSite site) => state = state.toggleSite(site);
+}
+
+final NotifierProviderFamily<SymptomsDraftNotifier, SymptomsDraft, CaptureDraftKey> symptomsDraftProvider =
+    NotifierProvider.autoDispose.family<SymptomsDraftNotifier, SymptomsDraft, CaptureDraftKey>(
+  SymptomsDraftNotifier.new,
+);
+
+/// Key for [oneSymptomDraftProvider]: the form, the stored entry an edit
+/// opens on, and which catalog symptom the form captures.
+typedef OneSymptomKey = ({Object form, MetricLogCapture? initial, SymptomId symptom});
+
+@immutable
+class OneSymptomDraft {
+  OneSymptomDraft({Set<PainSite> sites = const {}, this.detail = const SymptomDetail()})
+      : sites = Set.unmodifiable(sites);
+
+  factory OneSymptomDraft.from(MetricLogCapture? c, SymptomId symptom) => OneSymptomDraft(
+        sites: c?.painSites ?? const {},
+        detail: c?.symptomDetails[symptom] ?? const SymptomDetail(),
+      );
+
+  final Set<PainSite> sites;
+
+  /// Only urine and stool carry one (`SymptomId.hasDetail`).
+  final SymptomDetail detail;
+
+  OneSymptomDraft toggleSite(PainSite site) =>
+      canToggleSite(sites, site) ? OneSymptomDraft(sites: _toggled(sites, site), detail: detail) : this;
+
+  OneSymptomDraft withDetail(SymptomDetail d) => OneSymptomDraft(sites: sites, detail: d);
+
+  @override
+  bool operator ==(Object other) =>
+      other is OneSymptomDraft && other.detail == detail && const SetEquality<PainSite>().equals(other.sites, sites);
+
+  @override
+  int get hashCode => Object.hash(detail, Object.hashAllUnordered(sites));
+}
+
+class OneSymptomDraftNotifier extends Notifier<OneSymptomDraft> {
+  OneSymptomDraftNotifier(this.args);
+  final OneSymptomKey args;
+
+  @override
+  OneSymptomDraft build() => OneSymptomDraft.from(args.initial, args.symptom);
+
+  void toggleSite(PainSite site) => state = state.toggleSite(site);
+  void setDetail(SymptomDetail d) => state = state.withDetail(d);
+}
+
+final NotifierProviderFamily<OneSymptomDraftNotifier, OneSymptomDraft, OneSymptomKey> oneSymptomDraftProvider =
+    NotifierProvider.autoDispose.family<OneSymptomDraftNotifier, OneSymptomDraft, OneSymptomKey>(
+  OneSymptomDraftNotifier.new,
+);

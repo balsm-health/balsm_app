@@ -6,80 +6,31 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../application/use_cases/cancel_deletion_use_case.dart';
 import '../../application/use_cases/request_deletion_use_case.dart';
 import '../i18n/i18n.dart';
+import '../providers/deletion_flow.dart';
 
 /// Final "Are you sure?" confirmation with a live grace countdown.
 ///
 /// Submitting calls `POST /deletion/intake` (via [RequestDeletionUseCase]),
 /// which schedules deletion and returns the grace deadline. After scheduling
 /// the user may still cancel within the grace window.
-class DeletionConfirmScreen extends ConsumerStatefulWidget {
+class DeletionConfirmScreen extends ConsumerWidget {
   const DeletionConfirmScreen({super.key});
 
-  @override
-  ConsumerState<DeletionConfirmScreen> createState() => _DeletionConfirmScreenState();
-}
-
-class _DeletionConfirmScreenState extends ConsumerState<DeletionConfirmScreen> {
-  bool _submitting = false;
-  String? _error;
-  DateTime? _graceUntil;
-  Timer? _ticker;
+  static const DeletionEntry _entry = DeletionEntry.confirm;
 
   @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _confirm() async {
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref.read(requestDeletionUseCaseProvider).call();
-    if (!mounted) return;
-    result.fold(
-      (intake) {
-        setState(() {
-          _submitting = false;
-          _graceUntil = intake.graceUntil;
-        });
-        _ticker = Timer.periodic(
-          const Duration(seconds: 1),
-          (_) => setState(() {}),
-        );
-      },
-      (failure) => setState(() {
-        _submitting = false;
-        _error = failure.message;
-      }),
-    );
-  }
-
-  Future<void> _cancel() async {
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref.read(cancelDeletionUseCaseProvider).call();
-    if (!mounted) return;
-    result.fold(
-      (_) => context.goNamed('deletion.cancelled'),
-      (failure) => setState(() {
-        _submitting = false;
-        _error = failure.message;
-      }),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(deletionStringsProvider);
-    final grace = _graceUntil;
-    final scheduled = grace != null;
+    ref.listen(deletionFlowProvider(_entry).select((f) => f.stage), (_, stage) {
+      if (stage == DeletionStage.cancelled) context.goNamed('deletion.cancelled');
+    });
+    final (:scheduled, :graceUntil, :failure) = ref.watch(
+      deletionFlowProvider(_entry).select(
+        (f) => (scheduled: f.stage != DeletionStage.preconfirm, graceUntil: f.graceUntil, failure: f.failure),
+      ),
+    );
     return Scaffold(
       backgroundColor: AppColors.cream50,
       body: SafeArea(
@@ -118,42 +69,20 @@ class _DeletionConfirmScreenState extends ConsumerState<DeletionConfirmScreen> {
                       color: AppColors.textTertiary,
                     ),
                   ),
-                  if (grace != null) ...[
+                  if (graceUntil case final grace?) ...[
                     const SizedBox(height: 24),
                     _GraceCountdownCard(graceUntil: grace),
                   ],
-                  if (_error case final error?) ...[
+                  if (failure case final failure?) ...[
                     const SizedBox(height: 20),
-                    BalsmErrorBanner(message: error),
+                    BalsmErrorBanner(message: failure.message),
                   ],
                 ],
               ),
             ),
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
-              child: scheduled
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        BalsmButton(
-                          label: m.publicCancelAction,
-                          loading: _submitting,
-                          onPressed: _submitting ? null : _cancel,
-                        ),
-                        const SizedBox(height: 10),
-                        BalsmButton(
-                          label: coreMessagesOf(context).common.done,
-                          variant: BalsmButtonVariant.secondary,
-                          onPressed: () => context.go('/'),
-                        ),
-                      ],
-                    )
-                  : BalsmButton(
-                      label: m.confirmAction,
-                      variant: BalsmButtonVariant.danger,
-                      loading: _submitting,
-                      onPressed: _submitting ? null : _confirm,
-                    ),
+              child: _ConfirmActions(scheduled: scheduled),
             ),
           ],
         ),
@@ -162,14 +91,73 @@ class _DeletionConfirmScreenState extends ConsumerState<DeletionConfirmScreen> {
   }
 }
 
-class _GraceCountdownCard extends ConsumerWidget {
+/// Before scheduling: the danger confirm button. After: cancel, or done.
+class _ConfirmActions extends ConsumerWidget {
+  const _ConfirmActions({required this.scheduled});
+
+  final bool scheduled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(deletionStringsProvider);
+    final provider = deletionFlowProvider(DeletionConfirmScreen._entry);
+    final submitting = ref.watch(provider.select((f) => f.submitting));
+    if (!scheduled) {
+      return BalsmButton(
+        label: m.confirmAction,
+        variant: BalsmButtonVariant.danger,
+        loading: submitting,
+        onPressed: submitting ? null : () => unawaited(ref.read(provider.notifier).requestDeletion()),
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BalsmButton(
+          label: m.publicCancelAction,
+          loading: submitting,
+          onPressed: submitting ? null : () => unawaited(ref.read(provider.notifier).cancelDeletion()),
+        ),
+        const SizedBox(height: 10),
+        BalsmButton(
+          label: coreMessagesOf(context).common.done,
+          variant: BalsmButtonVariant.secondary,
+          onPressed: () => context.go('/'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Counts down to the purge once a second; the ticker is this card's own.
+class _GraceCountdownCard extends ConsumerStatefulWidget {
   const _GraceCountdownCard({required this.graceUntil});
 
   final DateTime graceUntil;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GraceCountdownCard> createState() => _GraceCountdownCardState();
+}
+
+class _GraceCountdownCardState extends ConsumerState<_GraceCountdownCard> {
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final m = ref.watch(deletionStringsProvider);
+    final graceUntil = widget.graceUntil;
     final remaining = graceUntil.difference(DateTime.now().toUtc());
     final formatted = DateFormat.yMMMMd().add_jm().format(graceUntil.toLocal());
     return Container(

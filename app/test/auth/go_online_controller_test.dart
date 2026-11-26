@@ -236,9 +236,13 @@ void main() {
 
   test('retry after a failed file move moves rows and files to the server id', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
-    when(() => signIn.goOnline(
-            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId'),),)
-        .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
+    when(
+      () => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'),
+      ),
+    ).thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
     when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
     var fail = true;
     when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {
@@ -315,7 +319,6 @@ void main() {
     verifyNever(() => offline.markOnline());
     expect(await owners(db), ['off-1']);
     expect(events.whereType<UserSignedIn>(), isEmpty);
-    expect(controller.pendingTargetId, 'srv-1');
     expect(storage.data['balsm.pending_merge_target'], 'srv-1');
     // The merge screen needs the device's own id; it stays pinned.
     expect(storage.data['balsm.offline.local_id'], 'off-1');
@@ -373,7 +376,7 @@ void main() {
     expect(events.whereType<UserSignedIn>(), isEmpty);
   });
 
-  test('lockout is a failure and records when it ends', () async {
+  test('lockout changes nothing and reports when it ends', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
     final until = DateTime.now().toUtc().add(const Duration(minutes: 5));
     when(
@@ -386,8 +389,7 @@ void main() {
 
     final r = await controller.verify(email: 'a@b.co', code: '000000');
 
-    expect(r.isFailure, isTrue);
-    expect(controller.lockedUntil, until);
+    expect(r.value, GoOnlineLockedOut(until));
     verifyNever(() => offline.markOnline());
   });
 

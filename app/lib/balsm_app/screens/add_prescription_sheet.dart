@@ -2,16 +2,14 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:medications/medications.dart';
-import 'package:prescriptions/prescriptions.dart';
 
 import '../app_state.dart';
-import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../maintenance/maintenance_guard.dart';
 import '../widgets/date_time_row.dart';
 import '../widgets/med_plan_form.dart';
 import '../widgets/photo_attach.dart';
+import 'prescription_draft.dart';
 
 Future<void> showAddPrescription(BuildContext context) async => maintenancePaused(context)
     ? null
@@ -29,13 +27,10 @@ class AddPrescriptionSheet extends ConsumerStatefulWidget {
 }
 
 class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
+  /// This sheet's own draft in [prescriptionDraftProvider], gone when it closes.
+  final _form = Object();
   final _title = TextEditingController();
   final _doctor = TextEditingController();
-  final _url = TextEditingController();
-  final _meds = [MedPlanDraft()];
-  DateTime _issued = DateTime.now();
-  DateTime? _expiry;
-  PickedAttach? _attach;
   bool _saving = false;
   bool _done = false;
 
@@ -43,77 +38,25 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
   void dispose() {
     _title.dispose();
     _doctor.dispose();
-    _url.dispose();
-    for (final m in _meds) {
-      m.dispose();
-    }
     super.dispose();
   }
 
-  bool get _ready {
-    final hasFile = _attach != null || _url.text.trim().isNotEmpty;
-    final hasMeds = _meds.any((m) => m.isNamed);
-    return hasFile || hasMeds;
-  }
-
   Future<void> _save() async {
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null || _saving || !_ready) return;
+    if (_saving) return;
+    final m = AppScope.of(context).strings.meds;
     setState(() => _saving = true);
-    final s = AppScope.of(context);
-    final m = s.strings.meds;
-    final named = _meds.where((d) => d.isNamed).toList();
-    final items = [
-      for (final d in named)
-        PrescribedItem(
-          name: d.name.text.trim(),
-          dose: d.summary(m),
-          notes: d.notes.text.trim().isEmpty ? null : d.notes.text.trim(),
-        ),
-    ];
-    String? attachPath;
-    String? attachKind;
-    if (_attach?.bytes != null) {
-      final id = 'rx-${DateTime.now().microsecondsSinceEpoch}';
-      final ext = _attach!.kind == 'pdf' ? 'pdf' : 'jpg';
-      attachPath = await ref.read(userFileStoreProvider).save('$id.$ext', _attach!.bytes!);
-      attachKind = _attach!.kind;
-    } else if (_url.text.trim().isNotEmpty) {
-      attachPath = _url.text.trim();
-      attachKind = 'url';
-    }
-    final title = _title.text.trim().isEmpty ? m.rx_default_title : _title.text.trim();
-    final doctor = _doctor.text.trim();
-    final id = PrescriptionId.value('rx-${DateTime.now().microsecondsSinceEpoch}');
-    await ref.read(prescriptionsDataSourceProvider).put(
-          id,
-          Prescription(
-            id: id,
-            userId: userId,
-            clinician: doctor.isEmpty ? title : doctor,
-            title: title,
-            source: 'self',
-            attachmentPath: attachPath,
-            attachmentKind: attachKind,
-            items: items,
-            issuedAt: _issued,
-            validUntil: _expiry,
-            createdAt: DateTime.now(),
-          ),
+    final title = _title.text.trim();
+    final saved = await ref.read(prescriptionDraftProvider(_form).notifier).save(
+          title: title.isEmpty ? m.rx_default_title : title,
+          doctor: _doctor.text.trim(),
+          strings: m,
         );
-    // Each med also joins the Meds tab's daily list, on its own schedule.
-    final addMedication = ref.read(addMedicationUseCaseProvider(userId));
-    for (final d in named) {
-      await addMedication.call(d.toMedication(userId));
-    }
-    ref
-      ..invalidate(todayDosesProvider)
-      ..invalidate(medicationListProvider);
     if (!mounted) return;
     setState(() {
       _saving = false;
-      _done = true;
+      _done = saved;
     });
+    if (!saved) return;
     await Future<void>.delayed(const Duration(milliseconds: 1400));
     if (mounted) Navigator.of(context).pop();
   }
@@ -164,61 +107,96 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
           Flexible(
             child: SingleChildScrollView(
               padding: EdgeInsetsDirectional.fromSTEB(14, 14, 14, sheetBottomInset(context, base: 36)),
-              child: _done ? _Done(s: s, label: m.rx_added) : _form(s, m),
+              child: _done
+                  ? _Done(s: s, label: m.rx_added)
+                  : _PrescriptionForm(
+                      form: _form,
+                      title: _title,
+                      doctor: _doctor,
+                      saving: _saving,
+                      onSave: _save,
+                    ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _form(PatientAppState s, MedsStrings m) {
+/// The sheet's fields. Watches the draft, so an edit rebuilds the form and not
+/// the sheet around it.
+class _PrescriptionForm extends ConsumerWidget {
+  const _PrescriptionForm({
+    required this.form,
+    required this.title,
+    required this.doctor,
+    required this.saving,
+    required this.onSave,
+  });
+
+  /// The key of this sheet's draft in [prescriptionDraftProvider].
+  final Object form;
+  final TextEditingController title;
+  final TextEditingController doctor;
+  final bool saving;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final m = s.strings.meds;
+    final draft = ref.watch(prescriptionDraftProvider(form));
+    final notifier = ref.read(prescriptionDraftProvider(form).notifier);
+    final canSave = draft.ready && !saving;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SectionLabel(icon: LucideIcons.fileText, label: s.strings.common.details, accent: s.accent.main),
-        _LabeledField(s: s, label: m.rx_name, controller: _title, hint: m.rx_name_ph),
+        _LabeledField(s: s, label: m.rx_name, controller: title, hint: m.rx_name_ph),
         const SizedBox(height: 14),
         _LabeledField(
           s: s,
           label: m.rx_doctor_name,
-          controller: _doctor,
+          controller: doctor,
           hint: m.rx_doctor_name_ph,
           icon: LucideIcons.stethoscope,
         ),
         DateTimeWhen(
-          when: _issued,
-          onChanged: (v) => setState(() => _issued = v),
+          when: draft.issued,
+          onChanged: notifier.setIssued,
           dateLabel: m.rx_date,
           lastDate: DateTime.now(),
-          expiry: _expiry,
-          onExpiryChanged: (v) => setState(() => _expiry = v),
+          expiry: draft.expiry,
+          onExpiryChanged: notifier.setExpiry,
           expiryLabel: m.rx_expiry,
         ),
         const SizedBox(height: 8),
         _SectionLabel(icon: LucideIcons.uploadCloud, label: m.rx_upload, accent: s.accent.main),
         UploadDropzone(
-          attach: _attach,
-          url: _url.text,
+          attach: draft.attach,
+          url: draft.url,
+          // The picker answers after an await; the sheet may be closed by then.
           onAttach: (a) {
-            // The picker answers after an await; the sheet may be closed by then.
-            if (mounted) setState(() => _attach = a);
+            if (context.mounted) notifier.attach(a);
           },
-          onUrl: (v) => setState(() => _url.text = v),
+          onUrl: notifier.setUrl,
           orPasteLabel: m.rx_or_paste_url(s.gender),
           urlHint: m.rx_url_ph,
         ),
         const SizedBox(height: 18),
         _SectionLabel(icon: LucideIcons.pill, label: m.rx_manual, accent: s.accent.main),
-        for (var i = 0; i < _meds.length; i++) ...[
-          MedPlanCard(
-            key: ObjectKey(_meds[i]),
-            draft: _meds[i],
-            onRemove: _meds.length > 1 ? () => setState(() => _meds.removeAt(i).dispose()) : null,
-            onChanged: () => setState(() {}),
-          ),
-          const SizedBox(height: 10),
-        ],
+        ...draft.meds.expand(
+          (med) => [
+            MedPlanCard(
+              key: ValueKey(med.key),
+              draft: med.plan,
+              onRemove: draft.meds.length > 1 ? () => notifier.removeMed(med.key) : null,
+              onChanged: (plan) => notifier.updateMed(med.key, plan),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: PButton(
@@ -228,19 +206,19 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
             size: BtnSize.sm,
             accent: s.accent,
             ar: s.rtl,
-            onTap: () => setState(() => _meds.add(MedPlanDraft())),
+            onTap: notifier.addMed,
           ),
         ),
         const SizedBox(height: 20),
         Opacity(
-          opacity: _ready && !_saving ? 1 : 0.4,
+          opacity: canSave ? 1 : 0.4,
           child: PButton(
             m.rx_add,
             large: true,
             block: true,
             accent: s.accent,
             ar: s.rtl,
-            onTap: _ready && !_saving ? _save : null,
+            onTap: canSave ? onSave : null,
           ),
         ),
       ],

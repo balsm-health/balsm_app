@@ -16,6 +16,7 @@ import '../widgets/date_time_row.dart';
 import '../widgets/entry_attribution.dart';
 import '../widgets/photo_attach.dart';
 import '../widgets/vault_file_viewer.dart';
+import 'record_draft.dart';
 import 'records_screen.dart';
 
 /// One record, live from the active profile's vault — so an edit saved from
@@ -627,27 +628,23 @@ class _AddRecordSheet extends ConsumerStatefulWidget {
 }
 
 class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
-  RecordType? _type;
   final _title = TextEditingController();
   final _tagDraft = TextEditingController();
-  final _tags = <String>[];
-  late DateTime _date;
-  PickedAttach? _attach;
   bool _saving = false;
   bool _done = false;
+
+  /// This sheet's [recordDraftProvider] key: type, date, tags and file live there.
+  late final RecordDraftKey _key = (form: Object(), initial: widget.initial, initialType: widget.initialType);
+
+  RecordDraft get _draft => ref.read(recordDraftProvider(_key));
+  RecordDraftNotifier get _drafts => ref.read(recordDraftProvider(_key).notifier);
 
   bool get _editing => widget.initial != null;
 
   @override
   void initState() {
     super.initState();
-    final initial = widget.initial;
-    _type = initial?.type ?? widget.initialType;
-    _date = initial?.takenAt ?? DateTime.now();
-    if (initial != null) {
-      _title.text = initial.title;
-      _tags.addAll(initial.tags);
-    }
+    if (widget.initial case final initial?) _title.text = initial.title;
   }
 
   @override
@@ -660,7 +657,8 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
   /// Stores the edit through the records module; the attachment stays. A
   /// blank name falls back to the type, as a new record does.
   Future<void> _saveEdit(RecordDocument record) async {
-    final typeValue = _type;
+    final draft = _draft;
+    final typeValue = draft.type;
     if (typeValue == null || _saving) return;
     setState(() => _saving = true);
     final s = AppScope.of(context);
@@ -669,8 +667,8 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
       record.id,
       title: title.isEmpty ? recordTypeLabelOne(s, typeValue) : title,
       type: typeValue,
-      takenAt: _date,
-      tags: _tags,
+      takenAt: draft.takenAt,
+      tags: draft.tags,
     );
     if (!mounted) return;
     if (result.isFailure) {
@@ -689,31 +687,36 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
   Future<void> _save() async {
     if (widget.initial case final record?) return _saveEdit(record);
     final userId = ref.read(currentUserIdProvider);
-    final typeValue = _type;
+    final draft = _draft;
+    final typeValue = draft.type;
     if (userId == null || typeValue == null || _saving) return;
+    // Read before the first await: the store is written even if the sheet
+    // closes while the file is being saved.
+    final records = ref.read(recordsDataSourceProvider);
     setState(() => _saving = true);
     final s = AppScope.of(context);
     final now = DateTime.now();
     final id = RecordDocumentId.value('rec-${now.microsecondsSinceEpoch}');
+    final title = _title.text.trim();
     String? filePath;
     String? fileType;
-    if (_attach?.bytes != null) {
-      final ext = _attach!.kind == 'pdf' ? 'pdf' : 'jpg';
-      filePath = await saveVaultBytes(ref, fileName: '${id.value}.$ext', bytes: _attach!.bytes!);
-      fileType = _attach!.kind == 'pdf' ? 'PDF' : 'Image';
+    if (draft.attach case PickedAttach(:final kind, :final bytes?)) {
+      final ext = kind == 'pdf' ? 'pdf' : 'jpg';
+      filePath = await saveVaultBytes(ref, fileName: '${id.value}.$ext', bytes: bytes);
+      fileType = kind == 'pdf' ? 'PDF' : 'Image';
     }
     final doc = RecordDocument(
       id: id,
       userId: userId,
       type: typeValue,
-      title: _title.text.trim().isEmpty ? recordTypeLabelOne(s, typeValue) : _title.text.trim(),
-      tags: List.unmodifiable(_tags),
+      title: title.isEmpty ? recordTypeLabelOne(s, typeValue) : title,
+      tags: draft.tags,
       fileType: fileType,
       filePath: filePath,
-      takenAt: _date,
+      takenAt: draft.takenAt,
       createdAt: now,
     );
-    await ref.read(recordsDataSourceProvider).put(id, doc);
+    await records.put(id, doc);
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -727,6 +730,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final r = s.strings.records;
+    final type = ref.watch(recordDraftProvider(_key).select((d) => d.type));
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration: const BoxDecoration(
@@ -740,23 +744,22 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
             padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 10),
             child: Row(
               children: [
-                if (_type != null && widget.initialType == null)
+                if (type != null && widget.initialType == null)
                   RoundBtn(
                     icon: backArrow(context),
                     semanticLabel: s.strings.common.a11y_back,
                     ghost: true,
                     iconSize: 18,
-                    onTap: () => setState(() => _type = null),
+                    onTap: () => _drafts.setType(null),
                   ),
                 Expanded(
                   child: Text(
-                    _done
-                        ? ''
-                        : _type == null
-                            ? r.rec_pick_type
-                            : _editing
-                                ? r.rec_edit_title(recordTypeLabelOne(s, _type!))
-                                : recordTypeLabelOne(s, _type!),
+                    switch (type) {
+                      _ when _done => '',
+                      null => r.rec_pick_type,
+                      final t when _editing => r.rec_edit_title(recordTypeLabelOne(s, t)),
+                      final t => recordTypeLabelOne(s, t),
+                    },
                     style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -774,161 +777,233 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
           Flexible(
             child: SingleChildScrollView(
               padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, sheetBottomInset(context, base: 36)),
-              child: _done
-                  ? _RecordAdded(s: s, edited: _editing)
-                  : _type == null
-                      ? _typePicker(s)
-                      : _form(s),
+              child: switch (type) {
+                _ when _done => _RecordAdded(s: s, edited: _editing),
+                null => _TypePicker(onPick: _drafts.setType),
+                final t => _RecordForm(
+                    s: s,
+                    draftKey: _key,
+                    type: t,
+                    title: _title,
+                    tagDraft: _tagDraft,
+                    initial: widget.initial,
+                    onSave: _saving ? null : _save,
+                  ),
+              },
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _typePicker(PatientAppState s) => Column(
+/// The add-record sheet's first step: one row per record type.
+class _TypePicker extends StatelessWidget {
+  const _TypePicker({required this.onPick});
+  final ValueChanged<RecordType> onPick;
+
+  @override
+  Widget build(BuildContext context) => Column(
         children: [
           for (final type in RecordType.values) ...[
-            _TypeRow(type: type, onTap: () => setState(() => _type = type)),
+            _TypeRow(type: type, onTap: () => onPick(type)),
             const SizedBox(height: 12),
           ],
         ],
       );
+}
 
-  Widget _form(PatientAppState s) {
+/// The add-record sheet's form, once a type is picked. The date, tags and
+/// file come from the sheet's [recordDraftProvider]; the title and the tag
+/// being typed from their text fields.
+class _RecordForm extends ConsumerWidget {
+  const _RecordForm({
+    required this.s,
+    required this.draftKey,
+    required this.type,
+    required this.title,
+    required this.tagDraft,
+    required this.initial,
+    required this.onSave,
+  });
+  final PatientAppState s;
+  final RecordDraftKey draftKey;
+  final RecordType type;
+  final TextEditingController title;
+  final TextEditingController tagDraft;
+
+  /// The record being edited; null when adding one.
+  final RecordDocument? initial;
+
+  /// Null while a save is in flight.
+  final VoidCallback? onSave;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final r = s.strings.records;
+    final draft = ref.watch(recordDraftProvider(draftKey));
+    final drafts = ref.read(recordDraftProvider(draftKey).notifier);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Field(label: r.rec_title, child: _RecordInput(controller: _title, hint: r.rec_title_ph)),
+        _Field(label: r.rec_title, child: _RecordInput(controller: title, hint: r.rec_title_ph)),
         const SizedBox(height: 18),
-        DateTimeWhen(when: _date, onChanged: (v) => setState(() => _date = v)),
+        DateTimeWhen(when: draft.takenAt, onChanged: drafts.setDate),
         const SizedBox(height: 18),
         _Field(
           label: r.rec_tags,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_tags.isNotEmpty) ...[
+              if (draft.tags.isNotEmpty) ...[
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: [
-                    for (final tag in _tags)
-                      _RemovableTag(label: tag, onRemove: () => setState(() => _tags.remove(tag))),
-                  ],
+                  children: draft.tags
+                      .map((tag) => _RemovableTag(label: tag, onRemove: () => drafts.removeTag(tag)))
+                      .toList(),
                 ),
                 const SizedBox(height: 8),
               ],
               _RecordInput(
-                controller: _tagDraft,
+                controller: tagDraft,
                 hint: r.rec_tags_ph(s.gender),
                 onSubmitted: (v) {
                   final t = v.trim();
-                  if (t.isEmpty || _tags.contains(t)) return;
-                  setState(() {
-                    _tags.add(t);
-                    _tagDraft.clear();
-                  });
+                  if (t.isEmpty || draft.tags.contains(t)) return;
+                  drafts.addTag(t);
+                  tagDraft.clear();
                 },
               ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: [
-                  for (final tag in _suggestedTags(s, _type!))
-                    if (!_tags.contains(tag))
-                      GestureDetector(
-                        onTap: () => setState(() => _tags.add(tag)),
-                        // Suggestion chips are **dashed** in the design — the
-                        // dashed outline is what distinguishes "tap to add" from
-                        // the solid, already-applied tags.
-                        child: DashedBorder(
-                          color: AppColors.borderStrong,
-                          strokeWidth: 1.5,
-                          radius: AppRadii.pill,
-                          child: Container(
-                            height: 30,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(AppRadii.pill),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(LucideIcons.plus, size: 13, color: AppColors.textTertiary),
-                                const SizedBox(width: 5),
-                                Text(
-                                  tag,
-                                  style: Typo.bodySm(ar: s.rtl)
-                                      .copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                ],
+                children: _suggestedTags(s, type)
+                    .where((tag) => !draft.tags.contains(tag))
+                    .map((tag) => _SuggestedTag(s: s, label: tag, onTap: () => drafts.addTag(tag)))
+                    .toList(),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
-        ..._attachment(s),
+        _RecordAttachment(
+          s: s,
+          initial: initial,
+          attach: draft.attach,
+          onAttach: (a) {
+            // The picker answers after an await, by which time the sheet may be gone.
+            if (context.mounted) ref.read(recordDraftProvider(draftKey).notifier).attach(a);
+          },
+        ),
         const SizedBox(height: 24),
         PButton(
-          _editing ? r.rec_save_changes : s.strings.settings.add_record,
+          initial != null ? r.rec_save_changes : s.strings.settings.add_record,
           large: true,
           block: true,
           accent: s.accent,
           ar: s.rtl,
-          onTap: _type == null || _saving ? null : _save,
+          onTap: onSave,
         ),
       ],
     );
   }
+}
 
-  /// A new record picks its file here; an edited one keeps the file it has,
-  /// shown as it is.
-  List<Widget> _attachment(PatientAppState s) {
+/// A tag the type suggests. Dashed in the design — the dashed outline is what
+/// distinguishes "tap to add" from the solid, already-applied tags.
+class _SuggestedTag extends StatelessWidget {
+  const _SuggestedTag({required this.s, required this.label, required this.onTap});
+  final PatientAppState s;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: DashedBorder(
+          color: AppColors.borderStrong,
+          strokeWidth: 1.5,
+          radius: AppRadii.pill,
+          child: Container(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.plus, size: 13, color: AppColors.textTertiary),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+/// A new record picks its file here; an edited one keeps the file it has,
+/// shown as it is.
+class _RecordAttachment extends StatelessWidget {
+  const _RecordAttachment({required this.s, required this.initial, required this.attach, required this.onAttach});
+  final PatientAppState s;
+  final RecordDocument? initial;
+  final PickedAttach? attach;
+  final ValueChanged<PickedAttach?> onAttach;
+
+  @override
+  Widget build(BuildContext context) {
     final r = s.strings.records;
     final label = Text(
       r.rec_attach,
       style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
     );
-    if (widget.initial case final record?) {
+    if (initial case final record?) {
       final path = record.filePath;
-      if (path == null || path.isEmpty) return const [];
-      return [label, const SizedBox(height: 8), VaultAttachmentThumb(path: path, title: record.title, height: 120)];
+      if (path == null || path.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          label,
+          const SizedBox(height: 8),
+          VaultAttachmentThumb(path: path, title: record.title, height: 120),
+        ],
+      );
     }
-    return [
-      label,
-      const SizedBox(height: 8),
-      UploadDropzone(
-        attach: _attach,
-        url: '',
-        // The picker answers after an await, by which time the sheet may be gone.
-        onAttach: (a) {
-          if (mounted) setState(() => _attach = a);
-        },
-        onUrl: (_) {},
-        takePhotoLabel: r.rec_take_photo,
-        fromFilesLabel: r.rec_from_files,
-        help: r.rec_attach_h,
-      ),
-    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        label,
+        const SizedBox(height: 8),
+        UploadDropzone(
+          attach: attach,
+          url: '',
+          onAttach: onAttach,
+          onUrl: (_) {},
+          takePhotoLabel: r.rec_take_photo,
+          fromFilesLabel: r.rec_from_files,
+          help: r.rec_attach_h,
+        ),
+      ],
+    );
   }
+}
 
-  List<String> _suggestedTags(PatientAppState s, RecordType type) {
-    final r = s.strings.records;
-    return switch (type) {
-      RecordType.lab => [r.tag_diabetes, r.tag_cholesterol, r.tag_kidney, r.tag_thyroid],
-      RecordType.scan => [r.tag_chest, r.tag_abdomen, r.tag_bone, r.tag_follow_up],
-      RecordType.report => [r.tag_cardiology, r.tag_surgery, r.tag_follow_up, r.tag_referral],
-    };
-  }
+List<String> _suggestedTags(PatientAppState s, RecordType type) {
+  final r = s.strings.records;
+  return switch (type) {
+    RecordType.lab => [r.tag_diabetes, r.tag_cholesterol, r.tag_kidney, r.tag_thyroid],
+    RecordType.scan => [r.tag_chest, r.tag_abdomen, r.tag_bone, r.tag_follow_up],
+    RecordType.report => [r.tag_cardiology, r.tag_surgery, r.tag_follow_up, r.tag_referral],
+  };
 }
 
 /// `.b-input` as the record sheets draw it — add record and edit record.

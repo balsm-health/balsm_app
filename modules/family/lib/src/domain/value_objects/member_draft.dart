@@ -1,10 +1,15 @@
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show immutable;
 
 import 'member_age.dart';
 
 /// What the add / edit member form collects (design `MCAddMemberScreen`):
 /// relation, name, date of birth and sex are required; blood type is
 /// optional. [violations] reports every missing or invalid field at once.
+///
+/// Value equality over every field: a form holds it in a provider, and
+/// Riverpod 3 drops an update that is == to the last one.
+@immutable
 class MemberDraft {
   const MemberDraft({
     required this.displayName,
@@ -57,6 +62,20 @@ class MemberDraft {
     final dob = dateOfBirth;
     return dob != null && MemberAge.between(dob, now).isAdult;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is MemberDraft &&
+      other.displayName == displayName &&
+      other.relationship == relationship &&
+      other.dateOfBirth == dateOfBirth &&
+      other.sex == sex &&
+      other.bloodType == bloodType &&
+      other.groupId == groupId &&
+      other.newGroupName == newGroupName;
+
+  @override
+  int get hashCode => Object.hash(displayName, relationship, dateOfBirth, sex, bloodType, groupId, newGroupName);
 }
 
 /// A broken [MemberDraft] rule; [name] is the machine-readable code.

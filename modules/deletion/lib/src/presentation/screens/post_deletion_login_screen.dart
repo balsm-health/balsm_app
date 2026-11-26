@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,45 +8,30 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/cancel_deletion_use_case.dart';
 import '../i18n/i18n.dart';
+import '../providers/deletion_flow.dart';
 
 /// Shown after a user logs into an account that is pending deletion.
 ///
 /// Surfaces a banner with the scheduled deletion date and a CTA that cancels
 /// the deletion via [CancelDeletionUseCase].
-class PostDeletionLoginScreen extends ConsumerStatefulWidget {
+class PostDeletionLoginScreen extends ConsumerWidget {
   const PostDeletionLoginScreen({super.key, this.graceUntil});
 
   /// Scheduled purge deadline; surfaced to the user. May be null if unknown.
   final DateTime? graceUntil;
 
-  @override
-  ConsumerState<PostDeletionLoginScreen> createState() => _PostDeletionLoginScreenState();
-}
-
-class _PostDeletionLoginScreenState extends ConsumerState<PostDeletionLoginScreen> {
-  bool _submitting = false;
-  String? _error;
-
-  Future<void> _cancel() async {
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref.read(cancelDeletionUseCaseProvider).call();
-    if (!mounted) return;
-    result.fold(
-      (_) => context.goNamed('deletion.cancelled'),
-      (failure) => setState(() {
-        _submitting = false;
-        _error = failure.message;
-      }),
-    );
-  }
+  static const DeletionEntry _entry = DeletionEntry.postLogin;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final m = ref.watch(deletionStringsProvider);
-    final grace = widget.graceUntil;
+    ref.listen(deletionFlowProvider(_entry).select((f) => f.stage), (_, stage) {
+      if (stage == DeletionStage.cancelled) context.goNamed('deletion.cancelled');
+    });
+    final (:submitting, :failure) =
+        ref.watch(deletionFlowProvider(_entry).select((f) => (submitting: f.submitting, failure: f.failure)));
+    void cancel() => unawaited(ref.read(deletionFlowProvider(_entry).notifier).cancelDeletion());
+    final grace = graceUntil;
     final dateText = grace != null ? DateFormat.yMMMMd().format(grace.toLocal()) : m.soon;
     return Scaffold(
       backgroundColor: AppColors.cream50,
@@ -94,9 +81,9 @@ class _PostDeletionLoginScreenState extends ConsumerState<PostDeletionLoginScree
                     m.changedMind,
                     style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
                   ),
-                  if (_error case final error?) ...[
+                  if (failure case final failure?) ...[
                     const SizedBox(height: 20),
-                    BalsmErrorBanner(message: error, onRetry: _cancel),
+                    BalsmErrorBanner(message: failure.message, onRetry: cancel),
                   ],
                 ],
               ),
@@ -105,8 +92,8 @@ class _PostDeletionLoginScreenState extends ConsumerState<PostDeletionLoginScree
               padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
               child: BalsmButton(
                 label: m.publicCancelAction,
-                loading: _submitting,
-                onPressed: _submitting ? null : _cancel,
+                loading: submitting,
+                onPressed: submitting ? null : cancel,
               ),
             ),
           ],

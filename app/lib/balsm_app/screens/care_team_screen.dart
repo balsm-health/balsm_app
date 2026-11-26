@@ -21,6 +21,7 @@ import '../widgets/phone_field.dart';
 import '../widgets/photo_attach.dart';
 import '../widgets/vault_file_viewer.dart';
 import 'care_import_sheet.dart';
+import 'care_provider_draft.dart';
 import 'profile_subscreens.dart';
 
 /// Care team (`home.jsx` `CareTeamScreen` + its "Add a provider" sheet).
@@ -88,7 +89,6 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
 
   @override
   void dispose() {
-    _importedTimer?.cancel();
     _query.dispose();
     super.dispose();
   }
@@ -115,19 +115,6 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
       careTypeLabel(c, p.type),
     ].join(' ').toLowerCase();
     return hay.contains(q);
-  }
-
-  /// How many rows the last import created, for the inline banner. Zero hides
-  /// it. `home.jsx` clears it after 5s rather than leaving it on the screen.
-  int _imported = 0;
-  Timer? _importedTimer;
-
-  void _showImported(int n) {
-    setState(() => _imported = n);
-    _importedTimer?.cancel();
-    _importedTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) setState(() => _imported = 0);
-    });
   }
 
   Future<void> _add() async {
@@ -160,7 +147,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
       _typeFilter = null;
       _query.clear();
     });
-    _showImported(result);
+    ref.read(careImportBannerProvider.notifier).show(result);
   }
 
   /// The same sheet in edit mode. It returns `true` when the row was saved and
@@ -201,6 +188,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     final s = AppScope.of(context);
     final c = s.strings.care;
     final team = ref.watch(careTeamProvider).value ?? const <CareProvider>[];
+    final imported = ref.watch(careImportBannerProvider);
     final q = _query.text.trim().toLowerCase();
     final shown = team.where((p) => (_typeFilter == null || p.type == _typeFilter) && _matches(p, q, c)).toList();
 
@@ -232,7 +220,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
           padding: const EdgeInsetsDirectional.fromSTEB(0, 4, 0, 14),
           child: Text(c.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5)),
         ),
-        if (_imported > 0) _ImportedBanner(s: s, count: _imported),
+        if (imported > 0) _ImportedBanner(s: s, count: imported),
         if (team.isNotEmpty) ...[
           _CareSearchField(controller: _query, hint: c.care_search_ph, onChanged: () => setState(() {})),
           if (present.length > 1) ...[
@@ -727,7 +715,9 @@ class AddCareProviderSheet extends ConsumerStatefulWidget {
 }
 
 class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
-  CareProviderType _type = CareProviderType.doctor;
+  /// This sheet's draft (type, staged files) in [careProviderDraftProvider].
+  late final CareProviderDraftKey _key = (form: Object(), initial: widget.provider);
+  CareProviderDraftNotifier get _draft => ref.read(careProviderDraftProvider(_key).notifier);
   final _name = TextEditingController();
   final _specialty = TextEditingController();
   final _phone = TextEditingController();
@@ -739,14 +729,12 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   final _notes = TextEditingController();
   bool _saving = false;
 
-  /// Vault paths attached before the row exists. `home.jsx` keeps them in
-  /// `formAtts` and writes them with the provider; add mode has no
-  /// [CareProviderId] to file them under until the save returns one, so they
-  /// wait here and are linked in [_save].
-  ///
-  /// Edit mode never uses this — there the id already exists, so a file is
-  /// linked the moment it is picked, exactly as the card does it.
-  final List<CareProviderFile> _staged = [];
+  // Vault paths attached before the row exists live in the draft's `staged`.
+  // `home.jsx` keeps them in `formAtts` and writes them with the provider; add
+  // mode has no CareProviderId to file them under until the save returns one,
+  // so they wait there and are linked in [_save]. Edit mode never stages: the
+  // id already exists, so a file is linked the moment it is picked, exactly as
+  // the card does it.
 
   bool _attaching = false;
 
@@ -760,7 +748,6 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     super.initState();
     final p = widget.provider;
     if (p == null) return;
-    _type = p.type;
     _name.text = p.name;
     _specialty.text = p.specialty ?? '';
     _phone.text = p.phone ?? '';
@@ -800,7 +787,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   /// mode.
   List<CareProviderFile> _files() {
     final p = _editing;
-    if (p == null) return _staged;
+    if (p == null) return ref.watch(careProviderDraftProvider(_key).select((d) => d.staged));
     return ref.watch(careProviderFilesProvider(p.id)).value ?? const <CareProviderFile>[];
   }
 
@@ -851,7 +838,8 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   Future<void> _record(CareProviderFile attachment) async {
     final p = _editing;
     if (p == null) {
-      if (!_staged.contains(attachment)) _staged.add(attachment);
+      // The sheet may have closed while the file was being saved.
+      if (mounted) _draft.stage(attachment);
       return;
     }
     final dao = ref.read(careProvidersDataSourceProvider);
@@ -866,7 +854,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   Future<void> _detachFile(CareProviderFile attachment) async {
     final p = _editing;
     if (p == null) {
-      setState(() => _staged.remove(attachment));
+      _draft.unstage(attachment);
       return;
     }
     await ref.read(careProvidersDataSourceProvider).deleteFile(p.id, attachment.locator);
@@ -911,13 +899,14 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
       return;
     }
     setState(() => _saving = true);
+    final draft = ref.read(careProviderDraftProvider(_key));
     final editing = _editing;
     // Arabic-Indic digits normalize on the way in, as everywhere else a phone
     // number is captured (FR-213).
     final result = editing == null
         ? await ref.read(addCareProviderUseCaseProvider).execute(
               userId: userId,
-              type: _type,
+              type: draft.type,
               name: _name.text,
               specialty: _specialty.text,
               phone: toWesternDigits(_phone.text),
@@ -931,7 +920,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
         : await ref.read(updateCareProviderUseCaseProvider).execute(
               userId: userId,
               provider: editing,
-              type: _type,
+              type: draft.type,
               name: _name.text,
               specialty: _specialty.text,
               phone: toWesternDigits(_phone.text),
@@ -946,9 +935,9 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     if (result.isSuccess) {
       // Add mode: the row only just got an id, so anything attached while
       // filling the form is filed under it now.
-      if (editing == null && _staged.isNotEmpty) {
+      if (editing == null && draft.staged.isNotEmpty) {
         final dao = ref.read(careProvidersDataSourceProvider);
-        for (final a in _staged) {
+        for (final a in draft.staged) {
           if (a.isLink) {
             await dao.putLink(result.value.id, a.locator);
           } else {
@@ -973,7 +962,8 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     final s = AppScope.of(context);
     final c = s.strings.care;
     // Places and people label the same two fields differently.
-    final place = _type.isPlace;
+    final type = ref.watch(careProviderDraftProvider(_key).select((d) => d.type));
+    final place = type.isPlace;
     final ready = _name.text.trim().isNotEmpty && !_saving;
     final files = _files();
     final vaultFiles = [
@@ -1032,9 +1022,9 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                         _TypeChip(
                           icon: careTypeIcon(t),
                           label: careTypeLabel(c, t),
-                          active: _type == t,
+                          active: type == t,
                           tall: true,
-                          onTap: () => setState(() => _type = t),
+                          onTap: () => _draft.setType(t),
                         ),
                     ],
                   ),
