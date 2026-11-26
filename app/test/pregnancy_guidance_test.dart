@@ -177,7 +177,10 @@ void main() {
       final light = MediaSelector.file(art.media, MediaSelector.contextFor(art.media, app: {'theme': 'light'}));
       final dark = MediaSelector.file(art.media, MediaSelector.contextFor(art.media, app: {'theme': 'dark'}));
       expect((art.credit, art.sourceUrl, art.media.alt), ('art', 'https://example.test/art', 'Week 24 illustration'));
-      expect((light?.url, dark?.url), ('https://cdn.example.test/w24.jpg', 'https://cdn.example.test/w24-dark.jpg'));
+      expect(
+        (light?.uri.toString(), dark?.uri.toString()),
+        ('https://cdn.example.test/w24.jpg', 'https://cdn.example.test/w24-dark.jpg'),
+      );
       expect(guidance.forWeek(25)!.illustration, isNull);
     });
 

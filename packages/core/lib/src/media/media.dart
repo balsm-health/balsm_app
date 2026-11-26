@@ -1,4 +1,5 @@
 import 'package:balsm_api/balsm_api.dart' show MediaAxisDto, MediaDto, MediaFileDto, MediaRenditionDto;
+import 'package:media_source/media_source.dart';
 
 /// Who fills an axis value: the app from its own state, or the user with a
 /// switch on the media.
@@ -12,7 +13,10 @@ class Media {
   /// Null when [dto] has no rendition to show.
   static Media? fromDto(MediaDto? dto) {
     if (dto == null) return null;
-    final renditions = [for (final r in dto.renditions) MediaRendition._fromDto(r)];
+    final renditions = [
+      for (final r in dto.renditions)
+        if (MediaRendition._fromDto(r) case final rendition?) rendition,
+    ];
     if (renditions.isEmpty) return null;
     return Media(
       alt: dto.alt,
@@ -89,36 +93,47 @@ class MediaOption {
 }
 
 /// A [file] served when every axis in [when] has that value; an axis absent
-/// from [when] matches anything.
+/// from [when] matches anything. [width] and [height] are [file]'s pixels,
+/// 0 when unknown (media_source carries no dimensions).
 class MediaRendition {
-  const MediaRendition({required this.file, this.when = const {}, this.thumbnail});
+  const MediaRendition({required this.file, this.when = const {}, this.thumbnail, this.width = 0, this.height = 0});
 
-  factory MediaRendition._fromDto(MediaRenditionDto dto) => MediaRendition(
-        when: dto.when,
-        file: MediaFile._fromDto(dto.file),
-        thumbnail: switch (dto.thumbnail) {
-          final t? => MediaFile._fromDto(t),
-          null => null,
-        },
+  /// Null when [dto]'s file url cannot be parsed. A thumbnail whose url
+  /// cannot be parsed is dropped.
+  static MediaRendition? _fromDto(MediaRenditionDto dto) {
+    final file = _network(dto.file);
+    if (file == null) return null;
+    return MediaRendition(
+      when: dto.when,
+      file: file,
+      thumbnail: switch (dto.thumbnail) {
+        final t? => _network(t),
+        null => null,
+      },
+      width: dto.file.width,
+      height: dto.file.height,
+    );
+  }
+
+  /// The CDN file as the media_source subtype for its mime type
+  /// ([ImageNetworkMedia] for an image), with its size and name.
+  static NetworkMediaSource? _network(MediaFileDto dto) => NetworkMediaSource.fromUrlOrNull(
+        dto.url,
+        mimeType: dto.mime.isEmpty ? null : dto.mime,
+        size: dto.bytes > 0 ? FileSize.b(dto.bytes) : null,
       );
 
   final Map<String, String> when;
-  final MediaFile file;
+  final NetworkMediaSource file;
 
   /// A smaller file for lists and cards; null when there is none.
-  final MediaFile? thumbnail;
-}
-
-/// One file on the CDN. [width] and [height] are pixels, 0 when unknown.
-class MediaFile {
-  const MediaFile({required this.url, this.mime = '', this.width = 0, this.height = 0, this.bytes = 0});
-
-  factory MediaFile._fromDto(MediaFileDto dto) =>
-      MediaFile(url: dto.url, mime: dto.mime, width: dto.width, height: dto.height, bytes: dto.bytes);
-
-  final String url;
-  final String mime;
+  final NetworkMediaSource? thumbnail;
   final int width;
   final int height;
-  final int bytes;
+
+  /// [file] paired with its [thumbnail]; just [file] when there is none.
+  MediaSource get source => switch (thumbnail) {
+        final t? => ThumbnailMediaSource(original: file, thumbnail: t),
+        null => file,
+      };
 }

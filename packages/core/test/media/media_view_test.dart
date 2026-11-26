@@ -5,6 +5,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:media_source/media_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // A 1×1 transparent PNG.
@@ -19,12 +20,12 @@ const _gender = MediaAxis(
   defaultValue: 'girl',
 );
 
-const _media = Media(
+final _media = Media(
   alt: 'Week 12 illustration',
-  axes: [_gender],
+  axes: const [_gender],
   renditions: [
-    MediaRendition(when: {'gender': 'girl'}, file: MediaFile(url: 'girl')),
-    MediaRendition(when: {'gender': 'boy'}, file: MediaFile(url: 'boy')),
+    MediaRendition(when: const {'gender': 'girl'}, file: ImageNetworkMedia.url('girl')),
+    MediaRendition(when: const {'gender': 'boy'}, file: ImageNetworkMedia.url('boy')),
   ],
 );
 
@@ -100,8 +101,8 @@ void main() {
   });
 
   testWidgets('a media without a user axis shows no switch; compact shows the thumbnail', (tester) async {
-    const plain = Media(
-      renditions: [MediaRendition(file: MediaFile(url: 'full'), thumbnail: MediaFile(url: 'thumb'))],
+    final plain = Media(
+      renditions: [MediaRendition(file: ImageNetworkMedia.url('full'), thumbnail: ImageNetworkMedia.url('thumb'))],
     );
     await tester.runAsync(() async {
       await tester.pumpWidget(
@@ -118,5 +119,34 @@ void main() {
 
     expect(drawn(tester).image, images['thumb']);
     expect(find.byType(BalsmSegmented<MediaOption>), findsNothing);
+  });
+
+  testWidgets('precacheMedia fetches every user-axis option and each thumbnail', (tester) async {
+    final asked = <String>[];
+    final withThumb = Media(
+      axes: const [_gender],
+      renditions: [
+        MediaRendition(
+          when: const {'gender': 'girl'},
+          file: ImageNetworkMedia.url('girl'),
+          thumbnail: ImageNetworkMedia.url('girl-t'),
+        ),
+        MediaRendition(when: const {'gender': 'boy'}, file: ImageNetworkMedia.url('boy')),
+      ],
+    );
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => const SizedBox())));
+    final context = tester.element(find.byType(SizedBox));
+    await tester.runAsync(
+      () => precacheMedia(
+        context,
+        [withThumb],
+        imageFor: (url) {
+          asked.add(url);
+          return loads(url);
+        },
+      ),
+    );
+
+    expect(asked, unorderedEquals(['girl', 'girl-t', 'boy']));
   });
 }

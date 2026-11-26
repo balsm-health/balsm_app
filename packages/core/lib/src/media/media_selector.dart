@@ -1,3 +1,5 @@
+import 'package:media_source/media_source.dart';
+
 import 'media.dart';
 
 /// Picks the file to show for a [Media]. Pure: the caller supplies the
@@ -30,16 +32,21 @@ abstract final class MediaSelector {
     if (matching.isEmpty) return null;
     final specificity = matching.map((r) => r.when.length).reduce((a, b) => a > b ? a : b);
     final best = matching.where((r) => r.when.length == specificity).toList();
-    final wideEnough = best.where((r) => r.file.width >= minWidth).toList();
+    final wideEnough = best.where((r) => r.width >= minWidth).toList();
     if (wideEnough.isNotEmpty) {
-      return wideEnough.reduce((a, b) => b.file.width < a.file.width ? b : a);
+      return wideEnough.reduce((a, b) => b.width < a.width ? b : a);
     }
-    return best.reduce((a, b) => b.file.width > a.file.width ? b : a);
+    return best.reduce((a, b) => b.width > a.width ? b : a);
   }
 
   /// The file to show: the [rendition]'s thumbnail when [compact] and it
   /// has one, else its full file. Null when no rendition matches.
-  static MediaFile? file(Media media, Map<String, String> context, {double minWidth = 0, bool compact = false}) {
+  static NetworkMediaSource? file(
+    Media media,
+    Map<String, String> context, {
+    double minWidth = 0,
+    bool compact = false,
+  }) {
     final r = rendition(media, context, minWidth: minWidth);
     if (r == null) return null;
     return compact ? (r.thumbnail ?? r.file) : r.file;

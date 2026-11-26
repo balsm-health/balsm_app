@@ -9,7 +9,7 @@ import 'media_app_axes.dart';
 import 'media_choices.dart';
 import 'media_selector.dart';
 
-/// Turns a file url into the image to draw; [NetworkImage] unless a test
+/// Turns a file's url (the network source's uri) into the image to draw; [NetworkImage] unless a test
 /// supplies another.
 typedef MediaImageFor = ImageProvider Function(String url);
 
@@ -72,7 +72,7 @@ class _MediaViewState extends ConsumerState<MediaView> {
         final width = constraints.maxWidth.isFinite ? constraints.maxWidth : 0.0;
         final file = MediaSelector.file(media, values, minWidth: width * ratio, compact: widget.compact);
         if (file == null) return const SizedBox.shrink();
-        final image = widget.imageFor(file.url);
+        final image = widget.imageFor(file.uri.toString());
         return _ShownWhenLoaded(
           image: image,
           child: Column(
@@ -194,8 +194,8 @@ Future<void> precacheMedia(
     for (final m in media)
       for (final values in MediaSelector.everyUserContext(m, app: app))
         if (MediaSelector.rendition(m, values, minWidth: minWidth) case final r?) ...[
-          r.file.url,
-          if (r.thumbnail case final t?) t.url,
+          r.file.uri.toString(),
+          if (r.thumbnail case final t?) t.uri.toString(),
         ],
   };
   return Future.wait([
