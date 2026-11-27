@@ -1,0 +1,36 @@
+# Keys under which 0.7.0 (and every earlier store build) kept data on the
+# device: keychain / secure storage, SharedPreferences and IndexedDB names.
+# Extracted from the v0.7.0-main.35 sources; do not edit. A trailing dot is
+# a prefix (balsm.file_key.<user id>).
+balsm.access_token
+balsm.account_mode
+balsm.active_server_preset
+balsm.backup.dirty
+balsm.backup.last
+balsm.backup.recovery
+balsm.backup.salt
+balsm.db
+balsm.db.key
+balsm.db.key.v2
+balsm.denied_countries_cache
+balsm.dev_host_retried
+balsm.dev_log_key
+balsm.devhost
+balsm.device_id
+balsm.file_key.
+balsm.files
+balsm.flags.overrides
+balsm.flags.values
+balsm.http
+balsm.offline.disclosure_pending
+balsm.offline.email
+balsm.offline.local_id
+balsm.offline.lockout
+balsm.offline.pw_hash
+balsm.offline.pw_plain
+balsm.pending_merge
+balsm.pending_merge_choice
+balsm.pending_merge_target
+balsm.refresh_token
+balsm.secure
+balsm.user_id
