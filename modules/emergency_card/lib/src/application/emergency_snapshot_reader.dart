@@ -8,6 +8,8 @@ import '../domain/aggregates/emergency_card_snapshot.dart';
 /// emergency_card bounded context decoupled from profile internals.
 ///
 /// The returned snapshot contains PHI and MUST NOT be logged or sent to Sentry.
+// Port interface: the app shell binds the implementation that reads the profile module, and tests swap in fakes.
+// ignore: one_member_abstracts
 abstract class EmergencySnapshotReader {
   Future<EmergencyCardSnapshot?> readSnapshot();
 }

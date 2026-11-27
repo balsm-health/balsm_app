@@ -2,12 +2,14 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/care/map_packs/map_pack_download_controller.dart';
 import 'package:app/balsm_app/care/map_packs/map_pack_list_item.dart';
 import 'package:app/balsm_app/screens/map_packs_sheet.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart' show noProviderRetry;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _StubNotifier extends StateNotifier<MapPackDownloadState> implements MapPackDownloadController {
-  _StubNotifier(super.state);
+  _StubNotifier(super._state);
 
   @override
   Future<void> load(String lang) async {}
@@ -22,20 +24,23 @@ class _StubNotifier extends StateNotifier<MapPackDownloadState> implements MapPa
 Future<void> _pump(WidgetTester tester, MapPackDownloadState state) async {
   await tester.pumpWidget(
     ProviderScope(
+      retry: noProviderRetry,
       overrides: [
         mapPackDownloadControllerProvider.overrideWith((ref) => _StubNotifier(state)),
       ],
       child: AppScope(
         state: PatientAppState(),
         child: MaterialApp(
-          home: Builder(builder: (context) {
-            return Scaffold(
-              body: ElevatedButton(
-                onPressed: () => showMapPacksSheet(context),
-                child: const Text('open'),
-              ),
-            );
-          }),
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: ElevatedButton(
+                  onPressed: () => showMapPacksSheet(context),
+                  child: const Text('open'),
+                ),
+              );
+            },
+          ),
         ),
       ),
     ),
@@ -66,7 +71,7 @@ void main() {
   });
 
   testWidgets('offline state shows the notice banner', (tester) async {
-    await _pump(tester, const MapPackDownloadState(items: [], loading: false, offline: true));
+    await _pump(tester, const MapPackDownloadState(loading: false, offline: true));
 
     // Assert on the sheet rendering without error and the offline flag
     // reaching the widget — exact copy is asserted via the i18n keys

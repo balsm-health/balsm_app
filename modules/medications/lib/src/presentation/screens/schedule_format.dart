@@ -1,32 +1,24 @@
 import '../../domain/aggregates/medication.dart';
-
-const _weekdayShort = {
-  1: 'Mon',
-  2: 'Tue',
-  3: 'Wed',
-  4: 'Thu',
-  5: 'Fri',
-  6: 'Sat',
-  7: 'Sun',
-};
+import '../i18n/i18n.dart';
 
 /// Human-readable schedule summary, e.g. "Daily · 08:00, 20:00" or
 /// "Mon, Wed, Fri · 09:00".
-String formatSchedule(ScheduleType type, ScheduleConfig cfg) {
+String formatSchedule(Messages m, ScheduleType type, ScheduleConfig cfg) {
   final times = cfg.times.join(', ');
+  final weekdays = m.weekdaysShort.split('|'); // ISO 1 (Monday) .. 7 (Sunday)
   switch (type) {
     case ScheduleType.daily:
-      return 'Daily · $times';
+      return m.scheduleDailyAt(times);
     case ScheduleType.weekly:
     case ScheduleType.custom:
-      final days = (cfg.days ?? const <int>[]).map((d) => _weekdayShort[d] ?? '?').join(', ');
-      final label = days.isEmpty ? (type == ScheduleType.weekly ? 'Weekly' : 'Custom') : days;
+      final days = (cfg.days ?? const <int>[]).map((d) => d >= 1 && d <= 7 ? weekdays[d - 1] : '?').join(', ');
+      final label = days.isEmpty ? (type == ScheduleType.weekly ? m.scheduleWeekly : m.scheduleCustom) : days;
       return '$label · $times';
     case ScheduleType.once:
-      return 'Once · $times';
+      return m.scheduleOnceAt(times);
     case ScheduleType.everyHours:
-      return 'Every ${cfg.interval ?? 1}h from $times';
+      return m.scheduleEveryHours(cfg.interval ?? 1, times);
     case ScheduleType.everyDays:
-      return 'Every ${cfg.interval ?? 1} days · $times';
+      return m.scheduleEveryDays(cfg.interval ?? 1, times);
   }
 }

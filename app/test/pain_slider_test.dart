@@ -1,22 +1,24 @@
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/tokens.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pumps a 300pt-wide slider and returns the values it reports.
 Future<List<double>> _tapAt(WidgetTester tester, double dx, {TextDirection dir = TextDirection.ltr}) async {
   final reported = <double>[];
-  await tester.pumpWidget(MaterialApp(
-    home: Directionality(
-      textDirection: dir,
-      child: Center(
-        child: SizedBox(
-          width: 300,
-          child: PainSlider(value: 0, knobColor: T.danger, onChanged: reported.add),
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Directionality(
+        textDirection: dir,
+        child: Center(
+          child: SizedBox(
+            width: 300,
+            child: PainSlider(value: 0, knobColor: AppColors.danger, onChanged: reported.add),
+          ),
         ),
       ),
     ),
-  ));
+  );
   // Padding is fromLTRB(4, 18, 4, 6) and the track is 56 tall, so its centre
   // is 18 + 28 below the widget top. The tick row sits below that — tapping
   // the widget's own centre would miss the track entirely.

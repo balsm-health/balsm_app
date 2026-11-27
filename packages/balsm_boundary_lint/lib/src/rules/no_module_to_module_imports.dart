@@ -14,7 +14,11 @@ class NoModuleToModuleImports extends DartLintRule {
     'sessions',
     'account',
     'deletion',
-    'geofence_block'
+    'geofence_block',
+    'family',
+    'family_link',
+    'pregnancy',
+    'vaccinations'
   ];
   static const _code = LintCode(
       name: 'no_module_to_module_imports',
@@ -29,7 +33,7 @@ class NoModuleToModuleImports extends DartLintRule {
   }
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     context.registry.addImportDirective((node) {
       final uri = node.uri.stringValue ?? '';
       final currentPkg = _pkgOf(resolver.path);

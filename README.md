@@ -22,11 +22,17 @@ encrypted or non-PHI payloads.
   <img src="app/screenshots/balsm/iphone/ar/10_profile.png"     width="16%" alt="الملف — Profile" />
 </p>
 <p align="center">
+  <img src="app/screenshots/balsm/iphone/ar/13_pregnancy.png"        width="16%" alt="متابعة الحمل — Pregnancy" />
+  <img src="app/screenshots/balsm/iphone/ar/14_pregnancy_weeks.png"  width="16%" alt="إرشاد الأسابيع — Week by week" />
+  <img src="app/screenshots/balsm/iphone/ar/15_pregnancy_card.png"   width="16%" alt="بطاقة الطوارئ — Pregnancy emergency card" />
+</p>
+<p align="center">
   <img src="app/screenshots/balsm/ipad/ar/09_trends.png" width="45%" alt="iPad — الرسوم البيانية" />
   <img src="app/screenshots/balsm/ipad/ar/04_home.png"   width="45%" alt="iPad — الرئيسية" />
 </p>
 <p align="center"><sub>iPhone and iPad, Arabic (RTL) — the tablet layout moves the tab bar to a
-side rail. Synthetic seeded data, never real PHI; English set and regeneration guide in
+side rail. Pregnancy tracking is part of Mother &amp; Child, behind its feature flag. Synthetic
+seeded data, never real PHI; English set and regeneration guide in
 <a href="docs/screenshots.md">docs/screenshots.md</a>.</sub></p>
 
 ## Repository map
@@ -40,7 +46,7 @@ cross-module reads go through core contracts/ports (enforced by `balsm_boundary_
 | `packages/core/` | Shared kernel: domain VOs, event bus, `AppDatabase` (SQLCipher), data-source ports, localization (i69n), design kit, telemetry, backup. |
 | `packages/balsm_api/` | Typed HTTP client for Balsm-API-DotNet (Dio), file downloader, server switching. |
 | `packages/balsm_boundary_lint/` | Custom lints enforcing the module-boundary rules. |
-| `modules/<context>/` | Bounded contexts (12): account, auth, deletion, disclosure, emergency_card, geofence_block, medications, prescriptions, profile, records, self_report, sessions. Each: `domain/ application/ infrastructure/ presentation/ i18n/`. |
+| `modules/<context>/` | Bounded contexts (16): account, auth, deletion, disclosure, emergency_card, family, family_link, geofence_block, medications, pregnancy, prescriptions, profile, records, self_report, sessions, vaccinations. Each: `domain/ application/ infrastructure/ presentation/ i18n/`. |
 
 Every package/module has its own `README.md` with a frontmatter header
 (`context / plane / features`) — start there when entering a directory.

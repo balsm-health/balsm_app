@@ -1,5 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
@@ -7,9 +8,9 @@ import '../tokens.dart';
 /// iOS-Reminders-style date/time group from Claude Design `DateTimeRow`.
 class DateTimeWhen extends StatelessWidget {
   const DateTimeWhen({
-    super.key,
     required this.when,
     required this.onChanged,
+    super.key,
     this.bare = false,
     this.dateLabel,
     this.lastDate,
@@ -39,7 +40,7 @@ class DateTimeWhen extends StatelessWidget {
     final day = DateTime(when.year, when.month, when.day);
     final dateText = day == today ? s.strings.common.today : '${when.day} ${_shortMonth(when.month, s)}';
     final timeText = TimeOfDay.fromDateTime(when).format(context);
-    final expiryDay = expiry == null ? null : DateTime(expiry!.year, expiry!.month, expiry!.day);
+    final expiryDay = switch (expiry) { final expiry? => DateTime(expiry.year, expiry.month, expiry.day), _ => null };
     final expiryText = expiryDay == null
         ? s.strings.common.select_date(s.gender)
         : expiryDay == today
@@ -49,66 +50,68 @@ class DateTimeWhen extends StatelessWidget {
     return Container(
       margin: bare ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: bare ? BorderRadius.zero : BorderRadius.circular(T.rLg),
-        border: bare ? null : Border.all(color: T.border),
+        color: AppColors.white,
+        borderRadius: bare ? BorderRadius.zero : BorderRadius.circular(AppRadii.lg),
+        border: bare ? null : Border.all(color: AppColors.border),
       ),
-      child: Column(children: [
-        _DateTimeRow(
-          icon: LucideIcons.calendar,
-          chipBg: const Color(0xFFFCEAE7),
-          chipFg: T.danger,
-          label: dateLabel ?? s.strings.common.date,
-          value: dateText,
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: when,
-              firstDate: DateTime(1900),
-              lastDate: lastDate ?? DateTime.now(),
-            );
-            if (picked == null) return;
-            onChanged(DateTime(picked.year, picked.month, picked.day, when.hour, when.minute));
-          },
-        ),
-        const Divider(height: 1, color: T.border),
-        _DateTimeRow(
-          icon: LucideIcons.clock,
-          chipBg: T.hueBlue50,
-          chipFg: T.hueBlue,
-          label: s.strings.common.time,
-          value: timeText,
-          onTap: () async {
-            final picked = await showTimePicker(
-              context: context,
-              initialTime: TimeOfDay.fromDateTime(when),
-            );
-            if (picked == null) return;
-            onChanged(DateTime(when.year, when.month, when.day, picked.hour, picked.minute));
-          },
-        ),
-        if (onExpiryChanged != null) ...[
-          const Divider(height: 1, color: T.border),
+      child: Column(
+        children: [
           _DateTimeRow(
             icon: LucideIcons.calendar,
-            chipBg: T.hueViolet50,
-            chipFg: T.hueViolet,
-            label: expiryLabel ?? s.strings.meds.rx_expiry,
-            value: expiryText,
-            muted: expiry == null,
+            chipBg: AppColors.dangerBackground,
+            chipFg: AppColors.danger,
+            label: dateLabel ?? s.strings.common.date,
+            value: dateText,
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
-                initialDate: expiry ?? when,
-                firstDate: DateTime(when.year, when.month, when.day),
-                lastDate: DateTime(now.year + 20),
+                initialDate: when,
+                firstDate: DateTime(1900),
+                lastDate: lastDate ?? DateTime.now(),
               );
               if (picked == null) return;
-              onExpiryChanged!(DateTime(picked.year, picked.month, picked.day));
+              onChanged(DateTime(picked.year, picked.month, picked.day, when.hour, when.minute));
             },
           ),
+          const Divider(height: 1, color: AppColors.border),
+          _DateTimeRow(
+            icon: LucideIcons.clock,
+            chipBg: AppColors.hueBlue50,
+            chipFg: AppColors.hueBlue,
+            label: s.strings.common.time,
+            value: timeText,
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay.fromDateTime(when),
+              );
+              if (picked == null) return;
+              onChanged(DateTime(when.year, when.month, when.day, picked.hour, picked.minute));
+            },
+          ),
+          if (onExpiryChanged case final onExpiryChanged?) ...[
+            const Divider(height: 1, color: AppColors.border),
+            _DateTimeRow(
+              icon: LucideIcons.calendar,
+              chipBg: AppColors.hueViolet50,
+              chipFg: AppColors.hueViolet,
+              label: expiryLabel ?? s.strings.meds.rx_expiry,
+              value: expiryText,
+              muted: expiry == null,
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: expiry ?? when,
+                  firstDate: DateTime(when.year, when.month, when.day),
+                  lastDate: DateTime(now.year + 20),
+                );
+                if (picked == null) return;
+                onExpiryChanged(DateTime(picked.year, picked.month, picked.day));
+              },
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
@@ -139,19 +142,24 @@ class _DateTimeRow extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        child: Row(children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: chipBg, borderRadius: BorderRadius.circular(T.rMd)),
-            child: Icon(icon, size: 17, color: chipFg),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(color: T.fg1))),
-          Text(value,
-              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: muted ? T.fg3 : T.hueBlue)),
-        ]),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: chipBg, borderRadius: BorderRadius.circular(AppRadii.md)),
+              child: Icon(icon, size: 17, color: chipFg),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary))),
+            Text(
+              value,
+              style: Typo.body(ar: s.rtl)
+                  .copyWith(fontWeight: FontWeight.w500, color: muted ? AppColors.textTertiary : AppColors.hueBlue),
+            ),
+          ],
+        ),
       ),
     );
   }

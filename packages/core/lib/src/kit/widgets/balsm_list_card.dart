@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 import 'balsm_list_row.dart';
 
 export 'balsm_list_row.dart';
@@ -8,8 +8,8 @@ export 'balsm_list_row.dart';
 /// Porting prototype `.list-card` (overflow hidden, 0 20px 16px margin).
 class BalsmListCard extends StatelessWidget {
   const BalsmListCard({
-    super.key,
     required this.children,
+    super.key,
     this.margin = const EdgeInsets.only(bottom: 16),
   });
 
@@ -20,25 +20,27 @@ class BalsmListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Remove divider on last row
     final rows = children.indexed
-        .map<Widget>((e) => BalsmListRow(
-              key: e.$2.key,
-              leading: e.$2.leading,
-              label: e.$2.label,
-              sublabel: e.$2.sublabel,
-              trailing: e.$2.trailing,
-              onTap: e.$2.onTap,
-              showChevron: e.$2.showChevron,
-              showDivider: e.$1 < children.length - 1,
-            ))
+        .map<Widget>(
+          (e) => BalsmListRow(
+            key: e.$2.key,
+            leading: e.$2.leading,
+            label: e.$2.label,
+            sublabel: e.$2.sublabel,
+            trailing: e.$2.trailing,
+            onTap: e.$2.onTap,
+            showChevron: e.$2.showChevron,
+            showDivider: e.$1 < children.length - 1,
+          ),
+        )
         .toList();
 
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: BalsmColors.surface,
-        borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: Border.all(color: BalsmColors.border),
-        boxShadow: BalsmShadow.sm,
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.sm,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

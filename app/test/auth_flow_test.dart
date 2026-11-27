@@ -11,11 +11,11 @@ import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockSignInUseCase extends Mock implements SignInUseCase {}
@@ -67,22 +67,25 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        signInUseCaseProvider.overrideWithValue(signIn),
-        signUpUseCaseProvider.overrideWithValue(signUp),
-        disclosureDaoProvider.overrideWithValue(disclosure),
-        offlineAccountServiceProvider.overrideWithValue(offline),
-        deviceAccountRemoverProvider.overrideWithValue(remover),
-        canShakeProvider.overrideWith((ref) async => canShake),
-      ],
-      child: MaterialApp(
-        home: Material(
-          type: MaterialType.transparency,
-          child: AppScope(state: state, child: const AuthRouter()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          signInUseCaseProvider.overrideWithValue(signIn),
+          signUpUseCaseProvider.overrideWithValue(signUp),
+          disclosureDaoProvider.overrideWithValue(disclosure),
+          offlineAccountServiceProvider.overrideWithValue(offline),
+          deviceAccountRemoverProvider.overrideWithValue(remover),
+          canShakeProvider.overrideWith((ref) async => canShake),
+        ],
+        child: MaterialApp(
+          home: Material(
+            type: MaterialType.transparency,
+            child: AppScope(state: state, child: const AuthRouter()),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pump();
   }
 
@@ -100,8 +103,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> type(WidgetTester tester,
-      {String email = 'patient@example.test', String password = 'a-real-password'}) async {
+  Future<void> type(
+    WidgetTester tester, {
+    String email = 'patient@example.test',
+    String password = 'a-real-password',
+  }) async {
     await tester.enterText(find.byType(TextField).first, email);
     await tester.enterText(find.byType(TextField).last, password);
     await tester.pump();
@@ -172,12 +178,14 @@ void main() {
 
     testWidgets('a lockout shows the wait, and never sends a code', (tester) async {
       when(() => signIn.passwordSignIn(email: any(named: 'email'), password: any(named: 'password'))).thenAnswer(
-        (_) async => AppResult.success(SignInLockout(
-          session: LockedOut(
-            until: DateTime.now().toUtc().add(const Duration(minutes: 5)),
-            identifier: 'patient@example.test',
+        (_) async => AppResult.success(
+          SignInLockout(
+            session: LockedOut(
+              until: DateTime.now().toUtc().add(const Duration(minutes: 5)),
+              identifier: 'patient@example.test',
+            ),
           ),
-        )),
+        ),
       );
 
       await open(tester, 'Sign in');
@@ -202,8 +210,10 @@ void main() {
           return null;
         },
       );
-      addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null));
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
       refusePassword();
 
       await open(tester, 'Sign in');
@@ -337,15 +347,19 @@ void main() {
     }
 
     Future<void> leaveAndComeBack(WidgetTester tester) async {
-      for (final s in [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]) {
-        tester.binding.handleAppLifecycleStateChanged(s);
-      }
+      [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ].forEach(tester.binding.handleAppLifecycleStateChanged);
       // Android tears the connection down while the app is away.
       tester.testTextInput.closeConnection();
       tester.testTextInput.log.clear();
-      for (final s in [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]) {
-        tester.binding.handleAppLifecycleStateChanged(s);
-      }
+      [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ].forEach(tester.binding.handleAppLifecycleStateChanged);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 1));
     }
@@ -525,8 +539,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining("Couldn't create the account on this device"), findsOneWidget);
-      expect(find.textContaining('secure storage unavailable'), findsNothing,
-          reason: 'the exception text must never reach the screen');
+      expect(
+        find.textContaining('secure storage unavailable'),
+        findsNothing,
+        reason: 'the exception text must never reach the screen',
+      );
       expect(state.accountMode, isNot(AccountMode.deviceOnly));
     });
   });
@@ -630,8 +647,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text("Couldn't unlock right now. Try again."), findsOneWidget);
-      expect(find.textContaining('secure storage unavailable'), findsNothing,
-          reason: 'the exception text must never reach the screen');
+      expect(
+        find.textContaining('secure storage unavailable'),
+        findsNothing,
+        reason: 'the exception text must never reach the screen',
+      );
       expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '');
       expect(state.route, isNot(AppRoutes.app));
     });

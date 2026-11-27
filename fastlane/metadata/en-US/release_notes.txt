@@ -1,0 +1,8 @@
+This update is about the small moments: fixing a reading, finding a day, keeping what matters close.
+
+• Family profiles and pregnancy tracking, week by week
+• Edit a reading or record you already logged
+• Delete medications, prescriptions and readings, one or several at once
+• Reports grouped by day, with every reading from that day
+• Emergency numbers follow the country you are in
+• Clearer camera and photo permission messages, and many fixes

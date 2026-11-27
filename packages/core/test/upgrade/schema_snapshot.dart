@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart' show immutable;
 
 /// Helpers for the app-upgrade tests: reading a database's schema as data,
 /// writing it out as a frozen release fixture, and filling a fixture with
@@ -11,7 +12,7 @@ import 'package:drift/native.dart';
 /// integers). Nothing resembles a real patient record.
 
 /// A bare connection to a database file: no schema, no migrations, nothing
-/// of today's [AppDatabase]. Used to fill an old-version database the way
+/// of today's `AppDatabase`. Used to fill an old-version database the way
 /// the old build would have left it.
 class RawDatabase extends GeneratedDatabase {
   RawDatabase(File file) : super(NativeDatabase(file));
@@ -44,6 +45,7 @@ Future<String> dumpSchemaSql(DatabaseConnectionUser db) async {
 }
 
 /// One column as `PRAGMA table_info` reports it.
+@immutable
 class ColumnShape {
   const ColumnShape({
     required this.name,

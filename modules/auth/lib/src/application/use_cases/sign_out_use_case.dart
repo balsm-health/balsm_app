@@ -41,7 +41,7 @@ class SignOutUseCase {
       await _adapter.signOut();
     } on AuthException {
       // Swallow — proceed to local cleanup.
-    } catch (_) {
+    } on Object catch (_) {
       // Swallow — network may be unavailable.
     }
 

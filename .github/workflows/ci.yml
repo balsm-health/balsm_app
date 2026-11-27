@@ -13,7 +13,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  FLUTTER_VERSION: '3.47.4'
   # Every package the pipeline analyzes, in dependency-safe order: core first
   # (everything depends on it), then the API client, then the bounded contexts
   # under modules/, and app last (it aggregates the tree).
@@ -26,7 +25,7 @@ env:
     modules/geofence_block modules/auth modules/disclosure modules/profile
     modules/account modules/emergency_card modules/medications
     modules/prescriptions modules/records modules/self_report
-    modules/deletion modules/sessions
+    modules/deletion modules/sessions modules/family modules/family_link modules/vaccinations modules/pregnancy
     app
 
 jobs:
@@ -107,11 +106,7 @@ jobs:
     if: needs.changes.outputs.dart == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: pub get (all packages)
         run: |
           set -e
@@ -129,6 +124,9 @@ jobs:
           for p in $PKGS; do
             echo "::group::analyze $p"; (cd "$p" && flutter analyze --no-fatal-warnings --no-fatal-infos); echo "::endgroup::"
           done
+      - name: Design tokens (colours, radii, font sizes, durations)
+        # CODING_STANDARDS.md §13: no bare design value outside its token home.
+        run: bash scripts/check_tokens.sh
 
   test:
     name: Tests (PHI-leak + i18n)
@@ -137,11 +135,7 @@ jobs:
     if: needs.changes.outputs.dart == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: pub get core + app
         run: |
           (cd packages/core && flutter pub get)
@@ -175,11 +169,7 @@ jobs:
       contains(fromJSON('["success", "skipped"]'), needs.analyze.result)
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Validate public-route assets (.well-known)
         run: |
           python3 -c "import json; json.load(open('app/web/.well-known/apple-app-site-association')); print('AASA OK')"
@@ -188,11 +178,14 @@ jobs:
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       # app/env/shared.json is git-ignored (per-developer server list); the CLI
-      # refuses to build without one. The tracked template works as-is.
+      # refuses to build without one. The tracked template works as-is, but its
+      # Production server is a placeholder, which the release guard rejects:
+      # these builds only prove the app compiles, so they pass --allow-insecure.
+      # Release builds (release.yml) use SHARED_ENV_JSON and keep the guard.
       - name: Provision server list (env/shared.json)
         run: cp app/env/shared.example.json app/env/shared.json
       - name: Build web (release, prod)
-        run: ./bin/balsm web balsm prod
+        run: ./bin/balsm web balsm prod --allow-insecure
 
   build-android:
     name: Build Android APK
@@ -209,11 +202,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Provision server list (env/shared.json)
@@ -222,7 +211,7 @@ jobs:
       # runner if missing. Release uses the debug signing fallback until a prod
       # keystore is wired (see SIGNING below).
       - name: Build APK (release, balsm · prod)
-        run: ./bin/balsm apk balsm prod
+        run: ./bin/balsm apk balsm prod --allow-insecure
 
   build-ios:
     name: Build iOS (no codesign)
@@ -235,17 +224,13 @@ jobs:
       contains(fromJSON('["success", "skipped"]'), needs.analyze.result)
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Provision server list (env/shared.json)
         run: cp app/env/shared.example.json app/env/shared.json
       - name: Build iOS (release, no codesign, balsm · prod)
-        run: ./bin/balsm ios balsm prod
+        run: ./bin/balsm ios balsm prod --allow-insecure
 
   coverage:
     name: Coverage → Codecov
@@ -254,11 +239,7 @@ jobs:
     if: needs.changes.outputs.dart == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - name: pub get (all packages)
         run: |
           set -e
@@ -280,7 +261,9 @@ jobs:
             [ "$p" = packages/balsm_api ] && continue
             if [ -d "$p/test" ]; then
               echo "::group::coverage $p"
-              (cd "$p" && flutter test --coverage --exclude-tags e2e) || true
+              # No `|| true`: a failing test fails the job. Goldens are excluded
+              # because their baseline images are not committed.
+              (cd "$p" && flutter test --coverage --exclude-tags "e2e || golden")
               if [ -f "$p/coverage/lcov.info" ]; then
                 sed "s|^SF:|SF:$p/|" "$p/coverage/lcov.info" >> coverage/lcov.info
               fi

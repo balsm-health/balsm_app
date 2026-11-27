@@ -1,7 +1,7 @@
 import 'package:auth/auth.dart';
-import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:auth/src/infrastructure/api/auth_exception.dart';
 import 'package:auth/src/infrastructure/api/balsm_auth_adapter.dart';
+import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -152,7 +152,7 @@ void main() {
     // session look device-only: every request would be refused locally and
     // the next boot would land on the offline Unlock screen.
     test('every ordinary sign-in marks the account online', () async {
-      final tokens = (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: false);
+      const tokens = (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: false);
       when(() => adapter.verifyOtp(any(), any(), any(), any())).thenAnswer((_) async => tokens);
       when(() => adapter.passwordSignIn(any(), any(), any(), any())).thenAnswer((_) async => tokens);
       when(() => adapter.verifyLink(any(), any(), any())).thenAnswer((_) async => tokens);
@@ -268,8 +268,11 @@ void main() {
   });
 
   group('goOnline', () {
-    ({AuthTokens tokens, bool adoptedClientId}) claim(
-            {required String userId, required bool isNew, required bool adopted}) =>
+    ({AuthTokens tokens, bool adoptedClientId}) claim({
+      required String userId,
+      required bool isNew,
+      required bool adopted,
+    }) =>
         (
           tokens: (accessToken: 'at', refreshToken: 'rt', userId: userId, isNewUser: isNew),
           adoptedClientId: adopted,

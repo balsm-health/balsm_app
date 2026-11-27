@@ -35,17 +35,20 @@ const _alias = <String, String>{
 /// silently returning the key string at runtime. Use [tr] only when the key is
 /// computed at runtime.
 Strings stringsFor(String lang) {
-  _arabicPluralsRegistered;
+  _registerArabicPlurals();
   return _bundles[lang] ?? _bundles['en']!;
 }
 
 /// i69n ships no Arabic plural rules, so `_plural` in the Arabic bundle would
 /// fall back to a generic resolver (3–4 few, 5+ other). Registers CLDR's
-/// cardinal rules once, on first lookup (a top-level final is lazy).
-final _arabicPluralsRegistered = () {
+/// cardinal rules once, on first lookup.
+bool _arabicPluralsRegistered = false;
+
+void _registerArabicPlurals() {
+  if (_arabicPluralsRegistered) return;
   i69n.registerResolver('ar', arabicPluralCategory);
-  return true;
-}();
+  _arabicPluralsRegistered = true;
+}
 
 /// CLDR Arabic cardinal categories: 0 zero, 1 one, 2 two, n % 100 in 3–10
 /// few, n % 100 in 11–99 many, everything else other.
@@ -63,12 +66,12 @@ i69n.QuantityCategory arabicPluralCategory(int n, i69n.QuantityType type) {
 
 /// Translate [key] for [lang], falling back to English then the key itself.
 String tr(String key, String lang) {
-  _arabicPluralsRegistered;
+  _registerArabicPlurals();
   final bundle = _bundles[lang] ?? _bundles['en']!;
   try {
     final value = bundle[_alias[key] ?? key];
     if (value is String) return value;
-  } catch (_) {
+  } on Object catch (_) {
     // nothrow flag returns the key path for unknown keys; treat as miss.
   }
   return key;

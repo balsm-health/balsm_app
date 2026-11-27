@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// Self-reported overall mood on a 1–5 scale (1 = very low, 5 = great).
 /// The label in the current locale resolves from the i69n bundle
 /// (`mood.<value>`); this value object holds only the structural score.
+@immutable
 class Mood {
-  const Mood(this.score) : assert(score >= 1 && score <= 5);
+  const Mood(this.score) : assert(score >= 1 && score <= 5, 'mood score is 1-5');
 
   final int score;
 

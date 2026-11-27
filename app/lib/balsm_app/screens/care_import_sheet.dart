@@ -9,7 +9,6 @@ import 'package:profile/profile.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
 import 'care_team_screen.dart';
 
 /// Review sheet for contacts picked from the phone's address book
@@ -66,7 +65,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_openedOnce) {
         _openedOnce = true;
-        _pick();
+        unawaited(_pick());
       }
     });
   }
@@ -87,8 +86,9 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
         // The OS lets the same contact be chosen twice; the sheet should not
         // show it twice.
         final key = contactPhoneKey(c.phones.isEmpty ? null : c.phones.first);
-        final already = _picked.any((p) =>
-            p.id == c.id || (key.isNotEmpty && contactPhoneKey(p.phones.isEmpty ? null : p.phones.first) == key));
+        final already = _picked.any(
+          (p) => p.id == c.id || (key.isNotEmpty && contactPhoneKey(p.phones.isEmpty ? null : p.phones.first) == key),
+        );
         if (already) continue;
         _picked.add(c);
         _selected.add(c.id);
@@ -145,7 +145,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final c = s.strings.care;
-    final team = ref.watch(careTeamProvider).valueOrNull ?? const <CareProvider>[];
+    final team = ref.watch(careTeamProvider).value ?? const <CareProvider>[];
     final picker = ref.read(contactPickerProvider);
 
     final shown = _shown();
@@ -159,143 +159,157 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
     // `TextField`, which asserts on a missing [Material] ancestor, and
     // `showAppSheet` supplies only the route.
     return Material(
-      color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      color: AppColors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         // `.app-sheet { height: 88% }`.
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.88),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          const SheetGrab(),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-            child: Row(children: [
-              Expanded(
-                child: Text(c.care_import_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            const SheetGrab(),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child:
+                        Text(c.care_import_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                  RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: s.strings.common.a11y_close,
+                    ghost: true,
+                    iconSize: 18,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-              RoundBtn(
-                  icon: LucideIcons.x,
-                  semanticLabel: s.strings.common.a11y_close,
-                  ghost: true,
-                  iconSize: 18,
-                  onTap: () => Navigator.pop(context)),
-            ]),
-          ),
-          const Divider(height: 1, color: T.ink100),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Text(
-                  picker.isAvailable ? c.care_import_note(s.gender) : c.care_import_unavailable,
-                  style: Typo.meta(ar: s.rtl).copyWith(height: 1.5),
+            ),
+            const Divider(height: 1, color: AppColors.ink100),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      picker.isAvailable ? c.care_import_note(s.gender) : c.care_import_unavailable,
+                      style: Typo.meta(ar: s.rtl).copyWith(height: 1.5),
+                    ),
+                    const SizedBox(height: 14),
+                    // The design puts "choose more contacts" above the list, not under
+                    // it: reaching the picker again should not mean scrolling past
+                    // everything already picked.
+                    if (picker.isAvailable && _picked.isNotEmpty) ...[
+                      PButton(
+                        c.care_import_more,
+                        icon: LucideIcons.contactRound,
+                        variant: BtnVariant.secondary,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _busy ? null : _pick,
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                    if (_picked.isEmpty)
+                      _EmptyPick(s: s, onPick: picker.isAvailable && !_busy ? _pick : null)
+                    else ...[
+                      // The prototype searches a full address book. Here it filters
+                      // what the picker returned, which earns a box once the patient
+                      // has picked a screenful.
+                      if (_picked.length >= 8) ...[
+                        _SearchField(controller: _search, onChanged: () => setState(() {})),
+                        const SizedBox(height: 12),
+                      ],
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                c.care_import_count('${shown.length}').toUpperCase(),
+                                style: Typo.meta(ar: s.rtl).copyWith(
+                                  fontSize: FontSizes.meta,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: s.rtl ? 0 : 1.4,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                            ),
+                            if (selectable.isNotEmpty)
+                              PButton(
+                                allOn ? c.care_import_clear : c.care_import_select_all,
+                                variant: BtnVariant.ghost,
+                                accent: s.accent,
+                                ar: s.rtl,
+                                color: s.accent.main,
+                                onTap: _busy ? null : () => _toggleAll(selectable, allOn: allOn),
+                              ),
+                          ],
+                        ),
+                      ),
+                      for (final contact in shown)
+                        _ContactRow(
+                          s: s,
+                          contact: contact,
+                          onTeam: contact.isAlreadyOnTeam(team),
+                          selected: _selected.contains(contact.id),
+                          typeOpen: _typeOpen == contact.id,
+                          onToggle: () {
+                            setState(() {
+                              _selected.contains(contact.id) ? _selected.remove(contact.id) : _selected.add(contact.id);
+                            });
+                            unawaited(HapticFeedback.selectionClick());
+                          },
+                          onTypeTap: () => setState(() => _typeOpen = _typeOpen == contact.id ? null : contact.id),
+                          onType: (t) => _setType(contact, t),
+                        ),
+                      if (shown.isEmpty)
+                        Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(0, 24, 0, 8),
+                          child: Text(c.care_import_no_match, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                        ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 14),
-                // The design puts "choose more contacts" above the list, not under
-                // it: reaching the picker again should not mean scrolling past
-                // everything already picked.
-                if (picker.isAvailable && _picked.isNotEmpty) ...[
+              ),
+            ),
+            // Pinned footer. The CTA is the point of the sheet, so it does not
+            // scroll away behind a long pick list.
+            Container(
+              decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink100))),
+              padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, sheetBottomInset(context, base: 28)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   PButton(
-                    c.care_import_more,
-                    icon: LucideIcons.contactRound,
-                    variant: BtnVariant.secondary,
+                    count == 0 ? c.care_import_none(s.gender) : c.care_import_cta('$count'),
+                    large: true,
                     block: true,
                     accent: s.accent,
                     ar: s.rtl,
-                    onTap: _busy ? null : _pick,
+                    onTap: (count == 0 || _busy) ? null : () => _import(team),
                   ),
-                  const SizedBox(height: 14),
-                ],
-                if (_picked.isEmpty)
-                  _EmptyPick(s: s, onPick: picker.isAvailable && !_busy ? _pick : null)
-                else ...[
-                  // The prototype searches a full address book. Here it filters
-                  // what the picker returned, which earns a box once the patient
-                  // has picked a screenful.
-                  if (_picked.length >= 8) ...[
-                    _SearchField(controller: _search, onChanged: () => setState(() {})),
-                    const SizedBox(height: 12),
-                  ],
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(children: [
-                      Expanded(
-                        child: Text(
-                          c.care_import_count('${shown.length}').toUpperCase(),
-                          style: Typo.meta(ar: s.rtl).copyWith(
-                            fontSize: FS.xs,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: s.rtl ? 0 : 1.4,
-                            color: T.fg3,
-                          ),
-                        ),
-                      ),
-                      if (selectable.isNotEmpty)
-                        PButton(
-                          allOn ? c.care_import_clear : c.care_import_select_all,
-                          variant: BtnVariant.ghost,
-                          accent: s.accent,
-                          ar: s.rtl,
-                          color: s.accent.main,
-                          onTap: _busy ? null : () => _toggleAll(selectable, allOn: allOn),
-                        ),
-                    ]),
+                  const SizedBox(height: 6),
+                  PButton(
+                    c.care_import_manual(s.gender),
+                    icon: LucideIcons.pencilLine,
+                    variant: BtnVariant.ghost,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _busy ? null : () => Navigator.pop(context, -1),
                   ),
-                  for (final contact in shown)
-                    _ContactRow(
-                      s: s,
-                      contact: contact,
-                      onTeam: contact.isAlreadyOnTeam(team),
-                      selected: _selected.contains(contact.id),
-                      typeOpen: _typeOpen == contact.id,
-                      onToggle: () {
-                        setState(() {
-                          _selected.contains(contact.id) ? _selected.remove(contact.id) : _selected.add(contact.id);
-                        });
-                        unawaited(HapticFeedback.selectionClick());
-                      },
-                      onTypeTap: () => setState(() => _typeOpen = _typeOpen == contact.id ? null : contact.id),
-                      onType: (t) => _setType(contact, t),
-                    ),
-                  if (shown.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 24, 0, 8),
-                      child: Text(c.care_import_no_match, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-                    ),
                 ],
-              ]),
+              ),
             ),
-          ),
-          // Pinned footer. The CTA is the point of the sheet, so it does not
-          // scroll away behind a long pick list.
-          Container(
-            decoration: const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))),
-            padding: EdgeInsets.fromLTRB(20, 12, 20, sheetBottomInset(context, base: 28)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              PButton(
-                count == 0 ? c.care_import_none(s.gender) : c.care_import_cta('$count'),
-                variant: BtnVariant.primary,
-                large: true,
-                block: true,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: (count == 0 || _busy) ? null : () => _import(team),
-              ),
-              const SizedBox(height: 6),
-              PButton(
-                c.care_import_manual(s.gender),
-                icon: LucideIcons.pencilLine,
-                variant: BtnVariant.ghost,
-                block: true,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: _busy ? null : () => Navigator.pop(context, -1),
-              ),
-            ]),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -314,25 +328,25 @@ class _SearchField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: (_) => onChanged(),
-      style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1),
+      style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: s.strings.care.care_import_search,
-        hintStyle: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg4),
+        hintStyle: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textHint),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(vertical: 13),
-        prefixIcon: const Icon(LucideIcons.search, size: 17, color: T.fg3),
-        prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: kMinTapTarget),
-        border: _border(T.border),
-        enabledBorder: _border(T.border),
+        prefixIcon: const Icon(LucideIcons.search, size: 17, color: AppColors.textTertiary),
+        prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: BalsmWindow.touchTarget),
+        border: _border(AppColors.border),
+        enabledBorder: _border(AppColors.border),
         focusedBorder: _border(s.accent.main),
       ),
     );
   }
 
   OutlineInputBorder _border(Color c) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(T.rMd),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         borderSide: BorderSide(color: c, width: 1.5),
       );
 }
@@ -354,39 +368,40 @@ class _EmptyPick extends StatelessWidget {
     final c = s.strings.care;
     return PCard(
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-      child: Column(children: [
-        Container(
-          width: 52,
-          height: 52,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
-          child: Icon(LucideIcons.contactRound, size: 24, color: s.accent.main),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          c.care_import_empty,
-          textAlign: TextAlign.center,
-          style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          c.care_import_empty_h(s.gender),
-          textAlign: TextAlign.center,
-          style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5),
-        ),
-        if (onPick != null) ...[
-          const SizedBox(height: 16),
-          PButton(
-            c.care_import_pick,
-            icon: LucideIcons.contactRound,
-            variant: BtnVariant.primary,
-            block: true,
-            accent: s.accent,
-            ar: s.rtl,
-            onTap: onPick,
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
+            child: Icon(LucideIcons.contactRound, size: 24, color: s.accent.main),
           ),
+          const SizedBox(height: 12),
+          Text(
+            c.care_import_empty,
+            textAlign: TextAlign.center,
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            c.care_import_empty_h(s.gender),
+            textAlign: TextAlign.center,
+            style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5),
+          ),
+          if (onPick != null) ...[
+            const SizedBox(height: 16),
+            PButton(
+              c.care_import_pick,
+              icon: LucideIcons.contactRound,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: onPick,
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
@@ -434,113 +449,122 @@ class _ContactRow extends StatelessWidget {
     final initials = _initials(contact.name);
 
     return DecoratedBox(
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.ink100))),
       child: Opacity(
         opacity: onTeam ? 0.55 : 1,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 60),
-            child: Row(children: [
-              Expanded(
-                child: Semantics(
-                  button: !onTeam,
-                  checked: onTeam ? null : selected,
-                  label: onTeam ? '${contact.name}, ${c.care_import_on_team}' : contact.name,
-                  excludeSemantics: true,
-                  child: GestureDetector(
-                    onTap: onTeam ? null : onToggle,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(children: [
-                        if (onTeam)
-                          const Icon(LucideIcons.check, size: 18, color: T.ink300)
-                        else
-                          _Tick(on: selected, accent: s.accent.main),
-                        const SizedBox(width: 12),
-                        // Neutral, not accent: the design keeps colour for the
-                        // tick and the type, so ten avatars do not all shout.
-                        Avatar(
-                          initials: initials,
-                          color: T.ink100,
-                          size: 40,
-                          fontSize: FS.sm,
-                          ar: s.rtl,
-                          child: Text(
-                            initials,
-                            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 60),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      button: !onTeam,
+                      checked: onTeam ? null : selected,
+                      label: onTeam ? '${contact.name}, ${c.care_import_on_team}' : contact.name,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        onTap: onTeam ? null : onToggle,
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
                             children: [
-                              Text(
-                                contact.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
+                              if (onTeam)
+                                const Icon(LucideIcons.check, size: 18, color: AppColors.ink300)
+                              else
+                                _Tick(on: selected, accent: s.accent.main),
+                              const SizedBox(width: 12),
+                              // Neutral, not accent: the design keeps colour for the
+                              // tick and the type, so ten avatars do not all shout.
+                              Avatar(
+                                initials: initials,
+                                color: AppColors.ink100,
+                                size: 40,
+                                fontSize: FontSizes.bodySm,
+                                ar: s.rtl,
+                                child: Text(
+                                  initials,
+                                  style: Typo.bodySm(ar: s.rtl)
+                                      .copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                                ),
                               ),
-                              if (phone.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Directionality(
-                                    textDirection: TextDirection.ltr,
-                                    child: Text(
-                                      '$phone$extra',
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      contact.name,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      textAlign: s.rtl ? TextAlign.right : TextAlign.left,
-                                      style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3),
+                                      style: Typo.bodySm(ar: s.rtl)
+                                          .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                                     ),
-                                  ),
+                                    if (phone.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Directionality(
+                                          textDirection: TextDirection.ltr,
+                                          child: Text(
+                                            '$phone$extra',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: s.rtl ? TextAlign.right : TextAlign.left,
+                                            style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
+                              ),
                             ],
                           ),
                         ),
-                      ]),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              if (onTeam)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 8),
-                  child: _OnTeamBadge(s: s),
-                )
-              // The type only matters for a row that is actually going to be
-              // saved, so it rides with the tick rather than sitting on every
-              // row.
-              else if (selected)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 8),
-                  child: _TypeChip(s: s, type: contact.type, open: typeOpen, onTap: onTypeTap),
-                ),
-            ]),
-          ),
-          if (selected && !onTeam && typeOpen)
-            Padding(
-              // Indented to the name column, so the chips read as belonging to
-              // this row rather than to the list.
-              padding: const EdgeInsetsDirectional.only(start: 34, bottom: 12),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final t in CareProviderType.values)
-                    BChip(
-                      careTypeLabel(c, t),
-                      active: t == contact.type,
-                      accent: s.accent.main,
-                      ar: s.rtl,
-                      onTap: () => onType(t),
+                  if (onTeam)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 8),
+                      child: _OnTeamBadge(s: s),
+                    )
+                  // The type only matters for a row that is actually going to be
+                  // saved, so it rides with the tick rather than sitting on every
+                  // row.
+                  else if (selected)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 8),
+                      child: _TypeChip(s: s, type: contact.type, open: typeOpen, onTap: onTypeTap),
                     ),
                 ],
               ),
             ),
-        ]),
+            if (selected && !onTeam && typeOpen)
+              Padding(
+                // Indented to the name column, so the chips read as belonging to
+                // this row rather than to the list.
+                padding: const EdgeInsetsDirectional.only(start: 34, bottom: 12),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final t in CareProviderType.values)
+                      BChip(
+                        careTypeLabel(c, t),
+                        active: t == contact.type,
+                        accent: s.accent.main,
+                        ar: s.rtl,
+                        onTap: () => onType(t),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -554,12 +578,12 @@ class _OnTeamBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
+        decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.pill)),
         child: Text(
           s.strings.care.care_import_on_team,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg3),
+          style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textTertiary),
         ),
       );
 }
@@ -579,11 +603,11 @@ class _Tick extends StatelessWidget {
         height: 22,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: on ? accent : T.borderStrong, width: 1.5),
-          color: on ? accent : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+          border: Border.all(color: on ? accent : AppColors.borderStrong, width: 1.5),
+          color: on ? accent : AppColors.white,
         ),
-        child: on ? const Icon(LucideIcons.check, size: 14, color: Colors.white) : null,
+        child: on ? const Icon(LucideIcons.check, size: 14, color: AppColors.white) : null,
       );
 }
 
@@ -610,17 +634,20 @@ class _TypeChip extends StatelessWidget {
             height: 30,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(T.rPill),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
               border: Border.all(color: s.accent.main),
               color: s.accent.bg,
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(careTypeIcon(type), size: 13, color: s.accent.d),
-              const SizedBox(width: 5),
-              Text(label, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
-              const SizedBox(width: 3),
-              Icon(open ? LucideIcons.chevronUp : LucideIcons.chevronDown, size: 12, color: s.accent.d),
-            ]),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(careTypeIcon(type), size: 13, color: s.accent.d),
+                const SizedBox(width: 5),
+                Text(label, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
+                const SizedBox(width: 3),
+                Icon(open ? LucideIcons.chevronUp : LucideIcons.chevronDown, size: 12, color: s.accent.d),
+              ],
+            ),
           ),
         ),
       ),

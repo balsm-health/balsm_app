@@ -1,7 +1,9 @@
 import 'package:core/core.dart';
 
+import '../../../profile.dart' show HealthProfilesDataSource;
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
+import 'health_profiles_data_source.dart' show HealthProfilesDataSource;
 
 /// The health profile's child collections, each as its own scoped source.
 ///

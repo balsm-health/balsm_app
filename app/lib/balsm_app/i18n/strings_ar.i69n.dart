@@ -44,6 +44,12 @@ class Strings_ar extends Strings {
   OfflineStrings_ar get offline => OfflineStrings_ar(this);
   UpdateStrings_ar get update => UpdateStrings_ar(this);
   WebStrings_ar get web => WebStrings_ar(this);
+  VaccStrings_ar get vacc => VaccStrings_ar(this);
+  GrowthStrings_ar get growth => GrowthStrings_ar(this);
+  PregnancyStrings_ar get pregnancy => PregnancyStrings_ar(this);
+  FamilyStrings_ar get family => FamilyStrings_ar(this);
+  AttributionStrings_ar get attribution => AttributionStrings_ar(this);
+  MaintenanceStrings_ar get maintenance => MaintenanceStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -95,6 +101,18 @@ class Strings_ar extends Strings {
         return update;
       case 'web':
         return web;
+      case 'vacc':
+        return vacc;
+      case 'growth':
+        return growth;
+      case 'pregnancy':
+        return pregnancy;
+      case 'family':
+        return family;
+      case 'attribution':
+        return attribution;
+      case 'maintenance':
+        return maintenance;
       default:
         return super[key];
     }
@@ -156,6 +174,7 @@ class AuthStrings_ar extends AuthStrings {
   String get create_account => "إنشاء حساب";
   String get otp_confirm_title => "أكّد بريدك";
   String get otp_sent_to => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String get otp_your_email => "بريدك الإلكتروني";
   String get otp_existing_note =>
       "إذا كان لهذا البريد حساب بالفعل، فسنُدخلك إليه.";
   String get signup_email_registered =>
@@ -292,6 +311,8 @@ class AuthStrings_ar extends AuthStrings {
         return otp_confirm_title;
       case 'otp_sent_to':
         return otp_sent_to;
+      case 'otp_your_email':
+        return otp_your_email;
       case 'otp_existing_note':
         return otp_existing_note;
       case 'signup_email_registered':
@@ -354,6 +375,17 @@ class BootStrings_ar extends BootStrings {
   final Strings_ar _parent;
   const BootStrings_ar(this._parent) : super(_parent);
   String get boot_preparing => "نُجهّز سجلّك الصحي";
+  String get lost_t => "لا يمكن فتح بياناتك السابقة";
+  String lost_b(String app) =>
+      "لا يستطيع هذا الإصدار من $app قراءة ما حُفظ على هذا الهاتف من قبل. لم يُحذف أي شيء، لكن لا يمكن فتحه هنا. حسابك سليم: يمكنك تسجيل الدخول مجددًا وبدء سجل صحي جديد.";
+  String get lost_start => "البدء من جديد";
+  String get lost_confirm_t => "البدء من جديد؟";
+  String lost_confirm_b(String app) =>
+      "سيُفتح $app فارغًا على هذا الهاتف. البيانات التي لا يستطيع قراءتها تُحفظ جانبًا ولا تُحذف، وتبقى غير قابلة للقراءة.";
+  String get lost_confirm_yes => "نعم، ابدأ من جديد";
+  String get lost_cancel => "إلغاء";
+  String get lost_unavailable =>
+      "تعذّر فتح سجلك الصحي على هذا الهاتف. يُرجى إغلاق التطبيق وفتحه مجددًا.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -363,6 +395,22 @@ class BootStrings_ar extends BootStrings {
     switch (key) {
       case 'boot_preparing':
         return boot_preparing;
+      case 'lost_t':
+        return lost_t;
+      case 'lost_b':
+        return lost_b;
+      case 'lost_start':
+        return lost_start;
+      case 'lost_confirm_t':
+        return lost_confirm_t;
+      case 'lost_confirm_b':
+        return lost_confirm_b;
+      case 'lost_confirm_yes':
+        return lost_confirm_yes;
+      case 'lost_cancel':
+        return lost_cancel;
+      case 'lost_unavailable':
+        return lost_unavailable;
       default:
         return super[key];
     }
@@ -381,7 +429,6 @@ class CareStrings_ar extends CareStrings {
           })} مرة أخرى في مكان مفتوح.";
   String get loc_settings => "الإعدادات";
   String get map_sub => "مكان بالقرب منك";
-  String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
   String get care_intro =>
       "الأشخاص والأماكن التي ترعاك — أطباء وتمريض وصيدليات ومقدّمو رعاية وغيرهم.";
@@ -396,7 +443,6 @@ class CareStrings_ar extends CareStrings {
   String get map_directions => "اتجاهات";
   String get map_list => "قائمة";
   String get map_map => "خريطة";
-  String get map_found => "مكان بالقرب منك";
   String get map_no_results => "لا توجد أماكن";
   String get map_no_res_h => "جرّب بحثًا أو تصنيفًا آخر.";
   String get map_search_area => "ابحث في هذه المنطقة";
@@ -539,6 +585,15 @@ class CareStrings_ar extends CareStrings {
       "افتح${_select(gender, {'female': 'ي', 'other': ''})} الرابط على";
   String get care_link_remove => "إزالة الرابط إلى";
   String get care_attach_add => "إضافة";
+  String map_found_count(int n) =>
+      "${_plural(n, zero: 'لا أماكن قريبة', one: 'مكان واحد بالقرب منك', two: 'مكانان بالقرب منك', few: '$n أماكن بالقرب منك', many: '$n مكانًا بالقرب منك', other: '$n مكان بالقرب منك')}";
+  String get type_hospital => "مستشفيات";
+  String get type_clinic => "عيادات";
+  String get type_dentist => "أطباء أسنان";
+  String get type_pharmacy => "صيدليات";
+  String get type_lab => "مختبرات";
+  String get type_scan => "مراكز أشعة";
+  String get type_store => "أدوات طبية";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -556,8 +611,6 @@ class CareStrings_ar extends CareStrings {
         return loc_settings;
       case 'map_sub':
         return map_sub;
-      case 'to_doctor':
-        return to_doctor;
       case 'to_home':
         return to_home;
       case 'care_intro':
@@ -584,8 +637,6 @@ class CareStrings_ar extends CareStrings {
         return map_list;
       case 'map_map':
         return map_map;
-      case 'map_found':
-        return map_found;
       case 'map_no_results':
         return map_no_results;
       case 'map_no_res_h':
@@ -780,6 +831,22 @@ class CareStrings_ar extends CareStrings {
         return care_link_remove;
       case 'care_attach_add':
         return care_attach_add;
+      case 'map_found_count':
+        return map_found_count;
+      case 'type_hospital':
+        return type_hospital;
+      case 'type_clinic':
+        return type_clinic;
+      case 'type_dentist':
+        return type_dentist;
+      case 'type_pharmacy':
+        return type_pharmacy;
+      case 'type_lab':
+        return type_lab;
+      case 'type_scan':
+        return type_scan;
+      case 'type_store':
+        return type_store;
       default:
         return super[key];
     }
@@ -827,7 +894,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get glu_fast => "صائمة";
   String get glu_meal => "بعد الأكل";
   String get glu_random => "عشوائي";
-  String get q_med_t => "هل أخذتِ أدويتك؟";
+  String q_med_t(Gender gender) =>
+      "هل أخذت${_select(gender, {'female': 'ِ', 'other': ''})} أدويتك؟";
   String q_med_h(Gender gender) => "اضغط${_select(gender, {
             'female': 'ي',
             'other': ''
@@ -859,6 +927,15 @@ class CheckinStrings_ar extends CheckinStrings {
   String symptoms_n(String n) => "$n أعراض";
   String get ql_title => "دعنا نطمئن عليك";
   String get ql_search => "بحث";
+  String ql_logging_for(Gender gender) =>
+      "${_select(gender, {'female': 'تسجّلين', 'other': 'تسجّل'})} لـ";
+  String ql_self_hint(Gender gender) => "لتسجّل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} لنفسك، ${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} ملفك من أعلى الشاشة الرئيسية.";
   String get ql_no_results => "لا توجد نتائج";
   String get ql_vitals => "العلامات الحيوية";
   String get ql_wellbeing => "الحالة العامة";
@@ -881,6 +958,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_discard_body => "لن يُحفظ ما أدخلته.";
   String get ql_discard => "تجاهل";
   String get ql_keep_editing => "متابعة التعديل";
+  String ql_edit_title(String what) => "تعديل · $what";
+  String get ql_delete_entry => "حذف هذا التسجيل";
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
@@ -900,7 +979,7 @@ class CheckinStrings_ar extends CheckinStrings {
   String rec_del_body_n(String day) =>
       "ستُحذف هذه السجلات من $day. لا يمكن التراجع عن ذلك.";
   String rec_count(int n) =>
-      "${_plural(n, one: 'سجل واحد', two: 'سجلين', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
+      "${_plural(n, zero: 'لا سجلات', one: 'سجل واحد', two: 'سجلين', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
   String get rec_select_title => "حدد السجلات";
   String get day_empty => "لا توجد سجلات في هذا اليوم.";
   String get list_sep => "، ";
@@ -955,6 +1034,32 @@ class CheckinStrings_ar extends CheckinStrings {
             'female': 'اختاري',
             'other': 'اختر'
           })} ما تشعر${_select(gender, {'female': 'ين', 'other': ''})} به.";
+  String m_q_mood_t(String name) => "كيف حال $name اليوم؟";
+  String m_q_mood_h(Gender gender, String name) => "${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} الوجه الأقرب لحال $name.";
+  String m_q_bp_t(String name) => "كم ضغط دم $name؟";
+  String m_q_glu_t(String name) => "وكم نسبة السكر لدى $name؟";
+  String m_q_glu_h(Gender gender) => "أدخل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} القراءة من جهاز قياس السكر.";
+  String m_q_med_t(String name) => "هل أُخذت أدوية $name؟";
+  String m_q_med_h(Gender gender, String name) => "اضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} على كل دواء أُخذ اليوم.";
+  String m_q_sym_t(String name) => "هل لدى $name ألم أو أعراض؟";
+  String m_q_sym_h(Gender gender, String name) => "حرّك${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} المؤشر لمستوى ألم $name، ثم ${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} أي أعراض.";
+  String m_q_vitals_t(String name) => "المؤشرات الحيوية لـ$name";
+  String m_saved_t(String name) => "تم حفظ متابعة $name";
   String get sd_color => "اللون";
   String get sd_quantity => "الكمية";
   String get sd_ml => "مل";
@@ -1078,6 +1183,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_title;
       case 'ql_search':
         return ql_search;
+      case 'ql_logging_for':
+        return ql_logging_for;
+      case 'ql_self_hint':
+        return ql_self_hint;
       case 'ql_no_results':
         return ql_no_results;
       case 'ql_vitals':
@@ -1106,6 +1215,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_discard;
       case 'ql_keep_editing':
         return ql_keep_editing;
+      case 'ql_edit_title':
+        return ql_edit_title;
+      case 'ql_delete_entry':
+        return ql_delete_entry;
       case 'body_location':
         return body_location;
       case 'body_view_front':
@@ -1198,6 +1311,28 @@ class CheckinStrings_ar extends CheckinStrings {
         return q_mood_t;
       case 'q_sym_h':
         return q_sym_h;
+      case 'm_q_mood_t':
+        return m_q_mood_t;
+      case 'm_q_mood_h':
+        return m_q_mood_h;
+      case 'm_q_bp_t':
+        return m_q_bp_t;
+      case 'm_q_glu_t':
+        return m_q_glu_t;
+      case 'm_q_glu_h':
+        return m_q_glu_h;
+      case 'm_q_med_t':
+        return m_q_med_t;
+      case 'm_q_med_h':
+        return m_q_med_h;
+      case 'm_q_sym_t':
+        return m_q_sym_t;
+      case 'm_q_sym_h':
+        return m_q_sym_h;
+      case 'm_q_vitals_t':
+        return m_q_vitals_t;
+      case 'm_saved_t':
+        return m_saved_t;
       case 'sd_color':
         return sd_color;
       case 'sd_quantity':
@@ -1263,6 +1398,9 @@ class CommonStrings_ar extends CommonStrings {
   String get see_all => "عرض الكل";
   String get step_of => "من";
   String get back => "رجوع";
+  String get exit_t => "الخروج من بلسم؟";
+  String get exit_b => "سيُغلق التطبيق.";
+  String get exit_cta => "خروج";
   String get finish => "إنهاء المتابعة";
   String get saved_t => "تم حفظ المتابعة";
   String get saved_local => "حُفظ محلياً — ستتم المزامنة عند الاتصال.";
@@ -1323,7 +1461,7 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_manual_sub => "لمن لا يملك حسابًا بعد.";
   String get fam_scan_title => "مسح رمز QR";
   String get fam_confirm_title => "تأكيد الإضافة";
-  String get fam_point_camera => "وجّه الكاميرا إلى رمز بلسم الخاص بهم";
+  String get fam_point_camera => "الكاميرا جاهزة لمسح رمز بلسم الخاص بهم";
   String get fam_code_found => "تم التعرّف على الرمز";
   String get fam_code_hint => "يجد كل فرد رمزه في الملف الشخصي ← رمز المشاركة.";
   String get fam_manual_instead => "الإدخال يدويًا بدلاً من ذلك";
@@ -1345,6 +1483,9 @@ class CommonStrings_ar extends CommonStrings {
             'female': 'ي',
             'other': ''
           })} مجددًا";
+  String get perm_camera_denied => "لا يملك بلسم إذن استخدام الكاميرا.";
+  String get perm_photos_denied => "لا يملك بلسم إذن الوصول إلى صورك.";
+  String get perm_settings => "الإعدادات";
   String get rel_default => "فرد من الأسرة";
   String get member_dob => "تاريخ الميلاد";
   String get member_dob_ph => "يوم / شهر / سنة";
@@ -1388,6 +1529,12 @@ class CommonStrings_ar extends CommonStrings {
         return step_of;
       case 'back':
         return back;
+      case 'exit_t':
+        return exit_t;
+      case 'exit_b':
+        return exit_b;
+      case 'exit_cta':
+        return exit_cta;
       case 'finish':
         return finish;
       case 'saved_t':
@@ -1534,6 +1681,12 @@ class CommonStrings_ar extends CommonStrings {
         return fam_scan_invalid;
       case 'fam_scan_failed':
         return fam_scan_failed;
+      case 'perm_camera_denied':
+        return perm_camera_denied;
+      case 'perm_photos_denied':
+        return perm_photos_denied;
+      case 'perm_settings':
+        return perm_settings;
       case 'rel_default':
         return rel_default;
       case 'member_dob':
@@ -1586,12 +1739,17 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_label => "البريد الإلكتروني";
   String get em_ph => "you@example.com";
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
-  String get em_eg => "مصر";
-  String em_intro(Gender gender) =>
-      "خطوط الطوارئ على مستوى مصر. اضغط${_select(gender, {
+  String em_intro(String country, Gender gender) =>
+      "خطوط الطوارئ على مستوى $country. اضغط${_select(gender, {
             'female': 'ي',
             'other': ''
           })} أي رقم للاتصال فوراً.";
+  String get em_national => "رقم الطوارئ";
+  String em_none(String country, Gender gender) =>
+      "لا يوجد رقم طوارئ مسجّل للدولة ($country) بعد. اتصل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} بخدمات الطوارئ المحلية.";
   String em_tap_call(Gender gender) =>
       "اضغط${_select(gender, {'female': 'ي', 'other': ''})} للاتصال";
   String get em_ambulance => "إسعاف";
@@ -1651,6 +1809,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_share => "مشاركة";
   String get eqr_save => "حفظ";
   String get eqr_save_failed => "تعذّر الحفظ في الاستوديو";
+  String get eqr_save_denied => "لا يملك بلسم إذن الحفظ في صورك.";
   String get eqr_saved_toast => "تم حفظ الصورة";
   String get eqr_link_copied => "تم نسخ الرابط";
   String get eqr_revoke => "إلغاء الرمز";
@@ -1690,10 +1849,12 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return em_ph;
       case 'em_otp_h':
         return em_otp_h;
-      case 'em_eg':
-        return em_eg;
       case 'em_intro':
         return em_intro;
+      case 'em_national':
+        return em_national;
+      case 'em_none':
+        return em_none;
       case 'em_tap_call':
         return em_tap_call;
       case 'em_ambulance':
@@ -1770,6 +1931,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return eqr_save;
       case 'eqr_save_failed':
         return eqr_save_failed;
+      case 'eqr_save_denied':
+        return eqr_save_denied;
       case 'eqr_saved_toast':
         return eqr_saved_toast;
       case 'eqr_link_copied':
@@ -1830,6 +1993,8 @@ class HomeStrings_ar extends HomeStrings {
       "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} دواءً";
   String get nudge_med_sub => "واظب على المتابعة";
   String get greet => "صباح الخير";
+  String get a11y_accounts => "حساباتك";
+  String get a11y_self_avatar => "حسابك";
   String get hero_time => "حوالي دقيقتين";
   String get streak => "يوم متتالٍ";
   String streak_help(Gender gender, int checked) => "${_select(gender, {
@@ -1856,6 +2021,30 @@ class HomeStrings_ar extends HomeStrings {
   String get sc_places => "مكان قريب";
   String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
+  String member_ci_q(String name) => "كيف حال $name اليوم؟";
+  String member_ci_note(Gender gender, String name) => "سجّل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} قياساً أو عرضاً نيابةً عن $name";
+  String member_ci_note_child(Gender gender) => "سجّل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} الحرارة أو الوزن أو أي عرض";
+  String member_ci_cta(Gender gender, String name) =>
+      "سجّل${_select(gender, {'female': 'ي', 'other': ''})} لـ$name";
+  String member_ci_done(String name) => "سُجّل لـ$name اليوم";
+  String member_recent_empty(String name) => "لا تسجيلات لـ$name بعد.";
+  String get m_height => "الطول";
+  String get unit_cm => "سم";
+  String get sc_blood => "فصيلة الدم";
+  String sc_allergies(int n) => "$n حساسية";
+  String get sc_conditions => "حالات مزمنة";
+  String get sc_meds => "دواء";
+  String get sc_measures => "مؤشرات";
+  String get sc_entries => "قياسات";
+  String get sc_recorded => "مسجّلة";
+  String sc_next(String date) => "القادمة $date";
+  String get sc_full_profile => "الملف الكامل";
   String viewing_own_data(Gender gender) =>
       "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
             'female': 'ترينه',
@@ -1883,6 +2072,10 @@ class HomeStrings_ar extends HomeStrings {
         return nudge_med_sub;
       case 'greet':
         return greet;
+      case 'a11y_accounts':
+        return a11y_accounts;
+      case 'a11y_self_avatar':
+        return a11y_self_avatar;
       case 'hero_time':
         return hero_time;
       case 'streak':
@@ -1911,6 +2104,40 @@ class HomeStrings_ar extends HomeStrings {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
+      case 'member_ci_q':
+        return member_ci_q;
+      case 'member_ci_note':
+        return member_ci_note;
+      case 'member_ci_note_child':
+        return member_ci_note_child;
+      case 'member_ci_cta':
+        return member_ci_cta;
+      case 'member_ci_done':
+        return member_ci_done;
+      case 'member_recent_empty':
+        return member_recent_empty;
+      case 'm_height':
+        return m_height;
+      case 'unit_cm':
+        return unit_cm;
+      case 'sc_blood':
+        return sc_blood;
+      case 'sc_allergies':
+        return sc_allergies;
+      case 'sc_conditions':
+        return sc_conditions;
+      case 'sc_meds':
+        return sc_meds;
+      case 'sc_measures':
+        return sc_measures;
+      case 'sc_entries':
+        return sc_entries;
+      case 'sc_recorded':
+        return sc_recorded;
+      case 'sc_next':
+        return sc_next;
+      case 'sc_full_profile':
+        return sc_full_profile;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':
@@ -1935,6 +2162,7 @@ class MedsStrings_ar extends MedsStrings {
   String get medications => "الأدوية";
   String get morning => "الصباح";
   String get evening => "المساء";
+  String get sec_pm => "بعد الظهر";
   String get adherence => "الالتزام";
   String get regimen => "نظامك اليومي";
   String get last_7d => "آخر ٧ أيام";
@@ -1952,14 +2180,14 @@ class MedsStrings_ar extends MedsStrings {
   String rx_meds_n(String n) => "$n أدوية";
   String get rx_show => "أظهر للصيدلاني";
   String get rx_scan => "امسح للصرف";
-  String get rx_add => "إضافة روشتة";
+  String get rx_add => "إضافة وصفة";
   String get rx_name => "الاسم";
-  String get rx_name_ph => "مثال: روشتة د. سارة";
+  String get rx_name_ph => "مثال: وصفة د. سارة";
   String get rx_doctor_name => "اسم الطبيب";
   String get rx_doctor_name_ph => "اختياري";
   String get rx_date => "تاريخ الإصدار";
   String get rx_expiry => "تاريخ الانتهاء";
-  String get rx_added => "تمت إضافة الروشتة";
+  String get rx_added => "تمت إضافة الوصفة";
   String get rx_upload => "رفع ملف";
   String get rx_manual => "كتابتها يدوياً";
   String rx_or_paste_url(Gender gender) =>
@@ -2008,7 +2236,7 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_from_gallery => "الصور";
   String get rx_from_files => "اختيار ملف";
   String get rx_prescribed_by => "بواسطة";
-  String get rx_default_title => "روشتة";
+  String get rx_default_title => "وصفة";
   String get dose_skipped => "تم التخطي";
   String get dose_snoozed => "مؤجل";
   String get dose_missed => "فائت";
@@ -2029,7 +2257,7 @@ class MedsStrings_ar extends MedsStrings {
   String get med_time_evening => "مساءً";
   String get med_time_night => "ليلاً";
   String get med_self_note =>
-      "لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
+      "لأدوية بدون وصفة طبية، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
   String get med_when => "موعد الجرعة";
   String get med_dose_times => "مواعيد الجرعات";
   String get med_first_dose => "الجرعة الأولى";
@@ -2043,6 +2271,17 @@ class MedsStrings_ar extends MedsStrings {
             'other': 'أضف'
           })} دواءً للبدء.";
   String get meds_none_today => "لا جرعات مجدولة اليوم.";
+  String regimen_of(String name) => "نظام $name اليومي";
+  String member_meds_empty(String name) => "لا أدوية لـ$name بعد";
+  String member_meds_empty_h(Gender gender, String name) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} أدوية $name ومواعيدها، وسيذكّرك بلسم بها حتى دون إنترنت.";
+  String get med_edit_title => "تعديل الدواء";
+  String get med_save_changes => "حفظ التعديلات";
+  String get med_changes_saved => "تم حفظ التعديلات";
+  String med_edit_hint(Gender gender) =>
+      "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على دواء لتعديله.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2072,6 +2311,8 @@ class MedsStrings_ar extends MedsStrings {
         return morning;
       case 'evening':
         return evening;
+      case 'sec_pm':
+        return sec_pm;
       case 'adherence':
         return adherence;
       case 'regimen':
@@ -2258,6 +2499,20 @@ class MedsStrings_ar extends MedsStrings {
         return meds_empty_help;
       case 'meds_none_today':
         return meds_none_today;
+      case 'regimen_of':
+        return regimen_of;
+      case 'member_meds_empty':
+        return member_meds_empty;
+      case 'member_meds_empty_h':
+        return member_meds_empty_h;
+      case 'med_edit_title':
+        return med_edit_title;
+      case 'med_save_changes':
+        return med_save_changes;
+      case 'med_changes_saved':
+        return med_changes_saved;
+      case 'med_edit_hint':
+        return med_edit_hint;
       default:
         return super[key];
     }
@@ -3145,10 +3400,11 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_lab_one => "تحليل";
   String get rec_scan_one => "أشعة";
   String get rec_report_one => "تقرير";
-  String get rec_self => "رفعتَه بنفسك";
+  String get rec_self => "رفعته بنفسك";
   String get rec_empty => "لا توجد سجلات بعد";
   String get rec_source => "المصدر";
   String get rec_view => "عرض المستند";
+  String get rec_kind_image => "صورة";
   String get rec_preview => "معاينة المستند";
   String get rec_preview_failed => "تعذّر فتح هذا الملف";
   String get rec_share => "مشاركة مع الطبيب";
@@ -3213,6 +3469,13 @@ class RecordsStrings_ar extends RecordsStrings {
       "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
   String get rec_delete_confirm => "حذف";
   String get rec_delete_1_title => "حذف هذا السجل؟";
+  String rec_edit_title(String type) => "تعديل · $type";
+  String get rec_changes_saved => "تم حفظ التعديلات";
+  String get rec_save_changes => "حفظ التعديلات";
+  String rec_save_failed(Gender gender) => "تعذّر الحفظ. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3264,6 +3527,8 @@ class RecordsStrings_ar extends RecordsStrings {
         return rec_source;
       case 'rec_view':
         return rec_view;
+      case 'rec_kind_image':
+        return rec_kind_image;
       case 'rec_preview':
         return rec_preview;
       case 'rec_preview_failed':
@@ -3358,6 +3623,14 @@ class RecordsStrings_ar extends RecordsStrings {
         return rec_delete_confirm;
       case 'rec_delete_1_title':
         return rec_delete_1_title;
+      case 'rec_edit_title':
+        return rec_edit_title;
+      case 'rec_changes_saved':
+        return rec_changes_saved;
+      case 'rec_save_changes':
+        return rec_save_changes;
+      case 'rec_save_failed':
+        return rec_save_failed;
       default:
         return super[key];
     }
@@ -3391,6 +3664,8 @@ class SettingsStrings_ar extends SettingsStrings {
   String get cal_months_short =>
       "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس";
   String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
+  String get cal_months_abbr =>
+      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3436,6 +3711,8 @@ class SettingsStrings_ar extends SettingsStrings {
         return cal_months_short;
       case 'cal_weekdays':
         return cal_weekdays;
+      case 'cal_months_abbr':
+        return cal_months_abbr;
       default:
         return super[key];
     }
@@ -3910,6 +4187,1530 @@ class WebStrings_ar extends WebStrings {
         return other_tab_b;
       case 'other_tab_retry':
         return other_tab_retry;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class VaccStrings_ar extends VaccStrings {
+  final Strings_ar _parent;
+  const VaccStrings_ar(this._parent) : super(_parent);
+  String get title => "التطعيمات";
+  String get add => "إضافة تطعيم";
+  String get empty_t => "لا تطعيمات مسجّلة بعد";
+  String empty_b(Gender gender) => "انسخ${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} الجرعات من كارت التطعيم الورقي، وحدّد${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} موعد الجرعة القادمة بنفسك.";
+  String get next_dose => "الجرعة القادمة";
+  String dose(int n) => "الجرعة $n";
+  String in_days(int n) =>
+      "بعد ${_plural(n, one: 'يوم واحد', two: 'يومين', few: '$n أيام', many: '$n يوماً', other: '$n يوم')}";
+  String get past_due => "موعدها مضى ولم تُسجَّل";
+  String was_due(String date) => "كان موعدها $date";
+  String get due_today => "موعدها اليوم";
+  String days_ago(int n) =>
+      "منذ ${_plural(n, one: 'يوم واحد', two: 'يومين', few: '$n أيام', many: '$n يوماً', other: '$n يوم')}";
+  String get record => "تسجيل";
+  String get given => "أُعطيت";
+  String get f_name => "اسم التطعيم";
+  String get f_name_ph => "كما هو مكتوب في كارت التطعيم";
+  String get f_dose => "رقم الجرعة";
+  String get f_date => "تاريخ التطعيم";
+  String get f_clinic => "مكان التطعيم";
+  String get f_clinic_ph => "مثل: مكتب الصحة القريب";
+  String get f_next => "موعد الجرعة القادمة";
+  String get optional => "اختياري";
+  String f_next_hint(Gender gender) => "حدّد${_select(gender, {
+            'female': 'يه',
+            'other': 'ه'
+          })} بنفسك كما هو مكتوب في كارت التطعيم أو حسب كلام الطبيب.";
+  String get f_next_clear => "مسح";
+  String get save => "حفظ التطعيم";
+  String get edit_t => "تعديل التطعيم";
+  String get save_changes => "حفظ التعديلات";
+  String get delete => "حذف هذا التطعيم";
+  String get delete_t => "حذف هذا التطعيم؟";
+  String get delete_b => "سيُحذف من سجل التطعيمات على هذا الجهاز.";
+  String tile_next(String date) => "الجرعة القادمة $date";
+  String recorded_n(int n) =>
+      "${_plural(n, zero: 'لا تطعيمات بعد', one: 'تطعيم واحد مسجّل', two: 'تطعيمان مسجّلان', few: '$n تطعيمات مسجّلة', many: '$n تطعيماً مسجّلاً', other: '$n تطعيم مسجّل')}";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'add':
+        return add;
+      case 'empty_t':
+        return empty_t;
+      case 'empty_b':
+        return empty_b;
+      case 'next_dose':
+        return next_dose;
+      case 'dose':
+        return dose;
+      case 'in_days':
+        return in_days;
+      case 'past_due':
+        return past_due;
+      case 'was_due':
+        return was_due;
+      case 'due_today':
+        return due_today;
+      case 'days_ago':
+        return days_ago;
+      case 'record':
+        return record;
+      case 'given':
+        return given;
+      case 'f_name':
+        return f_name;
+      case 'f_name_ph':
+        return f_name_ph;
+      case 'f_dose':
+        return f_dose;
+      case 'f_date':
+        return f_date;
+      case 'f_clinic':
+        return f_clinic;
+      case 'f_clinic_ph':
+        return f_clinic_ph;
+      case 'f_next':
+        return f_next;
+      case 'optional':
+        return optional;
+      case 'f_next_hint':
+        return f_next_hint;
+      case 'f_next_clear':
+        return f_next_clear;
+      case 'save':
+        return save;
+      case 'edit_t':
+        return edit_t;
+      case 'save_changes':
+        return save_changes;
+      case 'delete':
+        return delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
+      case 'tile_next':
+        return tile_next;
+      case 'recorded_n':
+        return recorded_n;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class GrowthStrings_ar extends GrowthStrings {
+  final Strings_ar _parent;
+  const GrowthStrings_ar(this._parent) : super(_parent);
+  String get title => "النمو";
+  String get weight => "الوزن (كجم)";
+  String get height => "الطول (سم)";
+  String get date => "التاريخ";
+  String get add => "إضافة القياس";
+  String get entries => "القياسات";
+  String get empty => "لا قياسات بعد.";
+  String kg(String v) => "$v كجم";
+  String cm(String v) => "$v سم";
+  String invalid(Gender gender) => "راجع${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} الأرقام: الوزن من 0.2 إلى 300 كجم، والطول من 20 إلى 250 سم.";
+  String tile_last(String date) => "آخر قياس $date";
+  String get tile_empty => "لا قياسات بعد";
+  String get editing => "تعديل القياس";
+  String get save_changes => "حفظ التعديلات";
+  String get cancel_edit => "إلغاء التعديل";
+  String tap_hint(Gender gender) =>
+      "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على قياس لتعديله.";
+  String get a11y_delete => "حذف القياس";
+  String get delete_t => "حذف هذا القياس؟";
+  String get delete_b => "سيُحذف من سجل النمو على هذا الجهاز.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'weight':
+        return weight;
+      case 'height':
+        return height;
+      case 'date':
+        return date;
+      case 'add':
+        return add;
+      case 'entries':
+        return entries;
+      case 'empty':
+        return empty;
+      case 'kg':
+        return kg;
+      case 'cm':
+        return cm;
+      case 'invalid':
+        return invalid;
+      case 'tile_last':
+        return tile_last;
+      case 'tile_empty':
+        return tile_empty;
+      case 'editing':
+        return editing;
+      case 'save_changes':
+        return save_changes;
+      case 'cancel_edit':
+        return cancel_edit;
+      case 'tap_hint':
+        return tap_hint;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class PregnancyStrings_ar extends PregnancyStrings {
+  final Strings_ar _parent;
+  const PregnancyStrings_ar(this._parent) : super(_parent);
+  String get title => "متابعة الحمل";
+  String week_n(int n) => "الأسبوع $n";
+  String week_lower(int n) => "الأسبوع $n";
+  String get week => "الأسبوع";
+  String day_n(int n) => "اليوم $n";
+  String guidance_week(int n) => "إرشاد الأسبوع $n";
+  String get all_weeks => "كل الأسابيع";
+  String get weeks_title => "إرشاد الأسابيع";
+  String get this_week => "هذا الأسبوع";
+  String get tri_1 => "الثلث الأول";
+  String get tri_2 => "الثلث الثاني";
+  String get tri_3 => "الثلث الثالث";
+  String get tri_short_1 => "الأول";
+  String get tri_short_2 => "الثاني";
+  String get tri_short_3 => "الثالث";
+  String days_to_go(int n) =>
+      "${_plural(n, one: 'باقٍ يوم واحد', two: 'باقٍ يومان', few: 'باقٍ $n أيام', many: 'باقٍ $n يوماً', other: 'باقٍ $n يوم')}";
+  String get days_to_due => "يوماً على الموعد المتوقع";
+  String get due_today => "الموعد المتوقع اليوم";
+  String days_past_due(int n) =>
+      "${_plural(n, one: 'مضى يوم واحد على الموعد المتوقع', two: 'مضى يومان على الموعد المتوقع', few: 'مضت $n أيام على الموعد المتوقع', many: 'مضى $n يوماً على الموعد المتوقع', other: 'مضى $n يوم على الموعد المتوقع')}";
+  String get days_past_due_label => "يوماً بعد الموعد المتوقع";
+  String get due_date => "الموعد المتوقع للولادة";
+  String get next_visit => "الزيارة القادمة";
+  String get prompt_b =>
+      "إن كنتِ حاملاً، سجّلي موعد الولادة المتوقع واسم طبيبتك";
+  String get hide_a11y => "إخفاء بطاقة متابعة الحمل";
+  String get hide_title => "إخفاء بطاقة متابعة الحمل؟";
+  String get hide_sub => "لن تظهر هذه البطاقة على الشاشة الرئيسية مرة أخرى.";
+  String get hide_note =>
+      "يمكنك تفعيل متابعة الحمل في أي وقت من «الملف» › «متابعة الحمل».";
+  String get hide_btn => "إخفاء البطاقة";
+  String get row_off => "غير مفعّلة";
+  String get next_visit_t => "زيارة المتابعة القادمة";
+  String get add_visit => "أضيفي موعد زيارة المتابعة القادمة";
+  String get visit_date => "التاريخ";
+  String get visit_time => "الوقت";
+  String get visit_time_ph => "مثل: 10:30";
+  String get visit_clinic => "العيادة";
+  String get visit_remove => "حذف هذه الزيارة";
+  String get babies => "الأطفال";
+  String get baby => "الطفل";
+  String baby_lettered(String x) => "الطفل $x";
+  String get baby_letters =>
+      "الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن";
+  String get attach => "إرفاق";
+  String get last_measure => "آخر قياس";
+  String get hr => "نبض القلب";
+  String get bpm => "نبضة/د";
+  String get efw => "الوزن التقديري";
+  String get grams => "جم";
+  String born_on(String date) => "الميلاد $date";
+  String get add_baby => "إضافة طفل";
+  String get my_records => "سجلاتي في الحمل";
+  String get my_records_empty => "نتائج تحاليلك أنتِ تظهر هنا.";
+  String get card_row => "بطاقة الطوارئ في وضع الحمل";
+  String get birth_sec => "الولادة وإنهاء المتابعة";
+  String get arrived_one => "وصل المولود";
+  String get arrived_multi => "وصل مولود";
+  String get end_t => "إنهاء متابعة الحمل";
+  String get end_b => "تبقى سجلات هذا الحمل محفوظة فيه على جهازك.";
+  String get end_cta => "إنهاء المتابعة";
+  String get go_back => "تراجع";
+  String get options => "خيارات";
+  String get rename => "تغيير الاسم";
+  String get stop_t => "إيقاف متابعة هذا الطفل";
+  String get stop_b =>
+      "ستُحفظ سجلاته داخل هذا الحمل على جهازك، ولن تظهر بطاقته بعد ذلك.";
+  String get stop_cta => "إيقاف المتابعة";
+  String get shared_all => "مشترك بين الجميع";
+  String get shared => "مشترك";
+  String get list_sep => "، ";
+  String get pregnant => "حامل";
+  String get type_2 => "حمل بتوأم";
+  String get type_3 => "حمل بثلاثة توائم";
+  String get type_4 => "حمل بأربعة توائم";
+  String type_n(int n) => "حمل متعدد ($n)";
+  String card_due(String date) => "الموعد المتوقع للولادة $date";
+  String get rh_neg => "العامل الريسوسي سالب";
+  String get rh_pos => "العامل الريسوسي موجب";
+  String get ob => "طبيبة النساء والتوليد";
+  String get card_note => "اعرضي هذه البطاقة من هاتفك في حالة الطوارئ.";
+  String get start_note =>
+      "تظهر متابعة الحمل في ملفك أنتِ فقط، ولا تظهر في ملفات العائلة.";
+  String get mode_due => "أعرف الموعد المتوقع";
+  String get mode_lmp => "أعرف تاريخ آخر دورة";
+  String get lmp => "أول يوم في آخر دورة";
+  String get est_due => "الموعد المتوقع تقريباً";
+  String get pick_date => "اختاري التاريخ";
+  String get how_many => "عدد الأطفال";
+  String get fewer_babies => "طفل أقل";
+  String get more_babies => "طفل إضافي";
+  String get add_later =>
+      "يمكنك إضافة طفل لاحقاً في أي وقت، مثلاً إذا ظهر توأم في سونار لاحق.";
+  String get ob_name_ph => "الاسم";
+  String get phone => "رقم الهاتف";
+  String get start_cta => "ابدئي المتابعة";
+  String get name_hint => "يمكنك أن تختاري اسماً إن أردتِ، وهذا اختياري.";
+  String get sec_scan => "السونار والتقارير";
+  String get sec_measure => "القياسات";
+  String get sec_doc => "التحاليل والمستندات";
+  String get nothing_yet => "لا شيء بعد.";
+  String get as_entered => "تُعرض القياسات كما أدخلتِها تماماً.";
+  String get add_record => "إضافة سجل";
+  String get name_sub => "اختياري. اتركيه فارغاً ليظهر الاسم الافتراضي.";
+  String get name_ph => "الاسم أو اسم التدليل";
+  String get attach_t => "إرفاق سجل";
+  String get who => "هذا السجل عن مَن؟";
+  String get me => "عنّي — نتائجي أنا";
+  String get all_babies => "كل الأطفال — تقرير مشترك";
+  String get clear_babies => "إلغاء تحديد الكل";
+  String get type => "النوع";
+  String get kind_scan => "سونار أو تقرير";
+  String get kind_measure => "قياسات";
+  String get kind_doc => "تحليل أو مستند";
+  String get one_at_a_time => "القياسات تُسجَّل لكل طفل على حدة.";
+  String get title_l => "العنوان";
+  String get title_ph_measure => "مثل: قياسات زيارة اليوم";
+  String get title_ph => "مثل: سونار الأسبوع 24";
+  String get date => "التاريخ";
+  String get hr_field => "نبض القلب (نبضة/د)";
+  String get efw_field => "الوزن التقديري (جم)";
+  String get other_field => "قياس آخر";
+  String get other_ph => "مثل: طول الفخذ";
+  String get value => "القيمة";
+  String get value_ph => "مثل: 44 مم";
+  String get as_written => "اكتبي الأرقام كما في التقرير. لا يفسّرها بلسم.";
+  String get file => "الملف";
+  String get file_pick => "صوّري أو اختاري ملفاً";
+  String get file_local => "يُحفظ على هذا الجهاز فقط";
+  String get file_attached => "ملف مرفق";
+  String birth_title(String baby) => "ملف $baby";
+  String get birth_title_one => "ملف المولود";
+  String get arrived_t => "وصل مولودك بالسلامة";
+  String get arrived_b_multi =>
+      "أنشئي ملف كل طفل عند ولادته. تبقى متابعة الحمل مفتوحة للبقية.";
+  String get arrived_b =>
+      "أنشئي ملف طفلك الآن، واختاري السجلات التي تنتقل إليه.";
+  String get which => "أي طفل؟";
+  String get blood_if_known => "إن كانت معروفة";
+  String get moves => "سجلات تنتقل إلى ملف الطفل";
+  String get no_records => "لا توجد سجلات لهذا الطفل.";
+  String get me_stay => "سجلاتك «عنّي» تبقى في ملفك أنتِ.";
+  String get create_cta => "إنشاء الملف";
+  String title_of(String name) => "متابعة الحمل · $name";
+  String records_of(String name) => "سجلات $name في الحمل";
+  String get records_of_empty => "نتائج تحاليل الأم تظهر هنا.";
+  String start_note_of(String name, Gender gender) =>
+      "تظهر متابعة الحمل في ملف $name فقط. تدير${_select(gender, {
+            'female': 'ين',
+            'other': ''
+          })}ها من جهازك.";
+  String start_cta_of(Gender gender) =>
+      "${_select(gender, {'female': 'ابدئي', 'other': 'ابدأ'})} المتابعة";
+  String me_of(String name) => "$name — نتائجها هي";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'week_n':
+        return week_n;
+      case 'week_lower':
+        return week_lower;
+      case 'week':
+        return week;
+      case 'day_n':
+        return day_n;
+      case 'guidance_week':
+        return guidance_week;
+      case 'all_weeks':
+        return all_weeks;
+      case 'weeks_title':
+        return weeks_title;
+      case 'this_week':
+        return this_week;
+      case 'tri_1':
+        return tri_1;
+      case 'tri_2':
+        return tri_2;
+      case 'tri_3':
+        return tri_3;
+      case 'tri_short_1':
+        return tri_short_1;
+      case 'tri_short_2':
+        return tri_short_2;
+      case 'tri_short_3':
+        return tri_short_3;
+      case 'days_to_go':
+        return days_to_go;
+      case 'days_to_due':
+        return days_to_due;
+      case 'due_today':
+        return due_today;
+      case 'days_past_due':
+        return days_past_due;
+      case 'days_past_due_label':
+        return days_past_due_label;
+      case 'due_date':
+        return due_date;
+      case 'next_visit':
+        return next_visit;
+      case 'prompt_b':
+        return prompt_b;
+      case 'hide_a11y':
+        return hide_a11y;
+      case 'hide_title':
+        return hide_title;
+      case 'hide_sub':
+        return hide_sub;
+      case 'hide_note':
+        return hide_note;
+      case 'hide_btn':
+        return hide_btn;
+      case 'row_off':
+        return row_off;
+      case 'next_visit_t':
+        return next_visit_t;
+      case 'add_visit':
+        return add_visit;
+      case 'visit_date':
+        return visit_date;
+      case 'visit_time':
+        return visit_time;
+      case 'visit_time_ph':
+        return visit_time_ph;
+      case 'visit_clinic':
+        return visit_clinic;
+      case 'visit_remove':
+        return visit_remove;
+      case 'babies':
+        return babies;
+      case 'baby':
+        return baby;
+      case 'baby_lettered':
+        return baby_lettered;
+      case 'baby_letters':
+        return baby_letters;
+      case 'attach':
+        return attach;
+      case 'last_measure':
+        return last_measure;
+      case 'hr':
+        return hr;
+      case 'bpm':
+        return bpm;
+      case 'efw':
+        return efw;
+      case 'grams':
+        return grams;
+      case 'born_on':
+        return born_on;
+      case 'add_baby':
+        return add_baby;
+      case 'my_records':
+        return my_records;
+      case 'my_records_empty':
+        return my_records_empty;
+      case 'card_row':
+        return card_row;
+      case 'birth_sec':
+        return birth_sec;
+      case 'arrived_one':
+        return arrived_one;
+      case 'arrived_multi':
+        return arrived_multi;
+      case 'end_t':
+        return end_t;
+      case 'end_b':
+        return end_b;
+      case 'end_cta':
+        return end_cta;
+      case 'go_back':
+        return go_back;
+      case 'options':
+        return options;
+      case 'rename':
+        return rename;
+      case 'stop_t':
+        return stop_t;
+      case 'stop_b':
+        return stop_b;
+      case 'stop_cta':
+        return stop_cta;
+      case 'shared_all':
+        return shared_all;
+      case 'shared':
+        return shared;
+      case 'list_sep':
+        return list_sep;
+      case 'pregnant':
+        return pregnant;
+      case 'type_2':
+        return type_2;
+      case 'type_3':
+        return type_3;
+      case 'type_4':
+        return type_4;
+      case 'type_n':
+        return type_n;
+      case 'card_due':
+        return card_due;
+      case 'rh_neg':
+        return rh_neg;
+      case 'rh_pos':
+        return rh_pos;
+      case 'ob':
+        return ob;
+      case 'card_note':
+        return card_note;
+      case 'start_note':
+        return start_note;
+      case 'mode_due':
+        return mode_due;
+      case 'mode_lmp':
+        return mode_lmp;
+      case 'lmp':
+        return lmp;
+      case 'est_due':
+        return est_due;
+      case 'pick_date':
+        return pick_date;
+      case 'how_many':
+        return how_many;
+      case 'fewer_babies':
+        return fewer_babies;
+      case 'more_babies':
+        return more_babies;
+      case 'add_later':
+        return add_later;
+      case 'ob_name_ph':
+        return ob_name_ph;
+      case 'phone':
+        return phone;
+      case 'start_cta':
+        return start_cta;
+      case 'name_hint':
+        return name_hint;
+      case 'sec_scan':
+        return sec_scan;
+      case 'sec_measure':
+        return sec_measure;
+      case 'sec_doc':
+        return sec_doc;
+      case 'nothing_yet':
+        return nothing_yet;
+      case 'as_entered':
+        return as_entered;
+      case 'add_record':
+        return add_record;
+      case 'name_sub':
+        return name_sub;
+      case 'name_ph':
+        return name_ph;
+      case 'attach_t':
+        return attach_t;
+      case 'who':
+        return who;
+      case 'me':
+        return me;
+      case 'all_babies':
+        return all_babies;
+      case 'clear_babies':
+        return clear_babies;
+      case 'type':
+        return type;
+      case 'kind_scan':
+        return kind_scan;
+      case 'kind_measure':
+        return kind_measure;
+      case 'kind_doc':
+        return kind_doc;
+      case 'one_at_a_time':
+        return one_at_a_time;
+      case 'title_l':
+        return title_l;
+      case 'title_ph_measure':
+        return title_ph_measure;
+      case 'title_ph':
+        return title_ph;
+      case 'date':
+        return date;
+      case 'hr_field':
+        return hr_field;
+      case 'efw_field':
+        return efw_field;
+      case 'other_field':
+        return other_field;
+      case 'other_ph':
+        return other_ph;
+      case 'value':
+        return value;
+      case 'value_ph':
+        return value_ph;
+      case 'as_written':
+        return as_written;
+      case 'file':
+        return file;
+      case 'file_pick':
+        return file_pick;
+      case 'file_local':
+        return file_local;
+      case 'file_attached':
+        return file_attached;
+      case 'birth_title':
+        return birth_title;
+      case 'birth_title_one':
+        return birth_title_one;
+      case 'arrived_t':
+        return arrived_t;
+      case 'arrived_b_multi':
+        return arrived_b_multi;
+      case 'arrived_b':
+        return arrived_b;
+      case 'which':
+        return which;
+      case 'blood_if_known':
+        return blood_if_known;
+      case 'moves':
+        return moves;
+      case 'no_records':
+        return no_records;
+      case 'me_stay':
+        return me_stay;
+      case 'create_cta':
+        return create_cta;
+      case 'title_of':
+        return title_of;
+      case 'records_of':
+        return records_of;
+      case 'records_of_empty':
+        return records_of_empty;
+      case 'start_note_of':
+        return start_note_of;
+      case 'start_cta_of':
+        return start_cta_of;
+      case 'me_of':
+        return me_of;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class FamilyStrings_ar extends FamilyStrings {
+  final Strings_ar _parent;
+  const FamilyStrings_ar(this._parent) : super(_parent);
+  String bar_viewing(Gender gender) =>
+      "${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}";
+  String get bar_your_profile => "ملفك";
+  String get bar_change => "تغيير";
+  String get bar_family => "العائلة";
+  String get bar_a11y => "تغيير الملف المعروض";
+  String picker_title(Gender gender) =>
+      "ملف من ${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}؟";
+  String picker_sub(Gender gender) => "اختار${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} صاحب البيانات التي تظهر في التطبيق.";
+  String picker_you(Gender gender) => "${_select(gender, {
+            'female': 'أنتِ',
+            'other': 'أنت'
+          })} · ${_select(gender, {
+            'female': 'صاحبة الحساب',
+            'other': 'صاحب الحساب'
+          })}";
+  String get manage_family => "إدارة العائلة";
+  String picker_note(Gender gender) =>
+      "هذه ملفات عائلتك على هذا الجهاز. لتبديل حساب بلسم نفسه، اضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} صورتك أعلى الشاشة الرئيسية.";
+  String get acc_sub =>
+      "حسابات بلسم المسجّلة على هذا الجهاز. لكل حساب تسجيل دخول خاص به.";
+  String get acc_signed_in => "حساب مسجّل";
+  String acc_family_t(Gender gender) => "${_select(gender, {
+            'female': 'تبحثين',
+            'other': 'تبحث'
+          })} عن ملفات أطفالك؟";
+  String acc_family_b(Gender gender) =>
+      "ملفات العائلة ليست حسابات، و${_select(gender, {
+            'female': 'تجدينها',
+            'other': 'تجدها'
+          })} في «العائلة».";
+  String get title => "العائلة";
+  String get add_member => "إضافة فرد من العائلة";
+  String intro(Gender gender) => "${_select(gender, {
+            'female': 'تديرين',
+            'other': 'تدير'
+          })} هذه الملفات من جهازك. لا يحتاج أفراد عائلتك إلى حساب أو تسجيل دخول.";
+  String get empty_t => "لا يوجد أفراد بعد";
+  String empty_b(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} أطفالك أو والديك لتحتفظ${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} ببطاقة طوارئ لكل منهم.";
+  String get stays_local => "بيانات عائلتك محفوظة على هذا الجهاز وحده.";
+  String get manual_t => "الإدخال يدويًا";
+  String manual_b(Gender gender) =>
+      "لطفلك، أو لمن لا يملك حسابًا على بلسم. ${_select(gender, {
+            'female': 'تديرين',
+            'other': 'تدير'
+          })} ملفه من جهازك.";
+  String get group_family => "عائلتي";
+  String get group_neighbours => "الجيران";
+  String get new_group => "مجموعة جديدة";
+  String get new_group_ph => "مثل: زملاء العمل";
+  String get rel_son => "ابنك";
+  String get rel_daughter => "ابنتك";
+  String get rel_child => "طفلك";
+  String get rel_mother => "والدتك";
+  String get rel_father => "والدك";
+  String get rel_parent => "أحد والديك";
+  String get rel_brother => "أخوك";
+  String get rel_sister => "أختك";
+  String get rel_sibling => "أخوك أو أختك";
+  String rel_spouse(Gender gender) =>
+      "${_select(gender, {'female': 'زوجك', 'other': 'زوجتك'})}";
+  String get rel_wife => "زوجتك";
+  String get rel_husband => "زوجك";
+  String get rel_partner => "شريك الحياة";
+  String get rel_grandparent => "جدّك أو جدّتك";
+  String get rel_relative => "قريب";
+  String get rel_friend => "صديق";
+  String get rel_neighbour => "جار";
+  String get rel_guardian => "وصي";
+  String get rel_caregiver => "مقدّم رعاية";
+  String get rel_other => "قريب";
+  String get pick_son => "ابن";
+  String get pick_daughter => "ابنة";
+  String get pick_mother => "الأم";
+  String get pick_father => "الأب";
+  String get pick_sister => "أخت";
+  String get pick_brother => "أخ";
+  String get pick_spouse => "زوج أو زوجة";
+  String get pick_neighbour => "جار أو جارة";
+  String get pick_friend => "صديق أو صديقة";
+  String get pick_other => "أخرى";
+  String age_years(int n) =>
+      "${_plural(n, one: 'سنة', two: 'سنتان', few: '$n سنوات', many: '$n سنة', other: '$n سنة')}";
+  String age_months(int n) =>
+      "${_plural(n, one: 'شهر', two: 'شهران', few: '$n أشهر', many: '$n شهراً', other: '$n شهر')}";
+  String age_and(String years, String months) => "$years و$months";
+  String born(String date) => "مواليد $date";
+  String get tile_card => "بطاقة الطوارئ";
+  String get no_allergies => "لا حساسية مسجّلة";
+  String allergies_n(int n) =>
+      "${_plural(n, one: 'حساسية واحدة', two: 'نوعان من الحساسية', few: '$n أنواع حساسية', many: '$n نوع حساسية', other: '$n نوع حساسية')}";
+  String get tile_meds => "الأدوية";
+  String get no_meds => "لا أدوية بعد";
+  String meds_n(int n) =>
+      "${_plural(n, one: 'دواء واحد', two: 'دواءان', few: '$n أدوية', many: '$n دواءً', other: '$n دواء')}";
+  String get tile_records => "السجلات";
+  String get no_records => "لا مستندات بعد";
+  String records_n(int n) =>
+      "${_plural(n, zero: 'لا سجلات', one: 'سجل واحد', two: 'سجلان', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
+  String get tile_medical => "الملف الطبي";
+  String get no_blood => "فصيلة الدم غير مسجّلة";
+  String conditions_n(int n) =>
+      "${_plural(n, one: 'حالة مزمنة واحدة', two: 'حالتان مزمنتان', few: '$n حالات مزمنة', many: '$n حالة مزمنة', other: '$n حالة مزمنة')}";
+  String get tile_trends => "المؤشرات";
+  String trends_n(int n) =>
+      "${_plural(n, one: 'مؤشر واحد', two: 'مؤشران', few: '$n مؤشرات', many: '$n مؤشراً', other: '$n مؤشر')}";
+  String get trends_none => "لا بيانات كافية بعد";
+  String tile_preg_off(Gender gender) => "غير مفعّلة · ${_select(gender, {
+            'female': 'ابدئي',
+            'other': 'ابدأ'
+          })} المتابعة";
+  String medical_intro(String name) =>
+      "تظهر هذه المعلومات على بطاقة طوارئ $name.";
+  String get medical_conditions => "الحالات المزمنة";
+  String get medical_allergies_none => "لا حساسية مسجّلة";
+  String get medical_conditions_none => "لا حالات مسجّلة";
+  String medical_allergy_ph(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} حساسية، مثل البنسلين";
+  String medical_condition_ph(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حالة، مثل الربو";
+  String get medical_add => "إضافة";
+  String medical_remove(String item) => "إزالة $item";
+  String get medical_row_sub => "فصيلة الدم والحساسية والحالات المزمنة";
+  String get medical_locked => "هذا الملف للعرض فقط، فلا يمكن تعديله من هنا.";
+  String get trends_empty_t => "لا بيانات في هذه الفترة";
+  String trends_empty_b(String name, Gender gender) =>
+      "تظهر هنا قياسات $name والنمو بمرور الوقت. جرّب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} فترة أطول.";
+  String trends_nothing(String name) => "لا تسجيلات لـ$name بعد.";
+  String get member_menu => "خيارات أخرى";
+  String get edit_details => "تعديل البيانات";
+  String get edit_medical => "البيانات الطبية";
+  String get close_profile => "إغلاق الملف";
+  String close_confirm_t(String name) => "إغلاق ملف $name؟";
+  String get close_confirm_b =>
+      "تبقى سجلاته على هذا الجهاز للعرض فقط، ولا يظهر الملف في قائمة الاختيار بعد الآن.";
+  String closed_toast(String name) => "أُغلق ملف $name";
+  String close_member(String name) => "إغلاق ملف $name";
+  String get edit_title => "تعديل الملف";
+  String get save_changes => "حفظ التعديلات";
+  String get step_basic => "البيانات الأساسية";
+  String get step_1_of_2 => "الخطوة 1 من 2 · البيانات الأساسية";
+  String get step_2_of_2 => "الخطوة 2 من 2 · الموافقة";
+  String get f_relation => "صلة القرابة";
+  String get f_name => "الاسم";
+  String f_name_ph(Gender gender) => "الاسم كما ${_select(gender, {
+            'female': 'تريدين',
+            'other': 'تريد'
+          })} أن يظهر";
+  String get f_group => "المجموعة";
+  String get f_dob => "تاريخ الميلاد";
+  String get f_dob_ph => "يوم / شهر / سنة";
+  String get consent_next => "سنطلب موافقته في الخطوة التالية";
+  String get f_sex => "الجنس";
+  String get sex_female => "أنثى";
+  String get sex_male => "ذكر";
+  String get f_blood => "فصيلة الدم";
+  String get optional => "اختياري";
+  String get blood_unsure => "لا أعرف";
+  String get next => "التالي";
+  String get save => "حفظ";
+  String consent_title(String name, Gender gender) =>
+      "قبل أن ${_select(gender, {
+            'female': 'تديري',
+            'other': 'تدير'
+          })} ملف $name";
+  String consent_body_f(String name, Gender gender) =>
+      "$name بالغة، ومعلوماتها الصحية ملكٌ لها. ${_select(gender, {
+            'female': 'تأكدي',
+            'other': 'تأكد'
+          })} من موافقتها على أن ${_select(gender, {
+            'female': 'تسجّلي',
+            'other': 'تسجّل'
+          })} بياناتها و${_select(gender, {
+            'female': 'تتابعيها',
+            'other': 'تتابعها'
+          })} من جهازك.";
+  String consent_body_m(String name, Gender gender) =>
+      "$name بالغ، ومعلوماته الصحية ملكٌ له. ${_select(gender, {
+            'female': 'تأكدي',
+            'other': 'تأكد'
+          })} من موافقته على أن ${_select(gender, {
+            'female': 'تسجّلي',
+            'other': 'تسجّل'
+          })} بياناته و${_select(gender, {
+            'female': 'تتابعيها',
+            'other': 'تتابعها'
+          })} من جهازك.";
+  String get consent_stays => "تبقى البيانات على جهازك ولا تُرسل إلى أي مكان.";
+  String consent_close(Gender gender) =>
+      "يمكنك إغلاق الملف متى ${_select(gender, {
+            'female': 'شئتِ',
+            'other': 'شئت'
+          })}.";
+  String consent_check_f(String name) =>
+      "لديّ موافقة $name على إدارة معلوماتها الصحية";
+  String consent_check_m(String name) =>
+      "لديّ موافقة $name على إدارة معلوماته الصحية";
+  String get consent_hint => "نسألك هذا مرة واحدة فقط لكل فرد بالغ.";
+  String add_cta(String name) => "إضافة $name";
+  String save_failed(Gender gender) => "تعذّر الحفظ. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String get card_brand => "بطاقة طوارئ · بلسم";
+  String get card_allergies => "الحساسية";
+  String get card_conditions => "أمراض مزمنة";
+  String get card_none => "لا يوجد";
+  String get card_contacts => "جهات الاتصال في الطوارئ";
+  String get card_no_contacts => "لم تُضف جهة اتصال بعد";
+  String card_note(Gender gender) => "اعرض${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} هذه البطاقة من هاتفك في حالة الطوارئ. بطاقتك أنت${_select(gender, {
+            'female': 'ِ',
+            'other': ''
+          })} وحدها تحمل رمزًا يمكن للمسعف مسحه.";
+  String get own_card_note =>
+      "هذه البطاقة محفوظة على هاتفك، فتُفتح دون اتصال بالإنترنت. البطاقة التي تحمل رمزًا يمكن للمسعف مسحه موجودة في ملفك الشخصي.";
+  String get add_contact => "إضافة جهة اتصال";
+  String get contact_name => "اسم جهة الاتصال";
+  String get contact_phone => "رقم الهاتف";
+  String get contact_add => "إضافة";
+  String a11y_call(String name) => "اتصال بـ$name";
+  String get contact_remove => "إزالة جهة الاتصال";
+  String a11y_remove_contact(String name) => "إزالة جهة الاتصال $name";
+  String contact_remove_t(String name) => "إزالة $name؟";
+  String get contact_remove_b =>
+      "تُزال جهة الاتصال من بطاقة الطوارئ على هذا الجهاز.";
+  String get scan_t => "مسح رمز QR الخاص بهم";
+  String get scan_b => "لمن لديه حساب على بلسم. يوافق على الطلب من تطبيقه.";
+  String get link_section => "حسابات مرتبطة";
+  String get link_requests => "طلبات الربط";
+  String link_asks(String relation) => "طلب إضافتك بصفة $relation";
+  String get link_waiting => "بانتظار موافقته";
+  String get link_read_only => "للعرض فقط";
+  String get link_someone => "مستخدم على بلسم";
+  String link_sent(Gender gender) =>
+      "تم إرسال الطلب. سيراه في تطبيق بلسم الخاص به.";
+  String link_not_found(Gender gender) =>
+      "هذا الرمز لم يعد صالحًا. اطلب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} منه إظهار رمزه الحالي.";
+  String link_exists(Gender gender) => "سبق أن ${_select(gender, {
+            'female': 'طلبتِ',
+            'other': 'طلبت'
+          })} الربط مع هذا الشخص، أو أنكما مرتبطان بالفعل.";
+  String link_failed(Gender gender) =>
+      "تعذّر إرسال الطلب. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String link_offline(Gender gender) => "${_select(gender, {
+            'female': 'أنتِ غير متصلة',
+            'other': 'أنت غير متصل'
+          })} بالإنترنت. ${_select(gender, {
+            'female': 'اتصلي',
+            'other': 'اتصل'
+          })} وحاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+  String link_action_failed(Gender gender) =>
+      "تعذّر تحديث الربط. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String link_linked_toast(String name, Gender gender) => "${_select(gender, {
+            'female': 'أصبحتِ مرتبطة',
+            'other': 'أصبحت مرتبطًا'
+          })} بـ$name";
+  String get link_card_section => "بطاقة الطوارئ الخاصة به";
+  String link_card_updated(String date) => "آخر تحديث $date";
+  String get link_card_not_shared => "غير مُشارَكة";
+  String get link_card_not_shared_b => "لم يشارك بطاقة الطوارئ الخاصة به معك.";
+  String link_card_stale(Gender gender) => "اطلب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} منه فتح بلسم لتحديث بطاقته.";
+  String get link_share_t => "مشاركة بطاقة الطوارئ الخاصة بي";
+  String link_share_b(Gender gender) =>
+      "لا يستطيع فتحها إلا هاتفه — لا بلسم ولا أي شخص آخر. ${_select(gender, {
+            'female': 'يمكنكِ',
+            'other': 'يمكنك'
+          })} إيقافها متى ${_select(gender, {
+            'female': 'شئتِ',
+            'other': 'شئت'
+          })}.";
+  String link_share_failed(Gender gender) =>
+      "تعذّر تغيير المشاركة. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String get link_unlink => "إلغاء الربط";
+  String link_unlink_t(String name) => "إلغاء الربط مع $name؟";
+  String get link_unlink_b =>
+      "لن يرى أيٌّ منكما البطاقة التي شاركها الآخر بعد الآن.";
+  String get link_unlinked_toast => "تم إلغاء الربط";
+  String get link_dot_a11y => "طلب ربط بانتظار الرد";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'bar_viewing':
+        return bar_viewing;
+      case 'bar_your_profile':
+        return bar_your_profile;
+      case 'bar_change':
+        return bar_change;
+      case 'bar_family':
+        return bar_family;
+      case 'bar_a11y':
+        return bar_a11y;
+      case 'picker_title':
+        return picker_title;
+      case 'picker_sub':
+        return picker_sub;
+      case 'picker_you':
+        return picker_you;
+      case 'manage_family':
+        return manage_family;
+      case 'picker_note':
+        return picker_note;
+      case 'acc_sub':
+        return acc_sub;
+      case 'acc_signed_in':
+        return acc_signed_in;
+      case 'acc_family_t':
+        return acc_family_t;
+      case 'acc_family_b':
+        return acc_family_b;
+      case 'title':
+        return title;
+      case 'add_member':
+        return add_member;
+      case 'intro':
+        return intro;
+      case 'empty_t':
+        return empty_t;
+      case 'empty_b':
+        return empty_b;
+      case 'stays_local':
+        return stays_local;
+      case 'manual_t':
+        return manual_t;
+      case 'manual_b':
+        return manual_b;
+      case 'group_family':
+        return group_family;
+      case 'group_neighbours':
+        return group_neighbours;
+      case 'new_group':
+        return new_group;
+      case 'new_group_ph':
+        return new_group_ph;
+      case 'rel_son':
+        return rel_son;
+      case 'rel_daughter':
+        return rel_daughter;
+      case 'rel_child':
+        return rel_child;
+      case 'rel_mother':
+        return rel_mother;
+      case 'rel_father':
+        return rel_father;
+      case 'rel_parent':
+        return rel_parent;
+      case 'rel_brother':
+        return rel_brother;
+      case 'rel_sister':
+        return rel_sister;
+      case 'rel_sibling':
+        return rel_sibling;
+      case 'rel_spouse':
+        return rel_spouse;
+      case 'rel_wife':
+        return rel_wife;
+      case 'rel_husband':
+        return rel_husband;
+      case 'rel_partner':
+        return rel_partner;
+      case 'rel_grandparent':
+        return rel_grandparent;
+      case 'rel_relative':
+        return rel_relative;
+      case 'rel_friend':
+        return rel_friend;
+      case 'rel_neighbour':
+        return rel_neighbour;
+      case 'rel_guardian':
+        return rel_guardian;
+      case 'rel_caregiver':
+        return rel_caregiver;
+      case 'rel_other':
+        return rel_other;
+      case 'pick_son':
+        return pick_son;
+      case 'pick_daughter':
+        return pick_daughter;
+      case 'pick_mother':
+        return pick_mother;
+      case 'pick_father':
+        return pick_father;
+      case 'pick_sister':
+        return pick_sister;
+      case 'pick_brother':
+        return pick_brother;
+      case 'pick_spouse':
+        return pick_spouse;
+      case 'pick_neighbour':
+        return pick_neighbour;
+      case 'pick_friend':
+        return pick_friend;
+      case 'pick_other':
+        return pick_other;
+      case 'age_years':
+        return age_years;
+      case 'age_months':
+        return age_months;
+      case 'age_and':
+        return age_and;
+      case 'born':
+        return born;
+      case 'tile_card':
+        return tile_card;
+      case 'no_allergies':
+        return no_allergies;
+      case 'allergies_n':
+        return allergies_n;
+      case 'tile_meds':
+        return tile_meds;
+      case 'no_meds':
+        return no_meds;
+      case 'meds_n':
+        return meds_n;
+      case 'tile_records':
+        return tile_records;
+      case 'no_records':
+        return no_records;
+      case 'records_n':
+        return records_n;
+      case 'tile_medical':
+        return tile_medical;
+      case 'no_blood':
+        return no_blood;
+      case 'conditions_n':
+        return conditions_n;
+      case 'tile_trends':
+        return tile_trends;
+      case 'trends_n':
+        return trends_n;
+      case 'trends_none':
+        return trends_none;
+      case 'tile_preg_off':
+        return tile_preg_off;
+      case 'medical_intro':
+        return medical_intro;
+      case 'medical_conditions':
+        return medical_conditions;
+      case 'medical_allergies_none':
+        return medical_allergies_none;
+      case 'medical_conditions_none':
+        return medical_conditions_none;
+      case 'medical_allergy_ph':
+        return medical_allergy_ph;
+      case 'medical_condition_ph':
+        return medical_condition_ph;
+      case 'medical_add':
+        return medical_add;
+      case 'medical_remove':
+        return medical_remove;
+      case 'medical_row_sub':
+        return medical_row_sub;
+      case 'medical_locked':
+        return medical_locked;
+      case 'trends_empty_t':
+        return trends_empty_t;
+      case 'trends_empty_b':
+        return trends_empty_b;
+      case 'trends_nothing':
+        return trends_nothing;
+      case 'member_menu':
+        return member_menu;
+      case 'edit_details':
+        return edit_details;
+      case 'edit_medical':
+        return edit_medical;
+      case 'close_profile':
+        return close_profile;
+      case 'close_confirm_t':
+        return close_confirm_t;
+      case 'close_confirm_b':
+        return close_confirm_b;
+      case 'closed_toast':
+        return closed_toast;
+      case 'close_member':
+        return close_member;
+      case 'edit_title':
+        return edit_title;
+      case 'save_changes':
+        return save_changes;
+      case 'step_basic':
+        return step_basic;
+      case 'step_1_of_2':
+        return step_1_of_2;
+      case 'step_2_of_2':
+        return step_2_of_2;
+      case 'f_relation':
+        return f_relation;
+      case 'f_name':
+        return f_name;
+      case 'f_name_ph':
+        return f_name_ph;
+      case 'f_group':
+        return f_group;
+      case 'f_dob':
+        return f_dob;
+      case 'f_dob_ph':
+        return f_dob_ph;
+      case 'consent_next':
+        return consent_next;
+      case 'f_sex':
+        return f_sex;
+      case 'sex_female':
+        return sex_female;
+      case 'sex_male':
+        return sex_male;
+      case 'f_blood':
+        return f_blood;
+      case 'optional':
+        return optional;
+      case 'blood_unsure':
+        return blood_unsure;
+      case 'next':
+        return next;
+      case 'save':
+        return save;
+      case 'consent_title':
+        return consent_title;
+      case 'consent_body_f':
+        return consent_body_f;
+      case 'consent_body_m':
+        return consent_body_m;
+      case 'consent_stays':
+        return consent_stays;
+      case 'consent_close':
+        return consent_close;
+      case 'consent_check_f':
+        return consent_check_f;
+      case 'consent_check_m':
+        return consent_check_m;
+      case 'consent_hint':
+        return consent_hint;
+      case 'add_cta':
+        return add_cta;
+      case 'save_failed':
+        return save_failed;
+      case 'card_brand':
+        return card_brand;
+      case 'card_allergies':
+        return card_allergies;
+      case 'card_conditions':
+        return card_conditions;
+      case 'card_none':
+        return card_none;
+      case 'card_contacts':
+        return card_contacts;
+      case 'card_no_contacts':
+        return card_no_contacts;
+      case 'card_note':
+        return card_note;
+      case 'own_card_note':
+        return own_card_note;
+      case 'add_contact':
+        return add_contact;
+      case 'contact_name':
+        return contact_name;
+      case 'contact_phone':
+        return contact_phone;
+      case 'contact_add':
+        return contact_add;
+      case 'a11y_call':
+        return a11y_call;
+      case 'contact_remove':
+        return contact_remove;
+      case 'a11y_remove_contact':
+        return a11y_remove_contact;
+      case 'contact_remove_t':
+        return contact_remove_t;
+      case 'contact_remove_b':
+        return contact_remove_b;
+      case 'scan_t':
+        return scan_t;
+      case 'scan_b':
+        return scan_b;
+      case 'link_section':
+        return link_section;
+      case 'link_requests':
+        return link_requests;
+      case 'link_asks':
+        return link_asks;
+      case 'link_waiting':
+        return link_waiting;
+      case 'link_read_only':
+        return link_read_only;
+      case 'link_someone':
+        return link_someone;
+      case 'link_sent':
+        return link_sent;
+      case 'link_not_found':
+        return link_not_found;
+      case 'link_exists':
+        return link_exists;
+      case 'link_failed':
+        return link_failed;
+      case 'link_offline':
+        return link_offline;
+      case 'link_action_failed':
+        return link_action_failed;
+      case 'link_linked_toast':
+        return link_linked_toast;
+      case 'link_card_section':
+        return link_card_section;
+      case 'link_card_updated':
+        return link_card_updated;
+      case 'link_card_not_shared':
+        return link_card_not_shared;
+      case 'link_card_not_shared_b':
+        return link_card_not_shared_b;
+      case 'link_card_stale':
+        return link_card_stale;
+      case 'link_share_t':
+        return link_share_t;
+      case 'link_share_b':
+        return link_share_b;
+      case 'link_share_failed':
+        return link_share_failed;
+      case 'link_unlink':
+        return link_unlink;
+      case 'link_unlink_t':
+        return link_unlink_t;
+      case 'link_unlink_b':
+        return link_unlink_b;
+      case 'link_unlinked_toast':
+        return link_unlinked_toast;
+      case 'link_dot_a11y':
+        return link_dot_a11y;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class AttributionStrings_ar extends AttributionStrings {
+  final Strings_ar _parent;
+  const AttributionStrings_ar(this._parent) : super(_parent);
+  String chip_a11y(String who) => "سجل التعديلات: $who";
+  String by(String name) => "بواسطة $name";
+  String edited_by(String name) => "عدّله $name";
+  String get someone => "شخص آخر";
+  String get you => "أنت";
+  String get history_title => "سجل التعديلات";
+  String get history_sub => "من أضاف هذا الإدخال أو عدّله، ومتى.";
+  String added_this(String name) => "أضافه $name";
+  String edited_this(String name) => "عدّله $name";
+  String shared_this(String name) => "شاركه $name";
+  String you_added(Gender gender) =>
+      "أضفت${_select(gender, {'female': 'ِ', 'other': 'َ'})}ه أنت";
+  String you_edited(Gender gender) =>
+      "عدّلت${_select(gender, {'female': 'ِ', 'other': 'َ'})}ه أنت";
+  String get role_family => "من العائلة";
+  String get role_doctor => "طبيب";
+  String get role_clinic => "جهة رعاية";
+  String get locked => "يحتفظ بلسم بهذا السجل ولا يمكن تعديله.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'chip_a11y':
+        return chip_a11y;
+      case 'by':
+        return by;
+      case 'edited_by':
+        return edited_by;
+      case 'someone':
+        return someone;
+      case 'you':
+        return you;
+      case 'history_title':
+        return history_title;
+      case 'history_sub':
+        return history_sub;
+      case 'added_this':
+        return added_this;
+      case 'edited_this':
+        return edited_this;
+      case 'shared_this':
+        return shared_this;
+      case 'you_added':
+        return you_added;
+      case 'you_edited':
+        return you_edited;
+      case 'role_family':
+        return role_family;
+      case 'role_doctor':
+        return role_doctor;
+      case 'role_clinic':
+        return role_clinic;
+      case 'locked':
+        return locked;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class MaintenanceStrings_ar extends MaintenanceStrings {
+  final Strings_ar _parent;
+  const MaintenanceStrings_ar(this._parent) : super(_parent);
+  String get eyebrow => "صيانة";
+  String get strip_title => "صيانة · وضع العرض فقط";
+  String get strip_details => "التفاصيل";
+  String get ro_title => "بلسم في وضع الصيانة";
+  String get ro_body =>
+      "نعمل على تحسين خوادمنا. كل ما على هاتفك ما زال موجوداً ويمكنك الاطلاع عليه.";
+  String get block_title => "بلسم متوقف مؤقتاً للصيانة";
+  String get block_body =>
+      "نجري أعمالاً عاجلة للحفاظ على أمان بياناتك الصحية. سيعود التطبيق قريباً.";
+  String get pre_body =>
+      "تسجيل الدخول وإنشاء الحسابات متوقفان مؤقتاً. يمكنك استخدام بلسم على هذا الجهاز فقط الآن، وربط حسابك لاحقاً.";
+  String get paused_title => "الإضافة والتعديل متوقفان مؤقتاً";
+  String paused_body(Gender gender) =>
+      "نُجري صيانة على خوادم بلسم. يمكنك المحاولة مرة أخرى عند انتهائها، ولم يُفقد أي شيء.";
+  String get still_available => "ما زال متاحاً";
+  String get paused_for_now => "متوقف مؤقتاً";
+  String get ok_view => "عرض سجلاتك وأدويتك ونتائجك";
+  String get ok_card => "بطاقة الطوارئ ورمز QR";
+  String get ok_reminders => "تذكيرات الأدوية على هاتفك";
+  String get paused_log => "تسجيل القياسات وإضافة السجلات والأدوية";
+  String get paused_sync => "المزامنة والمشاركة مع الأطباء";
+  String get paused_signin => "تسجيل الدخول وإنشاء حسابات جديدة";
+  String get got_it => "حسناً";
+  String get open_card => "فتح بطاقة الطوارئ";
+  String get device_only => "استخدمه على هذا الجهاز فقط";
+  String call_emergency(String number, Gender gender) =>
+      "اتصل${_select(gender, {'female': 'ي', 'other': ''})} بالطوارئ $number";
+  String check_again(Gender gender) =>
+      "تحقّق${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى";
+  String get checking => "جارٍ التحقق…";
+  String until(String time) => "حتى $time تقريباً";
+  String until_tomorrow(String time) => "حتى الغد $time تقريباً";
+  String get end_unknown => "سنعلن موعد العودة قريباً";
+  String get sheet_eyebrow => "وضع العرض فقط";
+  String get close => "إغلاق";
+  String left_hm(int h, int m) => "يعود خلال $h س و$m د تقريباً";
+  String left_h(int h) => "يعود خلال $h س تقريباً";
+  String left_m(int m) => "يعود خلال $m دقيقة تقريباً";
+  String get left_unknown => "المدة غير معلنة بعد";
+  String get progress_label => "تقدّم الصيانة";
+  String strip_a11y(String countdown) => "تفاصيل الصيانة. $countdown";
+  String get message_title => "رسالة من فريق بلسم";
+  String get data_safe => "بياناتك على هذا الهاتف آمنة ولن يُحذف منها شيء.";
+  String get fab_paused => "الإضافة متوقفة أثناء الصيانة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eyebrow':
+        return eyebrow;
+      case 'strip_title':
+        return strip_title;
+      case 'strip_details':
+        return strip_details;
+      case 'ro_title':
+        return ro_title;
+      case 'ro_body':
+        return ro_body;
+      case 'block_title':
+        return block_title;
+      case 'block_body':
+        return block_body;
+      case 'pre_body':
+        return pre_body;
+      case 'paused_title':
+        return paused_title;
+      case 'paused_body':
+        return paused_body;
+      case 'still_available':
+        return still_available;
+      case 'paused_for_now':
+        return paused_for_now;
+      case 'ok_view':
+        return ok_view;
+      case 'ok_card':
+        return ok_card;
+      case 'ok_reminders':
+        return ok_reminders;
+      case 'paused_log':
+        return paused_log;
+      case 'paused_sync':
+        return paused_sync;
+      case 'paused_signin':
+        return paused_signin;
+      case 'got_it':
+        return got_it;
+      case 'open_card':
+        return open_card;
+      case 'device_only':
+        return device_only;
+      case 'call_emergency':
+        return call_emergency;
+      case 'check_again':
+        return check_again;
+      case 'checking':
+        return checking;
+      case 'until':
+        return until;
+      case 'until_tomorrow':
+        return until_tomorrow;
+      case 'end_unknown':
+        return end_unknown;
+      case 'sheet_eyebrow':
+        return sheet_eyebrow;
+      case 'close':
+        return close;
+      case 'left_hm':
+        return left_hm;
+      case 'left_h':
+        return left_h;
+      case 'left_m':
+        return left_m;
+      case 'left_unknown':
+        return left_unknown;
+      case 'progress_label':
+        return progress_label;
+      case 'strip_a11y':
+        return strip_a11y;
+      case 'message_title':
+        return message_title;
+      case 'data_safe':
+        return data_safe;
+      case 'fab_paused':
+        return fab_paused;
       default:
         return super[key];
     }

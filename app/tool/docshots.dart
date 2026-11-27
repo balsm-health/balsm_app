@@ -30,8 +30,9 @@ Future<void> main(List<String> args) async {
   final flags = args.where((a) => a.startsWith('--')).toSet();
   final positional = args.where((a) => !a.startsWith('--')).toList();
   if (positional.length < 3) {
-    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> <out-dir> [--ios|--android]');
-    stderr.writeln('  <out-dir> is brand/device scoped, e.g. screenshots/balsm/iphone');
+    stderr
+      ..writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> <out-dir> [--ios|--android]')
+      ..writeln('  <out-dir> is brand/device scoped, e.g. screenshots/balsm/iphone');
     exit(64);
   }
   final wsUri = positional[0].replaceFirst('http://', 'ws://') + (positional[0].endsWith('/') ? 'ws' : '/ws');
@@ -60,8 +61,9 @@ Future<void> main(List<String> args) async {
   Future<void> shot(String lang, String name) async {
     // 2s was enough for static screens but not for the map: raster tiles are
     // fetched over the network and 60 markers cluster on top of them, so the
-    // capture landed on a grey, tileless canvas.
-    await Future<void>.delayed(Duration(seconds: name.contains('map') ? 8 : 3));
+    // capture landed on a grey, tileless canvas. The pregnancy screens fetch
+    // their week's artwork from the CDN the same way.
+    await Future<void>.delayed(Duration(seconds: name.contains('map') || name.contains('pregnancy') ? 8 : 3));
     final dir = Directory('$outRoot/$lang');
     if (!dir.existsSync()) dir.createSync(recursive: true);
     final path = '${dir.path}/$name.png';
@@ -135,6 +137,24 @@ Future<void> main(List<String> args) async {
     await ext('ext.balsm.open', {'screen': 'checkin'});
     await shot(lang, '12_checkin_step1_mood');
     await ext('ext.balsm.open', {'screen': 'close'});
+
+    // Pregnancy tracking. It is part of Mother & Child, which ships off, so the
+    // flag goes on for these four captures only and every capture above still
+    // shows the app as shipped. The persona's pregnancy is seeded at week 12
+    // (docshots_seed.dart) and its guidance is the API's real content
+    // (docshots_pregnancy_weeks.dart).
+    await ext('ext.balsm.setFlag', {'key': 'mother_child', 'on': 'true'});
+    for (final (screen, name) in const [
+      ('pregnancy', '13_pregnancy'),
+      ('pregnancyWeeks', '14_pregnancy_weeks'),
+      ('pregnancyCard', '15_pregnancy_card'),
+      ('baby', '16_pregnancy_baby'),
+    ]) {
+      await ext('ext.balsm.open', {'screen': screen});
+      await shot(lang, name);
+    }
+    await ext('ext.balsm.open', {'screen': 'close'});
+    await ext('ext.balsm.setFlag', {'key': 'mother_child'});
   }
 
   await vm.dispose();

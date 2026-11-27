@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../failure_text.dart';
 import '../../application/use_cases/claim_handle_use_case.dart';
+import '../failure_text.dart';
+import '../i18n/i18n.dart';
 
 /// Status of the live handle-availability check.
 enum _HandleStatus { idle, checking, available, taken, invalid }
@@ -42,7 +43,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
 
   void _onChanged(String raw) {
     // Strip a leading '@' and force lowercase for the canonical handle.
-    final value = raw.replaceFirst(RegExp(r'^@'), '').toLowerCase();
+    final value = raw.replaceFirst(RegExp('^@'), '').toLowerCase();
     if (value != raw) {
       _controller.value = TextEditingValue(
         text: value,
@@ -63,7 +64,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
     if (!kHandleFormat.hasMatch(value)) {
       setState(() {
         _status = _HandleStatus.invalid;
-        _message = '3-30 characters: a-z, 0-9, _ or .';
+        _message = ref.read(accountStringsProvider).handleFormatHint;
       });
       return;
     }
@@ -83,14 +84,17 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
       final available = res.available;
       setState(() {
         _status = available ? _HandleStatus.available : _HandleStatus.taken;
-        _message = available ? 'Available' : 'Handle taken';
+        _message = available
+            ? ref.read(accountStringsProvider).handle.available
+            : ref.read(accountStringsProvider).handle.taken;
       });
     } on ApiException catch (e) {
       if (!mounted || _controller.text != handle) return;
       final taken = e.statusCode == 409;
       setState(() {
         _status = taken ? _HandleStatus.taken : _HandleStatus.idle;
-        _message = taken ? 'Handle taken' : 'Could not check availability';
+        _message =
+            taken ? ref.read(accountStringsProvider).handle.taken : ref.read(accountStringsProvider).handleCheckFailed;
       });
     }
   }
@@ -100,7 +104,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
   /// suggestion within the 3-30 char handle format. Never suggests the
   /// attempted handle verbatim (it is unavailable).
   List<String> _conflictSuggestions(String handle) {
-    final base = handle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_.]+'), '').replaceAll(RegExp(r'^[._]+|[._]+$'), '');
+    final base = handle.toLowerCase().replaceAll(RegExp('[^a-z0-9_.]+'), '').replaceAll(RegExp(r'^[._]+|[._]+$'), '');
     if (base.isEmpty) return const [];
     // Leave room for a short suffix within the 30-char cap.
     final trimmed = base.length > 28 ? base.substring(0, 28) : base;
@@ -129,7 +133,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
         setState(() {
           if (failure is ConflictFailure) {
             _status = _HandleStatus.taken;
-            _message = 'Handle taken';
+            _message = ref.read(accountStringsProvider).handle.taken;
           } else {
             _message = accountFailureText(failure);
           }
@@ -140,19 +144,20 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(accountStringsProvider);
     // Only surface suggestions on a taken/reserved conflict, derived from the
     // attempted handle (not the unrelated display name).
     final suggestions =
         _status == _HandleStatus.taken ? _conflictSuggestions(_controller.text.trim()) : const <String>[];
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             BalsmAppBar.withBack(
-              title: 'Claim your handle',
+              title: m.claimTitle,
               onBack: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
@@ -160,9 +165,9 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
                   const SizedBox(height: 8),
-                  const Text(
-                    'Pick a unique @handle. People can find you with it.',
-                    style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
+                  Text(
+                    m.claimIntro,
+                    style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
                   ),
                   const SizedBox(height: 20),
                   _HandleField(
@@ -174,12 +179,12 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
                   ),
                   if (suggestions.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    const Text(
-                      'Suggestions',
-                      style: TextStyle(
-                        fontSize: 13,
+                    Text(
+                      m.suggestions,
+                      style: const TextStyle(
+                        fontSize: FontSizes.bodySm,
                         fontWeight: FontWeight.w600,
-                        color: BalsmColors.fg2,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -187,16 +192,18 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: suggestions
-                          .map((s) => GestureDetector(
-                                onTap: () {
-                                  _controller.text = s;
-                                  _onChanged(s);
-                                },
-                                child: BalsmPill(
-                                  label: '@$s',
-                                  variant: BalsmPillVariant.info,
-                                ),
-                              ))
+                          .map(
+                            (s) => GestureDetector(
+                              onTap: () {
+                                _controller.text = s;
+                                _onChanged(s);
+                              },
+                              child: BalsmPill(
+                                label: '@$s',
+                                variant: BalsmPillVariant.info,
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
@@ -204,9 +211,9 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
               child: BalsmButton(
-                label: 'Claim handle',
+                label: m.claimAction,
                 loading: _submitting,
                 onPressed: _status == _HandleStatus.available && !_submitting ? _submit : null,
               ),
@@ -236,12 +243,13 @@ class _HandleField extends StatelessWidget {
   Color get _borderColor {
     switch (status) {
       case _HandleStatus.available:
-        return BalsmColors.success;
+        return AppColors.success;
       case _HandleStatus.taken:
       case _HandleStatus.invalid:
-        return BalsmColors.danger;
-      default:
-        return BalsmColors.border;
+        return AppColors.danger;
+      case _HandleStatus.idle:
+      case _HandleStatus.checking:
+        return AppColors.border;
     }
   }
 
@@ -254,10 +262,10 @@ class _HandleField extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         );
       case _HandleStatus.available:
-        return const Icon(Icons.check_circle, color: BalsmColors.success, size: 22);
+        return const Icon(Icons.check_circle, color: AppColors.success, size: 22);
       case _HandleStatus.taken:
       case _HandleStatus.invalid:
-        return const Icon(Icons.cancel, color: BalsmColors.danger, size: 22);
+        return const Icon(Icons.cancel, color: AppColors.danger, size: 22);
       case _HandleStatus.idle:
         return null;
     }
@@ -265,7 +273,7 @@ class _HandleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final messageColor = status == _HandleStatus.available ? BalsmColors.success : BalsmColors.danger;
+    final messageColor = status == _HandleStatus.available ? AppColors.success : AppColors.danger;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -273,8 +281,8 @@ class _HandleField extends StatelessWidget {
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(BalsmRadius.md),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(color: _borderColor, width: 1.5),
           ),
           child: Row(
@@ -282,9 +290,9 @@ class _HandleField extends StatelessWidget {
               const Text(
                 '@',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: FontSizes.subhead,
                   fontWeight: FontWeight.w600,
-                  color: BalsmColors.fg3,
+                  color: AppColors.textTertiary,
                 ),
               ),
               Expanded(
@@ -293,7 +301,7 @@ class _HandleField extends StatelessWidget {
                   autofocus: true,
                   autocorrect: false,
                   enableSuggestions: false,
-                  style: const TextStyle(fontSize: 18, color: BalsmColors.fg1),
+                  style: const TextStyle(fontSize: FontSizes.subhead, color: AppColors.textPrimary),
                   decoration: const InputDecoration(
                     hintText: 'yourhandle',
                     border: InputBorder.none,
@@ -304,15 +312,15 @@ class _HandleField extends StatelessWidget {
                   onSubmitted: onSubmitted,
                 ),
               ),
-              if (_suffix != null) _suffix!,
+              if (_suffix case final suffix?) suffix,
             ],
           ),
         ),
-        if (message != null) ...[
+        if (message case final message?) ...[
           const SizedBox(height: 6),
           Text(
-            message!,
-            style: TextStyle(fontSize: 12, color: messageColor),
+            message,
+            style: TextStyle(fontSize: FontSizes.meta, color: messageColor),
           ),
         ],
       ],

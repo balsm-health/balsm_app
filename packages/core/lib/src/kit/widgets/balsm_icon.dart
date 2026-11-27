@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 // Note: lucide_icons package added in T035al to core/pubspec.yaml.
 // Import via: import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -42,7 +42,7 @@ class BalsmIcon extends StatelessWidget {
     return Icon(
       icon,
       size: size.pt,
-      color: color ?? BalsmColors.fg2,
+      color: color ?? AppColors.textSecondary,
       semanticLabel: semanticLabel,
       // Stroke weight emulated via opticalSize (best-effort on Material icons)
       opticalSize: weight == BalsmIconWeight.emphasis ? 24 : 20,

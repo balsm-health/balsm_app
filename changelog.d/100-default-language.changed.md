@@ -1,0 +1,1 @@
+On first launch Balsm now opens in your phone's language when it is Arabic or English, and in Arabic for any other language, instead of always opening in English. A language you have chosen is still kept. ([#100](https://github.com/balsm-health/balsm_app/issues/100))

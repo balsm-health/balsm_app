@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+
+import '../../localization/core_messages.dart';
+import '../tokens.dart';
 
 /// Trust item data for `BalsmTrustStrip`.
 class BalsmTrustItem {
@@ -12,16 +14,19 @@ class BalsmTrustItem {
 /// P001: shield-check (on-device) + user-check (private) + wifi-off (offline-ready).
 class BalsmTrustStrip extends StatelessWidget {
   const BalsmTrustStrip({
-    super.key,
     required this.items,
+    super.key,
   });
 
-  /// Default P001 trust strip items.
-  static const defaultItems = [
-    BalsmTrustItem(icon: Icons.shield_rounded, label: 'On-device'),
-    BalsmTrustItem(icon: Icons.person_pin_rounded, label: 'Private'),
-    BalsmTrustItem(icon: Icons.wifi_off_rounded, label: 'Offline-ready'),
-  ];
+  /// Default P001 trust strip items, in the language of [context].
+  static List<BalsmTrustItem> defaultItems(BuildContext context) {
+    final m = coreMessagesOf(context);
+    return [
+      BalsmTrustItem(icon: Icons.shield_rounded, label: m.trust_on_device),
+      BalsmTrustItem(icon: Icons.person_pin_rounded, label: m.trust_private),
+      BalsmTrustItem(icon: Icons.wifi_off_rounded, label: m.trust_offline),
+    ];
+  }
 
   final List<BalsmTrustItem> items;
 
@@ -46,15 +51,15 @@ class _TrustItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(item.icon, size: 22, color: BalsmColors.appAccent),
+        Icon(item.icon, size: 22, color: AppColors.hueBlue),
         const SizedBox(height: 6),
         Text(
           item.label,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 11,
+            fontSize: FontSizes.eyebrow,
             fontWeight: FontWeight.w600,
-            color: BalsmColors.fg3,
+            color: AppColors.textTertiary,
             height: 1.4,
           ),
         ),

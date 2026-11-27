@@ -1,8 +1,9 @@
 import 'package:app/balsm_app/care/care_entity.dart';
+import 'package:core/core.dart' show noProviderRetry;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 /// The map's "you are here" comes from [deviceLocationProvider], which must
@@ -44,7 +45,7 @@ Position _at(double lat, double lng) => Position(
 void main() {
   Future<(DeviceLocation, LatLng)> read(_FakeGeo geo) async {
     GeolocatorPlatform.instance = geo;
-    final c = ProviderContainer();
+    final c = ProviderContainer(retry: noProviderRetry);
     addTearDown(c.dispose);
     final sub = c.listen(userLatLngProvider, (_, __) {});
     addTearDown(sub.close);
@@ -77,7 +78,7 @@ void main() {
   }
 
   test('no fresh fix falls back to the last known position', () async {
-    final (d, _) = await read(_FakeGeo(last: _at(30.5, 31.0)));
+    final (d, _) = await read(_FakeGeo(last: _at(30.5, 31)));
     expect(d.position?.latitude, 30.5);
   });
 }

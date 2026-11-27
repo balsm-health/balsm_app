@@ -1,7 +1,7 @@
+import 'package:core/core.dart' show toWesternDigits;
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../kit.dart';
 import '../tokens.dart';
 
 // Shared auth-form fields, extracted from `screens/auth_flow.dart` so the
@@ -9,21 +9,22 @@ import '../tokens.dart';
 
 /// A text field in the sign-in style (white fill, 1.5 px border, accent focus).
 class AuthInput extends StatelessWidget {
-  const AuthInput(
-      {super.key,
-      required this.controller,
-      required this.hint,
-      this.id,
-      this.keyboard,
-      this.mono = false,
-      this.forceLtr = false,
-      this.obscure = false,
-      this.prefix,
-      this.prefixIcon,
-      this.suffixIcon,
-      required this.accent,
-      this.onChanged,
-      this.autofillHints});
+  const AuthInput({
+    required this.controller,
+    required this.hint,
+    required this.accent,
+    super.key,
+    this.id,
+    this.keyboard,
+    this.mono = false,
+    this.forceLtr = false,
+    this.obscure = false,
+    this.prefix,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.onChanged,
+    this.autofillHints,
+  });
   final TextEditingController controller;
   final String hint;
 
@@ -48,9 +49,11 @@ class AuthInput extends StatelessWidget {
   final List<String>? autofillHints;
   @override
   Widget build(BuildContext context) {
-    final style = mono ? Typo.num(size: FS.lg) : Typo.body(ar: false).copyWith(fontSize: FS.lg, color: T.fg1);
+    final style = mono
+        ? Typo.num(size: FontSizes.subhead)
+        : Typo.body().copyWith(fontSize: FontSizes.subhead, color: AppColors.textPrimary);
     final field = TextField(
-      key: id == null ? null : Key(id!),
+      key: switch (id) { final id? => Key(id), _ => null },
       controller: controller,
       keyboardType: keyboard,
       onChanged: onChanged,
@@ -63,16 +66,22 @@ class AuthInput extends StatelessWidget {
         prefixText: prefix,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
-        prefixStyle: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3),
+        prefixStyle: Typo.num(size: FontSizes.bodySm, weight: FontWeight.w700, color: AppColors.textTertiary),
         hintText: hint,
-        hintStyle: (mono ? Typo.num(size: FS.lg, color: T.fg4) : Typo.body().copyWith(fontSize: FS.lg, color: T.fg4)),
+        hintStyle: (mono
+            ? Typo.num(size: FontSizes.subhead, color: AppColors.textHint)
+            : Typo.body().copyWith(fontSize: FontSizes.subhead, color: AppColors.textHint)),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: accent.main, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: BorderSide(color: accent.main, width: 1.5),
+        ),
       ),
     );
     // Maestro selects on the platform accessibility identifier, which only
@@ -104,9 +113,11 @@ void reopenCodeKeyboard(FocusNode focus, {required bool Function() mounted}) {
 /// Fewer than six digits are kept, so a partial paste fills what it can.
 String? codeFromText(String? text) {
   if (text == null) return null;
-  final group = RegExp(r'(?<!\d)\d{3}[ -]?\d{3}(?!\d)').firstMatch(text);
+  // An Arabic keyboard types Arabic-Indic digits, which `\d` does not match.
+  final western = toWesternDigits(text);
+  final group = RegExp(r'(?<!\d)\d{3}[ -]?\d{3}(?!\d)').firstMatch(western);
   if (group != null) return group[0]!.replaceAll(RegExp(r'\D'), '');
-  final digits = text.replaceAll(RegExp(r'\D'), '');
+  final digits = western.replaceAll(RegExp(r'\D'), '');
   return digits.isEmpty || digits.length > 6 ? null : digits;
 }
 
@@ -119,8 +130,9 @@ class CodeInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.length - oldValue.text.length <= 1) {
-      final ok = RegExp(r'^\d{0,6}$').hasMatch(newValue.text);
-      return ok ? newValue : oldValue;
+      final western = toWesternDigits(newValue.text);
+      final ok = RegExp(r'^\d{0,6}$').hasMatch(western);
+      return ok ? newValue.copyWith(text: western) : oldValue;
     }
     final start = oldValue.selection.start;
     final end = newValue.selection.end;
@@ -155,9 +167,40 @@ void showCodePasteMenu(BuildContext context, Offset at, VoidCallback onPaste) {
   );
 }
 
+/// The six boxes of the verification code (`.otp-row`), centred.
+///
+/// A code reads left to right in every language: the first digit typed lands
+/// in the leftmost box, Arabic included, so the row is always LTR whatever the
+/// screen's direction. Both code screens (sign-in and Go online) use this one
+/// row, so they cannot drift apart.
+class OtpBoxRow extends StatelessWidget {
+  const OtpBoxRow({required this.code, required this.accent, super.key, this.length = 6});
+
+  /// The digits typed so far.
+  final String code;
+  final Accent accent;
+  final int length;
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            length,
+            // Flexible: six boxes are wider than a 384dp phone's column, so they
+            // shrink rather than overflow.
+            (i) => Flexible(
+              child: OtpBox(char: i < code.length ? code[i] : '', active: code.length == i, accent: accent),
+            ),
+          ),
+        ),
+      );
+}
+
 /// One painted box of the six-digit code row (`.otp-box`).
 class OtpBox extends StatelessWidget {
-  const OtpBox({super.key, required this.char, required this.active, required this.accent});
+  const OtpBox({required this.char, required this.active, required this.accent, super.key});
   final String char;
   final bool active;
   final Accent accent;
@@ -173,12 +216,12 @@ class OtpBox extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 5),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rMd),
-        border: Border.all(color: active || filled ? accent.main : T.border, width: 1.5),
-        boxShadow: active ? [BoxShadow(color: accent.bg, blurRadius: 0, spreadRadius: 4)] : null,
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: active || filled ? accent.main : AppColors.border, width: 1.5),
+        boxShadow: active ? [BoxShadow(color: accent.bg, spreadRadius: 4)] : null,
       ),
-      child: Text(char, style: Typo.num(size: FS.xl2, weight: FontWeight.w600)),
+      child: Text(char, style: Typo.num(size: FontSizes.title)),
     );
   }
 }

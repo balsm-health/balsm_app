@@ -1,12 +1,12 @@
-import 'package:flutter/gestures.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:disclosure/disclosure.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
 
 /// Which half of the notice a sheet shows (settings.jsx `LegalSheet`'s `kind`).
 enum LegalKind { terms, privacy }
@@ -60,62 +60,84 @@ class _LegalSheet extends ConsumerWidget {
     };
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.88),
-      decoration:
-          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: Row(children: [
-            Expanded(
-                child: Text(kind == LegalKind.terms ? s.strings.auth.legal_terms_t : s.strings.auth.legal_priv_t,
-                    style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(
-                icon: LucideIcons.x,
-                semanticLabel: s.strings.common.a11y_close,
-                ghost: true,
-                iconSize: 17,
-                onTap: () => Navigator.pop(context)),
-          ]),
-        ),
-        const Divider(height: 1, color: T.ink100),
-        Flexible(
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context, base: 34)),
-            children: [
-              for (final (i, sec) in sections.indexed)
-                Padding(
-                  padding: EdgeInsets.only(bottom: i < sections.length - 1 ? 22 : 8),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(sec.$1, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                    const SizedBox(height: 6),
-                    Text(sec.$2, style: Typo.bodySm(ar: ar).copyWith(height: 1.65)),
-                  ]),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    kind == LegalKind.terms ? s.strings.auth.legal_terms_t : s.strings.auth.legal_priv_t,
+                    style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ),
-              const Padding(padding: EdgeInsets.only(top: 10), child: Divider(height: 1, color: T.ink100)),
-              Padding(
-                padding: const EdgeInsets.only(top: 14),
-                child: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: '${s.strings.auth.legal_updated} '),
-                    TextSpan(text: kLegalNoticeVersion, style: Typo.num(size: FS.xs2, color: T.fg3)),
-                  ]),
-                  style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs2),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.pop(context),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ]),
+          const Divider(height: 1, color: AppColors.ink100),
+          Flexible(
+            child: ListView(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, sheetBottomInset(context, base: 34)),
+              children: [
+                for (final (i, sec) in sections.indexed)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: i < sections.length - 1 ? 22 : 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          sec.$1,
+                          style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(sec.$2, style: Typo.bodySm(ar: ar).copyWith(height: 1.65)),
+                      ],
+                    ),
+                  ),
+                const Padding(padding: EdgeInsets.only(top: 10), child: Divider(height: 1, color: AppColors.ink100)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: '${s.strings.auth.legal_updated} '),
+                        TextSpan(
+                          text: kLegalNoticeVersion,
+                          style: Typo.num(size: FontSizes.eyebrow, color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
+                    style: Typo.meta(ar: ar).copyWith(fontSize: FontSizes.eyebrow),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 /// `TermsLine` — the consent sentence with tappable terms / privacy links.
 class TermsLine extends StatefulWidget {
-  const TermsLine({super.key, required this.s});
+  const TermsLine({required this.s, super.key});
   final PatientAppState s;
   @override
   State<TermsLine> createState() => _TermsLineState();
@@ -146,13 +168,15 @@ class _TermsLineState extends State<TermsLine> {
       decorationColor: s.accent.d,
     );
     return Text.rich(
-      TextSpan(children: [
-        TextSpan(text: '${a.ph_terms_pre} '),
-        TextSpan(text: a.ph_terms_link, style: link, recognizer: _terms),
-        TextSpan(text: ' ${a.ph_terms_and} '),
-        TextSpan(text: a.ph_priv_link, style: link, recognizer: _privacy),
-        const TextSpan(text: '.'),
-      ]),
+      TextSpan(
+        children: [
+          TextSpan(text: '${a.ph_terms_pre} '),
+          TextSpan(text: a.ph_terms_link, style: link, recognizer: _terms),
+          TextSpan(text: ' ${a.ph_terms_and} '),
+          TextSpan(text: a.ph_priv_link, style: link, recognizer: _privacy),
+          const TextSpan(text: '.'),
+        ],
+      ),
       textAlign: TextAlign.center,
       style: base,
     );

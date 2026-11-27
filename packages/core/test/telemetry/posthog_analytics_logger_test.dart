@@ -121,7 +121,7 @@ void main() {
       final client = _FakePostHogClient();
       PostHogAnalyticsLogger(client: client)
         ..log('cache miss', level: LogLevel.debug)
-        ..log('cache miss', level: LogLevel.info)
+        ..log('cache miss')
         ..log('retry exhausted', level: LogLevel.warning);
       await pumpEventQueue();
 
@@ -133,7 +133,7 @@ void main() {
     test('logError carries the exception TYPE, never its text or the caller message', () async {
       final client = _FakePostHogClient();
       PostHogAnalyticsLogger(client: client).logError(
-        FormatException('patient dob 1990-01-01 is invalid'),
+        const FormatException('patient dob 1990-01-01 is invalid'),
         // What FlutterError.onError passes: the failing widget, key included.
         message: "building QuickLogRow-[<'pain_migraine_true'>]",
         fatal: true,
@@ -158,8 +158,8 @@ void main() {
 
     test('disabled: every call is a no-op AND the SDK is opted out', () async {
       final client = _FakePostHogClient();
-      final logger = PostHogAnalyticsLogger(client: client)..setAnalyticsEnabled(false);
-      logger
+      final logger = PostHogAnalyticsLogger(client: client)
+        ..setAnalyticsEnabled(false)
         ..logEvent('dose_taken')
         ..log('retry exhausted', level: LogLevel.error)
         ..logError(StateError('x'))
@@ -176,8 +176,9 @@ void main() {
 
     test('re-enabling opts the SDK back in and resumes capture', () async {
       final client = _FakePostHogClient();
-      final logger = PostHogAnalyticsLogger(client: client, enabled: false)..setAnalyticsEnabled(true);
-      logger.logEvent('dose_taken');
+      final logger = PostHogAnalyticsLogger(client: client, enabled: false)
+        ..setAnalyticsEnabled(true)
+        ..logEvent('dose_taken');
       await pumpEventQueue();
 
       expect(client.enables, 1);
@@ -195,8 +196,7 @@ void main() {
     });
 
     test('a failing backend never surfaces an error to the caller', () async {
-      final logger = PostHogAnalyticsLogger(client: _ThrowingPostHogClient());
-      logger
+      final logger = PostHogAnalyticsLogger(client: _ThrowingPostHogClient())
         ..logEvent('dose_taken')
         ..log('boom', level: LogLevel.error)
         ..logError(StateError('x'))

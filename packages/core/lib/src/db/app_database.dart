@@ -8,7 +8,7 @@ import 'database_connection_io.dart' if (dart.library.js_interop) 'database_conn
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [])
+@DriftDatabase()
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -43,10 +43,11 @@ class AppDatabase extends _$AppDatabase {
           // Dependants seam (P00X forward-compat): medications + health_record
           // anchor to health_profile, not just user_id. Nullable until a self
           // profile row is guaranteed at sign-in (F1); the convergent backfill
-          // below fills it as profile rows appear. Queries still filter on
-          // user_id — re-keying the DAOs lands with the dependants feature.
+          // below fills it as profile rows appear. Every one of these tables
+          // is read by health_profile_id (the person), not user_id.
           await _ensureColumn('medications', 'health_profile_id', 'TEXT');
           await _ensureColumn('health_record', 'health_profile_id', 'TEXT');
+          await _ensureColumn('prescription', 'health_profile_id', 'TEXT');
           await _ensureColumn('prescription', 'title', 'TEXT');
           await _ensureColumn('prescription', 'source', 'TEXT');
           await _ensureColumn('prescription', 'attachment_path', 'TEXT');
@@ -68,27 +69,71 @@ class AppDatabase extends _$AppDatabase {
           // whoever was signed in before the upgrade and are never drained.
           await _ensureColumn('sync_outbox', 'user_id', 'TEXT');
           await _ensurePainSitePk();
+          await _ensureMultiProfileColumns();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
           // `health_profile_id`, so indexing it inside `_phiSchema` (which runs
           // before the patches) would fail with "no such column".
           await customStatement('CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
+            'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)',
+          );
           await customStatement('CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)');
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_prescription_profile ON prescription(health_profile_id, issued_at)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_health_profile_user ON health_profile(user_id, is_self)',
+          );
           await runProfileAnchorBackfill();
         },
       );
 
   /// Idempotently adds [column] (with SQL [ddlType]) to [table] when it is not
   /// already present. Evolves the raw-SQL PHI schema (see [_phiSchema]) without
-  /// a full drift migration; safe to run on every open.
+  /// a full drift migration; safe to run on every open. A backfill must not key
+  /// off "the column was just added": an open killed after the `ALTER` would
+  /// never run it. Make the backfill convergent instead.
   Future<void> _ensureColumn(String table, String column, String ddlType) async {
     final info = await customSelect('PRAGMA table_info($table)').get();
     final hasColumn = info.any((r) => r.read<String>('name') == column);
     if (!hasColumn) {
       await customStatement('ALTER TABLE $table ADD COLUMN $column $ddlType');
     }
+  }
+
+  /// Family-member columns on `health_profile` (Mother & Child, stage 1).
+  ///
+  /// Before these, every row was its account's self profile. Each account owns
+  /// exactly one self row, so on every open the account's earliest row becomes
+  /// its self (kind `self`) when it has none, and a row that is not a self
+  /// cannot carry kind `self` — a later row of the same account, which only a
+  /// past merge could have left, becomes a dependent rather than a second self.
+  ///
+  /// Both steps converge instead of keying off "the column was just added":
+  /// an open killed between the `ALTER` and the backfill would otherwise leave
+  /// every row `is_self = 0` for good, and the next session would create an
+  /// empty self beside the patient's real profile. An account that already has
+  /// a self is never touched, so a real dependent is never promoted.
+  Future<void> _ensureMultiProfileColumns() async {
+    await _ensureColumn('health_profile', 'is_self', 'INTEGER NOT NULL DEFAULT 0');
+    await _ensureColumn('health_profile', 'kind', "TEXT NOT NULL DEFAULT 'self'");
+    await _ensureColumn('health_profile', 'display_name', 'TEXT');
+    await _ensureColumn('health_profile', 'date_of_birth', 'TEXT');
+    await _ensureColumn('health_profile', 'sex', 'TEXT');
+    await _ensureColumn('health_profile', 'relationship', 'TEXT');
+    await _ensureColumn('health_profile', 'group_id', 'TEXT');
+    await _ensureColumn('health_profile', 'tone', 'TEXT');
+    await _ensureColumn('health_profile', 'status', "TEXT NOT NULL DEFAULT 'active'");
+    await _ensureColumn('health_profile', 'closed_on', 'TEXT');
+    await _ensureColumn('health_profile', 'pregnancy_id', 'TEXT');
+    await _ensureColumn('health_profile', 'sequence', 'INTEGER');
+    await _ensureColumn('member_group', 'system_key', 'TEXT');
+    await customStatement(
+      "UPDATE health_profile SET is_self = 1, kind = 'self' WHERE rowid IN "
+      '(SELECT MIN(rowid) FROM health_profile GROUP BY user_id HAVING SUM(is_self) = 0)',
+    );
+    await customStatement("UPDATE health_profile SET kind = 'dependent' WHERE is_self = 0 AND kind = 'self'");
   }
 
   /// Rebuilds `check_in_pain_region` so one check-in can store the same region
@@ -110,12 +155,12 @@ class AppDatabase extends _$AppDatabase {
     ''');
     if (hasTissue) {
       await customStatement(
-        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        'INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) '
         "SELECT check_in_id, region_id, COALESCE(tissue_id, 'muscle') FROM check_in_pain_region",
       );
     } else {
       await customStatement(
-        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        'INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) '
         "SELECT check_in_id, region_id, 'muscle' FROM check_in_pain_region",
       );
     }
@@ -123,43 +168,124 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('ALTER TABLE check_in_pain_region_new RENAME TO check_in_pain_region');
   }
 
-  /// Anchors any NULL `health_profile_id` rows to their user's profile row
-  /// (convergent, idempotent). Runs on every open and again after
-  /// [ensureSelfHealthProfile] creates a profile row mid-session.
+  /// Anchors any NULL `health_profile_id` rows to their user's **self**
+  /// profile row (convergent, idempotent). Rows written before profiles were
+  /// per-person all belong to the account holder, so self is the only correct
+  /// anchor — never "whichever profile the account has". Runs on every open
+  /// and again after [ensureSelfHealthProfile] creates a profile row
+  /// mid-session.
   Future<void> runProfileAnchorBackfill() async {
-    for (final table in ['medications', 'health_record']) {
+    for (final table in _profileAnchoredTables) {
       await customStatement('''
         UPDATE $table SET health_profile_id =
           (SELECT hp.id FROM health_profile hp
-            WHERE hp.user_id = $table.user_id)
+            WHERE hp.user_id = $table.user_id AND hp.is_self = 1
+            ORDER BY hp.rowid LIMIT 1)
         WHERE health_profile_id IS NULL''');
     }
   }
 
-  /// Returns [userId]'s self health-profile id, creating the (empty) row on
-  /// first call — the guarantee behind `currentProfileIdProvider`: every
-  /// signed-in session has an active profile scope. Also re-runs the anchor
-  /// backfill so rows written before the profile existed converge immediately.
-  Future<HealthProfileId> ensureSelfHealthProfile(UserId userId) async {
-    final existing = await customSelect(
-      'SELECT id FROM health_profile WHERE user_id = ? LIMIT 1',
+  /// Tables that carry both the actor (`user_id`) and the subject
+  /// (`health_profile_id`) and were anchored to a profile after they shipped.
+  static const _profileAnchoredTables = ['medications', 'health_record', 'prescription'];
+
+  /// [userId]'s self health-profile id (`is_self = 1`), or null when the row
+  /// does not exist yet. The earliest such row wins, deterministically.
+  Future<HealthProfileId?> selfHealthProfileId(UserId userId) async {
+    final rows = await customSelect(
+      'SELECT id FROM health_profile WHERE user_id = ? AND is_self = 1 ORDER BY rowid LIMIT 1',
       variables: [Variable.withString(userId.value)],
     ).get();
-    if (existing.isNotEmpty) {
-      return HealthProfileId.value(existing.first.read<String>('id'));
-    }
-    final id = HealthProfileId.uuid();
-    // updated_at is epoch-millis (matches the profile DAO's hydration).
+    return rows.isEmpty ? null : HealthProfileId.value(rows.first.read<String>('id'));
+  }
+
+  /// Whether [profileId] is an account holder's own (self) profile, as opposed
+  /// to a family member's. For data that is the account's and must never be
+  /// attributed to — or mirrored from — a dependant.
+  Future<bool> isSelfHealthProfile(HealthProfileId profileId) async {
+    final rows = await customSelect(
+      'SELECT 1 FROM health_profile WHERE id = ? AND is_self = 1',
+      variables: [Variable.withString(profileId.value)],
+    ).get();
+    return rows.isNotEmpty;
+  }
+
+  /// Returns [userId]'s self health-profile id, creating the (empty) row on
+  /// first call — the guarantee behind `currentProfileIdProvider`: every
+  /// signed-in session has a profile scope. Resolves by `is_self`, never by
+  /// "the account's first row", so dependent profiles can't be mistaken for
+  /// the account holder. Also re-runs the anchor backfill so rows written
+  /// before the profile existed converge immediately.
+  Future<HealthProfileId> ensureSelfHealthProfile(UserId userId) async {
+    final existing = await selfHealthProfileId(userId);
+    if (existing != null) return existing;
+    // Check and insert are one statement: two callers racing on first sign-in
+    // (the active profile and the own-profile providers) cannot both insert,
+    // so an account never ends up with two self rows. updated_at is
+    // epoch-millis (matches the profile DAO's hydration).
     await customInsert(
-      'INSERT INTO health_profile (id, user_id, updated_at) VALUES (?, ?, ?)',
+      '''
+      INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at)
+      SELECT ?, ?, 1, 'self', 'active', ?
+      WHERE NOT EXISTS (SELECT 1 FROM health_profile WHERE user_id = ? AND is_self = 1)''',
       variables: [
-        Variable.withString(id.value),
+        Variable.withString(HealthProfileId.uuid().value),
         Variable.withString(userId.value),
         Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+        Variable.withString(userId.value),
       ],
     );
     await runProfileAnchorBackfill();
-    return id;
+    // Whichever caller inserted, every caller returns the one row that exists.
+    return (await selfHealthProfileId(userId))!;
+  }
+
+  /// The profile [userId] has selected on this device, when it still exists,
+  /// belongs to [userId] and is not closed; otherwise the self profile
+  /// (created on first call). The one rule behind `activeProfileProvider`:
+  /// a stale, foreign or closed selection always falls back to self.
+  Future<HealthProfileId> resolveActiveHealthProfile(UserId userId) async {
+    final self = await ensureSelfHealthProfile(userId);
+    final rows = await customSelect(
+      '''
+      SELECT ap.health_profile_id AS id FROM active_profile ap
+        JOIN health_profile hp ON hp.id = ap.health_profile_id AND hp.user_id = ap.user_id
+      WHERE ap.user_id = ? AND hp.status = 'active'
+      ORDER BY ap.selected_at DESC LIMIT 1''',
+      variables: [Variable.withString(userId.value)],
+    ).get();
+    return rows.isEmpty ? self : HealthProfileId.value(rows.first.read<String>('id'));
+  }
+
+  /// Records [profileId] as [userId]'s active profile on this device; null
+  /// clears the selection (back to self). Returns false — and changes
+  /// nothing — when [profileId] is not an active profile of [userId].
+  Future<bool> setActiveHealthProfile(UserId userId, HealthProfileId? profileId) async {
+    return transaction(() async {
+      if (profileId != null) {
+        final owned = await customSelect(
+          "SELECT 1 FROM health_profile WHERE id = ? AND user_id = ? AND status = 'active'",
+          variables: [Variable.withString(profileId.value), Variable.withString(userId.value)],
+        ).get();
+        if (owned.isEmpty) return false;
+      }
+      await customUpdate(
+        'DELETE FROM active_profile WHERE user_id = ?',
+        variables: [Variable.withString(userId.value)],
+        updateKind: UpdateKind.delete,
+      );
+      if (profileId != null) {
+        await customInsert(
+          'INSERT INTO active_profile (user_id, health_profile_id, selected_at) VALUES (?, ?, ?)',
+          variables: [
+            Variable.withString(userId.value),
+            Variable.withString(profileId.value),
+            Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+          ],
+        );
+      }
+      return true;
+    });
   }
 
   static Future<AppDatabase> open() async => AppDatabase(openExecutor());
@@ -224,8 +350,127 @@ const _phiSchema = <String>[
     blood_type TEXT,
     weight_kg REAL,
     height_cm REAL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    is_self INTEGER NOT NULL DEFAULT 0,
+    kind TEXT NOT NULL DEFAULT 'self',
+    display_name TEXT,
+    date_of_birth TEXT,
+    sex TEXT,
+    relationship TEXT,
+    group_id TEXT,
+    tone TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    closed_on TEXT,
+    pregnancy_id TEXT,
+    sequence INTEGER
   )''',
+  // The profile each account last selected on this device (the profile
+  // switcher). Not PHI, but it names a PHI partition, so it lives in the
+  // encrypted database and is re-keyed / merged / discarded with the owner's
+  // rows by `owner_rekey.dart` like every other user_id table. No uniqueness
+  // on user_id on purpose: a merge may briefly bring two rows, and the newest
+  // (`selected_at`) wins. A dangling or closed selection resolves to self —
+  // see `AppDatabase.resolveActiveHealthProfile`.
+  '''
+  CREATE TABLE IF NOT EXISTS active_profile (
+    user_id TEXT NOT NULL,
+    health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
+    selected_at INTEGER NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_active_profile_user ON active_profile(user_id, selected_at)',
+  // Family groups ("My family", "Neighbours", user-added) the member profiles
+  // are filed under (`health_profile.group_id`). Soft-delete only. A default
+  // group carries a `system_key` (`family`, `neighbours`) and is named at
+  // display time in the patient's language; `name` holds the patient's own
+  // text for a group they added.
+  '''
+  CREATE TABLE IF NOT EXISTS member_group (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    system_key TEXT,
+    name TEXT NOT NULL,
+    sort INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_member_group_user ON member_group(user_id, sort)',
+  // Vaccination log per person (Personal Health VaccinationRecord). Dates are
+  // ISO calendar dates (YYYY-MM-DD). Soft-delete only.
+  '''
+  CREATE TABLE IF NOT EXISTS vaccination_record (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
+    vaccine TEXT NOT NULL,
+    dose_number INTEGER,
+    administered_on TEXT,
+    clinic TEXT,
+    next_due_on TEXT,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_vaccination_record_profile ON vaccination_record(health_profile_id)',
+  // Growth log per person (weight/height over time). Soft-delete only.
+  '''
+  CREATE TABLE IF NOT EXISTS growth_entry (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
+    measured_on TEXT NOT NULL,
+    weight_kg REAL,
+    height_cm REAL,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_growth_entry_profile ON growth_entry(health_profile_id, measured_on)',
+  // A pregnancy, owned by the mother's profile. `status`: active | birth |
+  // ended. Baby (prenatal) profiles point back via `health_profile.pregnancy_id`.
+  '''
+  CREATE TABLE IF NOT EXISTS pregnancy (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
+    due_date TEXT,
+    ob_name TEXT,
+    ob_phone TEXT,
+    next_visit_on TEXT,
+    next_visit_time TEXT,
+    next_visit_clinic TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    closed_on TEXT,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_pregnancy_profile ON pregnancy(health_profile_id)',
+  // Something recorded during a pregnancy. `about`: me | baby; `kind`: scan |
+  // measure | doc. `attachment_ref` is a vault-relative locator (bytes live
+  // encrypted in the user file store, never here). Soft-delete only.
+  '''
+  CREATE TABLE IF NOT EXISTS pregnancy_item (
+    id TEXT PRIMARY KEY,
+    pregnancy_id TEXT NOT NULL REFERENCES pregnancy(id) ON DELETE CASCADE,
+    about TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT,
+    recorded_on TEXT NOT NULL,
+    fetal_hr_bpm INTEGER,
+    efw_g INTEGER,
+    other_label TEXT,
+    other_value TEXT,
+    attachment_ref TEXT,
+    created_at INTEGER NOT NULL,
+    deleted_at INTEGER
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_pregnancy_item_pregnancy ON pregnancy_item(pregnancy_id, recorded_on)',
+  // Which baby (prenatal / born profile) a pregnancy item is about. Birth keeps
+  // the baby's profile id, so these links carry the item into the child's
+  // history; "records that move" detaches unticked items by soft-deleting the
+  // link — the item itself stays on the pregnancy.
+  '''
+  CREATE TABLE IF NOT EXISTS pregnancy_item_baby (
+    item_id TEXT NOT NULL REFERENCES pregnancy_item(id) ON DELETE CASCADE,
+    health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
+    deleted_at INTEGER,
+    PRIMARY KEY (item_id, health_profile_id)
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_pregnancy_item_baby_profile ON pregnancy_item_baby(health_profile_id)',
   '''
   CREATE TABLE IF NOT EXISTS allergy (
     id TEXT PRIMARY KEY,
@@ -402,6 +647,7 @@ const _phiSchema = <String>[
   CREATE TABLE IF NOT EXISTS prescription (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
+    health_profile_id TEXT,
     clinician TEXT NOT NULL,
     specialty TEXT,
     reference TEXT,
@@ -452,6 +698,35 @@ const _phiSchema = <String>[
     PRIMARY KEY (check_in_id, region_id, tissue_id)
   )''',
   'CREATE INDEX IF NOT EXISTS idx_check_in_profile ON check_in(health_profile_id)',
+  // Who added, edited or shared a patient entry other than the patient
+  // (records, medications, readings), and the patient's own later edits of
+  // such an entry. PHI (people's names), on-device only. One ledger for every
+  // kind of entry: `entry_kind` is the owning table, `entry_id` its row, and
+  // each module reads only its own kind (`EntryProvenanceStore`). No foreign
+  // key: `INSERT OR REPLACE` on the entry tables would cascade it away.
+  //
+  // Append-only, like dose_events: a stored event is never changed. Only
+  // `health_profile_id` may move, so an account merge can re-point rows to
+  // the surviving self profile; rows go with their profile or account when
+  // that is discarded.
+  '''
+  CREATE TABLE IF NOT EXISTS entry_provenance (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL,
+    entry_kind TEXT NOT NULL,
+    entry_id TEXT NOT NULL,
+    actor_kind TEXT NOT NULL,
+    actor_name TEXT,
+    care_provider_id TEXT,
+    action TEXT NOT NULL,
+    occurred_at TEXT NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_entry_provenance_entry ON entry_provenance(entry_kind, health_profile_id, entry_id)',
+  '''
+  CREATE TRIGGER IF NOT EXISTS entry_provenance_no_update
+  BEFORE UPDATE OF id, entry_kind, entry_id, actor_kind, actor_name, care_provider_id, action, occurred_at
+  ON entry_provenance
+  BEGIN SELECT RAISE(ABORT, 'entry_provenance is append-only'); END''',
   // Disclosure/consent acceptance ledger (disclosure module). PHI-free —
   // records which disclosure version the user accepted and the jurisdiction
   // context at accept time. One row per (disclosure_id, version).

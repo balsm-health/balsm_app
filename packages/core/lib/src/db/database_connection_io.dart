@@ -15,7 +15,7 @@ QueryExecutor openExecutor() => LazyDatabase(() async {
       // FlutterSecureStorage() reads a different file on Android.
       const storage = SecureStorageWrapper.storage;
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/balsm.db');
+      final file = File('${dir.path}/$kDbFileName');
 
       // The v1 key was never applied (spec D7); drop it if an old build left it.
       if (await storage.read(key: kLegacyDbKeyStorageKey) != null) {

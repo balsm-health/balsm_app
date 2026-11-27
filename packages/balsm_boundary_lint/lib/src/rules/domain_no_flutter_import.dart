@@ -8,7 +8,7 @@ class DomainNoFlutterImport extends DartLintRule {
       problemMessage: 'Domain layer must not import flutter packages. Keep domain pure Dart.');
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     if (!resolver.path.contains('/src/domain/')) return;
     context.registry.addImportDirective((node) {
       final uri = node.uri.stringValue ?? '';

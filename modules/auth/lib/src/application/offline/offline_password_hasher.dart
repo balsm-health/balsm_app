@@ -11,7 +11,10 @@ abstract class OfflinePasswordHasher {
 /// Argon2id, PHC-style string: `$argon2id$v=19$m=19456,t=2,p=1$<salt>$<hash>`.
 /// Parameters are OWASP's minimum for Argon2id (19 MiB, 2 passes, 1 lane).
 class Argon2idOfflinePasswordHasher implements OfflinePasswordHasher {
-  static const _m = 19456, _t = 2, _p = 1, _len = 32;
+  static const _m = 19456;
+  static const _t = 2;
+  static const _p = 1;
+  static const _len = 32;
 
   Argon2id get _algo => Argon2id(memory: _m, iterations: _t, parallelism: _p, hashLength: _len);
 

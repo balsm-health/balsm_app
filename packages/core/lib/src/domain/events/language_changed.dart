@@ -6,15 +6,14 @@ import 'app_event.dart';
 /// Listeners use this to update Directionality / reload translations.
 /// Carries no PHI — only opaque user id and BCP-47 language tags.
 class LanguageChanged extends AppEvent {
-  final UserId userId;
-  final String oldLanguage;
-  final String newLanguage;
-
   const LanguageChanged({
     required this.userId,
     required this.oldLanguage,
     required this.newLanguage,
   });
+  final UserId userId;
+  final String oldLanguage;
+  final String newLanguage;
 
   @override
   String get eventName => 'language_changed';

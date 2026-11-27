@@ -2,12 +2,12 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../ports/health_profiles_data_source.dart';
-import '../ports/profile_child_data_sources.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
 
 /// Adds a [ChronicCondition] to the user's [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -34,6 +34,11 @@ class AddChronicConditionUseCase {
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
     required String name,
+
+    /// The person to change: a member profile of `userId`, or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
     String? icd10Code,
     int? onsetYear,
   }) async {
@@ -69,8 +74,11 @@ class AddChronicConditionUseCase {
     }
 
     try {
-      var profile = await _dao.getProfile(userId);
+      var profile = await _dao.resolveProfile(userId, profileId: profileId);
 
+      if (profile == null && profileId != null) {
+        return AppResult.failure(const NotFoundFailure('Health profile not found'));
+      }
       if (profile == null) {
         profile = HealthProfile(
           id: HealthProfileId.uuid(),
@@ -102,9 +110,9 @@ class AddChronicConditionUseCase {
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_added'),
       );
 
-      final updated = await _dao.getProfile(userId);
+      final updated = await _dao.resolveProfile(userId, profileId: profileId);
       return AppResult.success(updated ?? profile);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

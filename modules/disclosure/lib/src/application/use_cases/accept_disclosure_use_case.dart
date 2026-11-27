@@ -1,8 +1,9 @@
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
+
 import '../../domain/aggregates/disclosure_acceptance.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/disclosure_accepted.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/disclosure_dao.dart';
 
 /// Orchestrates the disclosure acceptance flow:
@@ -41,7 +42,7 @@ class AcceptDisclosureUseCase {
     // Step 1: persist on-device.
     try {
       await _dao.insert(acceptance);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(
         StorageFailure('Failed to persist disclosure acceptance: $e'),
       );
@@ -49,14 +50,16 @@ class AcceptDisclosureUseCase {
 
     // Step 2: sync to cloud (best-effort; offline tolerance).
     try {
-      await _api.accept(AcceptDisclosureRequest(
-        disclosureId: disclosureId.value,
-        version: version,
-        countryCode: countryCode,
-        supervisoryAuthority: supervisoryAuthority,
-        preferredLanguage: preferredLanguage,
-      ));
-    } catch (_) {
+      await _api.accept(
+        AcceptDisclosureRequest(
+          disclosureId: disclosureId.value,
+          version: version,
+          countryCode: countryCode,
+          supervisoryAuthority: supervisoryAuthority,
+          preferredLanguage: preferredLanguage,
+        ),
+      );
+    } on Object catch (_) {
       // Cloud sync is best-effort; offline is tolerated.
       // A background retry queue will pick this up (Phase 4).
     }
@@ -82,15 +85,17 @@ class AcceptDisclosureUseCase {
     try {
       final a = await _dao.watchAcceptance(disclosureId, version).first;
       if (a == null) return false;
-      await _api.accept(AcceptDisclosureRequest(
-        disclosureId: a.disclosureId.value,
-        version: a.version,
-        countryCode: a.countryCodeAtAccept,
-        supervisoryAuthority: a.supervisoryAuthorityNameAtAccept,
-        preferredLanguage: a.preferredLanguageAtAccept,
-      ));
+      await _api.accept(
+        AcceptDisclosureRequest(
+          disclosureId: a.disclosureId.value,
+          version: a.version,
+          countryCode: a.countryCodeAtAccept,
+          supervisoryAuthority: a.supervisoryAuthorityNameAtAccept,
+          preferredLanguage: a.preferredLanguageAtAccept,
+        ),
+      );
       return true;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }

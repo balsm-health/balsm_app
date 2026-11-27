@@ -1,0 +1,1 @@
+The first-run walkthrough now has the same English / Arabic switch as the welcome screen, so you can change language before reading the story. ([#168](https://github.com/balsm-health/balsm_app/pull/168))

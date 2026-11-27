@@ -9,7 +9,7 @@ class NoAggregateLeak extends DartLintRule {
           'Presentation must not import domain aggregates directly. Use a read-model / view-model instead.');
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     // Only the presentation (UI) layer is forbidden from touching aggregates
     // directly — application/ and infrastructure/ legitimately operate on them.
     if (!resolver.path.contains('/presentation/')) return;

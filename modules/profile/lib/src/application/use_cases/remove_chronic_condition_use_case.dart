@@ -2,12 +2,12 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../ports/health_profiles_data_source.dart';
-import '../ports/profile_child_data_sources.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
 
 /// Removes a [ChronicCondition] from the user's [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -30,9 +30,14 @@ class RemoveChronicConditionUseCase {
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
     required ChronicConditionId conditionId,
+
+    /// The person to change: a member profile of `userId`, or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
   }) async {
     try {
-      final profile = await _dao.getProfile(userId);
+      final profile = await _dao.resolveProfile(userId, profileId: profileId);
       if (profile == null) {
         return AppResult.failure(
           const NotFoundFailure('Health profile not found'),
@@ -45,9 +50,9 @@ class RemoveChronicConditionUseCase {
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_removed'),
       );
 
-      final updated = await _dao.getProfile(userId);
+      final updated = await _dao.resolveProfile(userId, profileId: profileId);
       return AppResult.success(updated ?? profile);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

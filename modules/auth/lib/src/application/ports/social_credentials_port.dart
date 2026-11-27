@@ -56,6 +56,8 @@ final class SocialCredentialsFailure extends SocialCredentialsResult {
 /// The SDK lives behind this port so the app shell can drive the flow — and
 /// tests can fake it — without depending on `google_sign_in` or
 /// `sign_in_with_apple` itself.
+// Port interface: the app shell binds the platform SDK implementation and tests swap in fakes.
+// ignore: one_member_abstracts
 abstract interface class SocialCredentialsPort {
   Future<SocialCredentialsResult> obtain();
 }

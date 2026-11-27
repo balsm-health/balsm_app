@@ -1,11 +1,11 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
-import 'dart:ui' as ui;
 
 import 'app_state.dart';
 import 'routes.dart';
@@ -33,11 +33,11 @@ typedef DesktopMenuActions = ({
 /// deliberate user act, which is the PHI rule for anything leaving the app.
 class DesktopMenuScope extends StatelessWidget {
   const DesktopMenuScope({
-    super.key,
     required this.state,
     required this.captureKey,
     required this.actions,
     required this.child,
+    super.key,
   });
 
   final PatientAppState state;
@@ -78,13 +78,13 @@ class DesktopMenuScope extends StatelessWidget {
     image.dispose();
     if (data == null) return;
     final bytes = data.buffer.asUint8List();
-    final path = await FilePicker.platform.saveFile(
+    // file_picker 13 writes the bytes itself; null means the user cancelled.
+    await FilePicker.saveFile(
       dialogTitle: 'Save screenshot',
       fileName: 'balsm-${DateTime.now().toIso8601String().substring(0, 19).replaceAll(':', '-')}.png',
-      type: FileType.image,
+      bytes: bytes,
+      mimeType: 'image/png',
     );
-    if (path == null) return;
-    await File(path).writeAsBytes(Uint8List.fromList(bytes));
   }
 
   @override
@@ -126,10 +126,12 @@ class DesktopMenuScope extends StatelessWidget {
             menus: [
               if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.about))
                 const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.about),
-              PlatformMenuItemGroup(members: [
-                if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.hide))
-                  const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.hide),
-              ]),
+              PlatformMenuItemGroup(
+                members: [
+                  if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.hide))
+                    const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.hide),
+                ],
+              ),
               if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.quit))
                 const PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.quit),
             ],
@@ -140,18 +142,31 @@ class DesktopMenuScope extends StatelessWidget {
               if (signedIn) ...[
                 PlatformMenuItem(label: s.strings.nav.menu_checkin, shortcut: checkInKey, onSelected: actions.checkIn),
                 PlatformMenuItem(
-                    label: s.strings.nav.menu_quicklog, shortcut: quickLogKey, onSelected: actions.quickLog),
+                  label: s.strings.nav.menu_quicklog,
+                  shortcut: quickLogKey,
+                  onSelected: actions.quickLog,
+                ),
                 PlatformMenuItem(
-                    label: s.strings.nav.menu_emergency, shortcut: emergencyKey, onSelected: actions.emergency),
+                  label: s.strings.nav.menu_emergency,
+                  shortcut: emergencyKey,
+                  onSelected: actions.emergency,
+                ),
               ],
-              PlatformMenuItemGroup(members: [
-                PlatformMenuItem(
+              PlatformMenuItemGroup(
+                members: [
+                  PlatformMenuItem(
                     label: s.strings.nav.menu_screenshot,
                     shortcut: shotKey,
-                    onSelected: () => _saveScreenshot(context)),
-                PlatformMenuItem(label: s.strings.nav.menu_logs, shortcut: logsKey, onSelected: actions.logs),
-                PlatformMenuItem(label: s.strings.nav.menu_devconfig, shortcut: devKey, onSelected: actions.devConfig),
-              ]),
+                    onSelected: () => _saveScreenshot(context),
+                  ),
+                  PlatformMenuItem(label: s.strings.nav.menu_logs, shortcut: logsKey, onSelected: actions.logs),
+                  PlatformMenuItem(
+                    label: s.strings.nav.menu_devconfig,
+                    shortcut: devKey,
+                    onSelected: actions.devConfig,
+                  ),
+                ],
+              ),
             ],
           ),
           if (signedIn)
@@ -186,40 +201,60 @@ class DesktopMenuScope extends StatelessWidget {
       bindings: shortcuts,
       child: Focus(
         autofocus: true,
-        child: Column(children: [
-          MenuBar(children: [
-            SubmenuButton(
-              menuChildren: [
-                if (signedIn) ...[
-                  MenuItemButton(
-                      shortcut: checkInKey, onPressed: actions.checkIn, child: Text(s.strings.nav.menu_checkin)),
-                  MenuItemButton(
-                      shortcut: quickLogKey, onPressed: actions.quickLog, child: Text(s.strings.nav.menu_quicklog)),
-                  MenuItemButton(
-                      shortcut: emergencyKey, onPressed: actions.emergency, child: Text(s.strings.nav.menu_emergency)),
-                ],
-                MenuItemButton(
-                    shortcut: shotKey,
-                    onPressed: () => _saveScreenshot(context),
-                    child: Text(s.strings.nav.menu_screenshot)),
-                MenuItemButton(shortcut: logsKey, onPressed: actions.logs, child: Text(s.strings.nav.menu_logs)),
-                MenuItemButton(
-                    shortcut: devKey, onPressed: actions.devConfig, child: Text(s.strings.nav.menu_devconfig)),
-              ],
-              child: Text(s.strings.nav.menu_actions),
-            ),
-            if (signedIn)
-              SubmenuButton(
-                menuChildren: [
-                  for (final (i, tab) in _tabs.indexed)
+        child: Column(
+          children: [
+            MenuBar(
+              children: [
+                SubmenuButton(
+                  menuChildren: [
+                    if (signedIn) ...[
+                      MenuItemButton(
+                        shortcut: checkInKey,
+                        onPressed: actions.checkIn,
+                        child: Text(s.strings.nav.menu_checkin),
+                      ),
+                      MenuItemButton(
+                        shortcut: quickLogKey,
+                        onPressed: actions.quickLog,
+                        child: Text(s.strings.nav.menu_quicklog),
+                      ),
+                      MenuItemButton(
+                        shortcut: emergencyKey,
+                        onPressed: actions.emergency,
+                        child: Text(s.strings.nav.menu_emergency),
+                      ),
+                    ],
                     MenuItemButton(
-                        shortcut: nav(i), onPressed: () => state.setTab(tab), child: Text(_tabLabel(s, tab))),
-                ],
-                child: Text(s.strings.nav.menu_go),
-              ),
-          ]),
-          Expanded(child: child),
-        ]),
+                      shortcut: shotKey,
+                      onPressed: () => _saveScreenshot(context),
+                      child: Text(s.strings.nav.menu_screenshot),
+                    ),
+                    MenuItemButton(shortcut: logsKey, onPressed: actions.logs, child: Text(s.strings.nav.menu_logs)),
+                    MenuItemButton(
+                      shortcut: devKey,
+                      onPressed: actions.devConfig,
+                      child: Text(s.strings.nav.menu_devconfig),
+                    ),
+                  ],
+                  child: Text(s.strings.nav.menu_actions),
+                ),
+                if (signedIn)
+                  SubmenuButton(
+                    menuChildren: [
+                      for (final (i, tab) in _tabs.indexed)
+                        MenuItemButton(
+                          shortcut: nav(i),
+                          onPressed: () => state.setTab(tab),
+                          child: Text(_tabLabel(s, tab)),
+                        ),
+                    ],
+                    child: Text(s.strings.nav.menu_go),
+                  ),
+              ],
+            ),
+            Expanded(child: child),
+          ],
+        ),
       ),
     );
   }

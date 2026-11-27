@@ -132,20 +132,21 @@ class AccountProfileUseCase {
     }
     try {
       await _storage.writeToken(
-          kLocalProfileKey,
-          jsonEncode({
-            'handle': _merge(cur.handle, input.handle),
-            'first_name': _merge(cur.firstName, input.firstName),
-            'last_name': _merge(cur.lastName, input.lastName),
-            'bio': _merge(cur.bio, input.bio),
-            'gender': (input.gender ?? cur.gender)?.name,
-            'nationality': _merge(cur.nationality, input.nationality),
-            'phone': _merge(cur.phone, input.phone),
-            'date_of_birth': dob,
-            'national_id': _merge(cur.nationalId, input.nationalId),
-          }));
+        kLocalProfileKey,
+        jsonEncode({
+          'handle': _merge(cur.handle, input.handle),
+          'first_name': _merge(cur.firstName, input.firstName),
+          'last_name': _merge(cur.lastName, input.lastName),
+          'bio': _merge(cur.bio, input.bio),
+          'gender': (input.gender ?? cur.gender)?.name,
+          'nationality': _merge(cur.nationality, input.nationality),
+          'phone': _merge(cur.phone, input.phone),
+          'date_of_birth': dob,
+          'national_id': _merge(cur.nationalId, input.nationalId),
+        }),
+      );
       return AppResult.success(null);
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const StorageFailure());
     }
   }
@@ -156,16 +157,18 @@ class AccountProfileUseCase {
   Future<AppResult<void>> publishLocal() async {
     final local = await _readLocal();
     if (local == null) return AppResult.success(null);
-    final r = await _updateRemote(UpdateProfileInput(
-      firstName: local.firstName,
-      lastName: local.lastName,
-      bio: local.bio,
-      gender: local.gender,
-      nationality: local.nationality,
-      phone: local.phone,
-      dateOfBirth: local.dateOfBirth,
-      nationalId: local.nationalId,
-    ));
+    final r = await _updateRemote(
+      UpdateProfileInput(
+        firstName: local.firstName,
+        lastName: local.lastName,
+        bio: local.bio,
+        gender: local.gender,
+        nationality: local.nationality,
+        phone: local.phone,
+        dateOfBirth: local.dateOfBirth,
+        nationalId: local.nationalId,
+      ),
+    );
     if (r.isSuccess) await dropLocal();
     return r;
   }
@@ -206,27 +209,31 @@ class AccountProfileUseCase {
 
   Future<AppResult<void>> _updateRemote(UpdateProfileInput input) async {
     try {
-      await _api.updateProfile(UpdateProfileRequest(
-        firstName: input.firstName,
-        lastName: input.lastName,
-        bio: input.bio,
-        gender: input.gender?.name,
-        nationality: input.nationality,
-        phone: input.phone,
-        dateOfBirth: input.dateOfBirth,
-        nationalId: input.nationalId,
-      ));
+      await _api.updateProfile(
+        UpdateProfileRequest(
+          firstName: input.firstName,
+          lastName: input.lastName,
+          bio: input.bio,
+          gender: input.gender?.name,
+          nationality: input.nationality,
+          phone: input.phone,
+          dateOfBirth: input.dateOfBirth,
+          nationalId: input.nationalId,
+        ),
+      );
       return AppResult.success(null);
     } on ApiException catch (e) {
       // Ahead of the switch: an offline failure carries a null statusCode, and
       // so does an unmapped one — the switch cannot tell them apart.
       if (e.isOffline) return AppResult.failure(const OfflineFailure());
-      return AppResult.failure(switch (e.statusCode) {
-        401 || 403 => const UnauthorizedFailure(),
-        422 => const ValidationFailure('You must be 18 or older'),
-        400 => const ValidationFailure('Invalid profile data'),
-        _ => const NetworkFailure(),
-      });
+      return AppResult.failure(
+        switch (e.statusCode) {
+          401 || 403 => const UnauthorizedFailure(),
+          422 => const ValidationFailure('You must be 18 or older'),
+          400 => const ValidationFailure('Invalid profile data'),
+          _ => const NetworkFailure(),
+        },
+      );
     }
   }
 }

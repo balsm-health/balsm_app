@@ -41,6 +41,12 @@ class Strings implements i69n.I69nMessageBundle {
   OfflineStrings get offline => OfflineStrings(this);
   UpdateStrings get update => UpdateStrings(this);
   WebStrings get web => WebStrings(this);
+  VaccStrings get vacc => VaccStrings(this);
+  GrowthStrings get growth => GrowthStrings(this);
+  PregnancyStrings get pregnancy => PregnancyStrings(this);
+  FamilyStrings get family => FamilyStrings(this);
+  AttributionStrings get attribution => AttributionStrings(this);
+  MaintenanceStrings get maintenance => MaintenanceStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -92,6 +98,18 @@ class Strings implements i69n.I69nMessageBundle {
         return update;
       case 'web':
         return web;
+      case 'vacc':
+        return vacc;
+      case 'growth':
+        return growth;
+      case 'pregnancy':
+        return pregnancy;
+      case 'family':
+        return family;
+      case 'attribution':
+        return attribution;
+      case 'maintenance':
+        return maintenance;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -153,6 +171,7 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get create_account => "Create an account";
   String get otp_confirm_title => "Confirm your email";
   String get otp_sent_to => "Enter the 6-digit code we sent to";
+  String get otp_your_email => "your email";
   String get otp_existing_note =>
       "If this email already has an account, you'll be signed in to it.";
   String get signup_email_registered =>
@@ -288,6 +307,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return otp_confirm_title;
       case 'otp_sent_to':
         return otp_sent_to;
+      case 'otp_your_email':
+        return otp_your_email;
       case 'otp_existing_note':
         return otp_existing_note;
       case 'signup_email_registered':
@@ -350,6 +371,17 @@ class BootStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const BootStrings(this._parent);
   String get boot_preparing => "Preparing your health record";
+  String get lost_t => "Your earlier data can't be opened";
+  String lost_b(String app) =>
+      "This version of $app can't read what was saved on this phone before it. Nothing has been deleted, but it can't be opened here. Your account is fine: you can sign in again and start a new health record.";
+  String get lost_start => "Start fresh";
+  String get lost_confirm_t => "Start fresh?";
+  String lost_confirm_b(String app) =>
+      "$app will open empty on this phone. The data it can't read is kept aside, not deleted, and stays unreadable.";
+  String get lost_confirm_yes => "Yes, start fresh";
+  String get lost_cancel => "Cancel";
+  String get lost_unavailable =>
+      "Your health record on this phone can't be opened. Close the app and open it again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -359,6 +391,22 @@ class BootStrings implements i69n.I69nMessageBundle {
     switch (key) {
       case 'boot_preparing':
         return boot_preparing;
+      case 'lost_t':
+        return lost_t;
+      case 'lost_b':
+        return lost_b;
+      case 'lost_start':
+        return lost_start;
+      case 'lost_confirm_t':
+        return lost_confirm_t;
+      case 'lost_confirm_b':
+        return lost_confirm_b;
+      case 'lost_confirm_yes':
+        return lost_confirm_yes;
+      case 'lost_cancel':
+        return lost_cancel;
+      case 'lost_unavailable':
+        return lost_unavailable;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -375,7 +423,6 @@ class CareStrings implements i69n.I69nMessageBundle {
       "Couldn’t find your location. Try again outdoors.";
   String get loc_settings => "Settings";
   String get map_sub => "places mapped nearby";
-  String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
   String get care_intro =>
       "The people and places caring for you — doctors, nurses, pharmacies, caregivers and more.";
@@ -390,7 +437,6 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get map_directions => "Directions";
   String get map_list => "List";
   String get map_map => "Map";
-  String get map_found => "places nearby";
   String get map_no_results => "No places found";
   String get map_no_res_h => "Try a different search or filter.";
   String get map_search_area => "Search this area";
@@ -499,6 +545,15 @@ class CareStrings implements i69n.I69nMessageBundle {
   String care_link_opens(Gender gender) => "Open link at";
   String get care_link_remove => "Remove link to";
   String get care_attach_add => "Add";
+  String map_found_count(int n) =>
+      "${_plural(n, one: '1 place nearby', other: '$n places nearby')}";
+  String get type_hospital => "Hospitals";
+  String get type_clinic => "Clinics";
+  String get type_dentist => "Dentists";
+  String get type_pharmacy => "Pharmacies";
+  String get type_lab => "Labs";
+  String get type_scan => "Scan centers";
+  String get type_store => "Med. stores";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -516,8 +571,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return loc_settings;
       case 'map_sub':
         return map_sub;
-      case 'to_doctor':
-        return to_doctor;
       case 'to_home':
         return to_home;
       case 'care_intro':
@@ -544,8 +597,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return map_list;
       case 'map_map':
         return map_map;
-      case 'map_found':
-        return map_found;
       case 'map_no_results':
         return map_no_results;
       case 'map_no_res_h':
@@ -740,6 +791,22 @@ class CareStrings implements i69n.I69nMessageBundle {
         return care_link_remove;
       case 'care_attach_add':
         return care_attach_add;
+      case 'map_found_count':
+        return map_found_count;
+      case 'type_hospital':
+        return type_hospital;
+      case 'type_clinic':
+        return type_clinic;
+      case 'type_dentist':
+        return type_dentist;
+      case 'type_pharmacy':
+        return type_pharmacy;
+      case 'type_lab':
+        return type_lab;
+      case 'type_scan':
+        return type_scan;
+      case 'type_store':
+        return type_store;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -770,7 +837,7 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get glu_fast => "Fasting";
   String get glu_meal => "After a meal";
   String get glu_random => "Random";
-  String get q_med_t => "Did you take your medications?";
+  String q_med_t(Gender gender) => "Did you take your medications?";
   String q_med_h(Gender gender) => "Tap each one you've taken today.";
   String get q_sym_t => "Any pain or symptoms?";
   String get pain_0 => "No pain";
@@ -795,6 +862,9 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String symptoms_n(String n) => "$n symptoms";
   String get ql_title => "Let's check in";
   String get ql_search => "Search";
+  String ql_logging_for(Gender gender) => "Logging for ";
+  String ql_self_hint(Gender gender) =>
+      "To log for yourself, switch to your profile at the top of Home.";
   String get ql_no_results => "No matches";
   String get ql_vitals => "Vitals";
   String get ql_wellbeing => "Wellbeing";
@@ -809,6 +879,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get ql_discard_body => "What you entered won’t be saved.";
   String get ql_discard => "Discard";
   String get ql_keep_editing => "Keep editing";
+  String ql_edit_title(String what) => "Edit · $what";
+  String get ql_delete_entry => "Delete this entry";
   String get body_location => "Where does it hurt?";
   String get body_view_front => "Front";
   String get body_view_back => "Back";
@@ -863,6 +935,20 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String q_mood_t(Gender gender) => "How are you feeling today?";
   String q_sym_h(Gender gender) =>
       "Slide to your pain level, then tap anything you feel.";
+  String m_q_mood_t(String name) => "How is $name feeling today?";
+  String m_q_mood_h(Gender gender, String name) =>
+      "Pick the face that fits $name best.";
+  String m_q_bp_t(String name) => "What's $name's blood pressure?";
+  String m_q_glu_t(String name) => "And $name's blood sugar?";
+  String m_q_glu_h(Gender gender) => "Enter the reading from the glucometer.";
+  String m_q_med_t(String name) => "Did $name take their medications?";
+  String m_q_med_h(Gender gender, String name) =>
+      "Tap each one $name has taken today.";
+  String m_q_sym_t(String name) => "Does $name have any pain or symptoms?";
+  String m_q_sym_h(Gender gender, String name) =>
+      "Slide to $name's pain level, then tap anything they feel.";
+  String m_q_vitals_t(String name) => "$name's vitals";
+  String m_saved_t(String name) => "Check-in saved for $name";
   String get sd_color => "Color";
   String get sd_quantity => "Quantity";
   String get sd_ml => "ml";
@@ -986,6 +1072,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_title;
       case 'ql_search':
         return ql_search;
+      case 'ql_logging_for':
+        return ql_logging_for;
+      case 'ql_self_hint':
+        return ql_self_hint;
       case 'ql_no_results':
         return ql_no_results;
       case 'ql_vitals':
@@ -1014,6 +1104,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_discard;
       case 'ql_keep_editing':
         return ql_keep_editing;
+      case 'ql_edit_title':
+        return ql_edit_title;
+      case 'ql_delete_entry':
+        return ql_delete_entry;
       case 'body_location':
         return body_location;
       case 'body_view_front':
@@ -1106,6 +1200,28 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return q_mood_t;
       case 'q_sym_h':
         return q_sym_h;
+      case 'm_q_mood_t':
+        return m_q_mood_t;
+      case 'm_q_mood_h':
+        return m_q_mood_h;
+      case 'm_q_bp_t':
+        return m_q_bp_t;
+      case 'm_q_glu_t':
+        return m_q_glu_t;
+      case 'm_q_glu_h':
+        return m_q_glu_h;
+      case 'm_q_med_t':
+        return m_q_med_t;
+      case 'm_q_med_h':
+        return m_q_med_h;
+      case 'm_q_sym_t':
+        return m_q_sym_t;
+      case 'm_q_sym_h':
+        return m_q_sym_h;
+      case 'm_q_vitals_t':
+        return m_q_vitals_t;
+      case 'm_saved_t':
+        return m_saved_t;
       case 'sd_color':
         return sd_color;
       case 'sd_quantity':
@@ -1171,6 +1287,9 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get see_all => "See all";
   String get step_of => "of";
   String get back => "Back";
+  String get exit_t => "Exit Balsm?";
+  String get exit_b => "The app will close.";
+  String get exit_cta => "Exit";
   String get finish => "Finish check-in";
   String get saved_t => "Check-in saved";
   String get saved_local => "Saved locally. Will sync when you reconnect.";
@@ -1248,6 +1367,11 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get fam_scan_invalid => "That isn't a Balsm profile code";
   String fam_scan_failed(Gender gender) =>
       "Couldn't read this code — try again";
+  String get perm_camera_denied =>
+      "Balsm doesn’t have permission to use the camera.";
+  String get perm_photos_denied =>
+      "Balsm doesn’t have permission to use your photos.";
+  String get perm_settings => "Settings";
   String get rel_default => "Family member";
   String get member_dob => "Date of birth";
   String get member_dob_ph => "DD / MM / YYYY";
@@ -1291,6 +1415,12 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return step_of;
       case 'back':
         return back;
+      case 'exit_t':
+        return exit_t;
+      case 'exit_b':
+        return exit_b;
+      case 'exit_cta':
+        return exit_cta;
       case 'finish':
         return finish;
       case 'saved_t':
@@ -1437,6 +1567,12 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return fam_scan_invalid;
       case 'fam_scan_failed':
         return fam_scan_failed;
+      case 'perm_camera_denied':
+        return perm_camera_denied;
+      case 'perm_photos_denied':
+        return perm_photos_denied;
+      case 'perm_settings':
+        return perm_settings;
       case 'rel_default':
         return rel_default;
       case 'member_dob':
@@ -1489,9 +1625,11 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get em_label => "Email address";
   String get em_ph => "you@example.com";
   String get em_otp_h => "We sent a 6-digit code to";
-  String get em_eg => "Egypt";
-  String em_intro(Gender gender) =>
-      "Egypt's nationwide emergency lines. Tap any number to call right away.";
+  String em_intro(String country, Gender gender) =>
+      "$country's nationwide emergency lines. Tap any number to call right away.";
+  String get em_national => "Emergency number";
+  String em_none(String country, Gender gender) =>
+      "No emergency number is on file for $country yet. Call your local emergency services.";
   String em_tap_call(Gender gender) => "Tap to call";
   String get em_ambulance => "Ambulance";
   String get em_police => "Police";
@@ -1539,6 +1677,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get eqr_share => "Share";
   String get eqr_save => "Save";
   String get eqr_save_failed => "Could not save to gallery";
+  String get eqr_save_denied =>
+      "Balsm doesn’t have permission to save to your photos.";
   String get eqr_saved_toast => "Saved to Photos";
   String get eqr_link_copied => "Link copied";
   String get eqr_revoke => "Revoke code";
@@ -1573,10 +1713,12 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return em_ph;
       case 'em_otp_h':
         return em_otp_h;
-      case 'em_eg':
-        return em_eg;
       case 'em_intro':
         return em_intro;
+      case 'em_national':
+        return em_national;
+      case 'em_none':
+        return em_none;
       case 'em_tap_call':
         return em_tap_call;
       case 'em_ambulance':
@@ -1653,6 +1795,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return eqr_save;
       case 'eqr_save_failed':
         return eqr_save_failed;
+      case 'eqr_save_denied':
+        return eqr_save_denied;
       case 'eqr_saved_toast':
         return eqr_saved_toast;
       case 'eqr_link_copied':
@@ -1707,6 +1851,8 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String nudge_med(Gender gender) => "Add a medication";
   String get nudge_med_sub => "Stay on track";
   String get greet => "Good morning";
+  String get a11y_accounts => "Your accounts";
+  String get a11y_self_avatar => "Your account";
   String get hero_time => "About 2 minutes";
   String get streak => "day streak";
   String streak_help(Gender gender, int checked) =>
@@ -1723,6 +1869,26 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get sc_places => "places nearby";
   String get sc_records => "Records";
   String viewing_member(String name) => "$name is selected";
+  String member_ci_q(String name) => "How is $name today?";
+  String member_ci_note(Gender gender, String name) =>
+      "Log a reading or symptom on their behalf";
+  String member_ci_note_child(Gender gender) =>
+      "Log a temperature, weight or any symptom";
+  String member_ci_cta(Gender gender, String name) => "Log for $name";
+  String member_ci_done(String name) => "Logged for $name today";
+  String member_recent_empty(String name) => "Nothing logged for $name yet.";
+  String get m_height => "Height";
+  String get unit_cm => "cm";
+  String get sc_blood => "blood type";
+  String sc_allergies(int n) =>
+      "${_plural(n, one: '1 allergy', other: '$n allergies')}";
+  String get sc_conditions => "conditions";
+  String get sc_meds => "medicines";
+  String get sc_measures => "measures";
+  String get sc_entries => "entries";
+  String get sc_recorded => "recorded";
+  String sc_next(String date) => "next $date";
+  String get sc_full_profile => "Full profile";
   String viewing_own_data(Gender gender) =>
       "Their record isn't on this device yet — you're still seeing your own.";
   String get viewing_switch_back => "Switch back";
@@ -1747,6 +1913,10 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return nudge_med_sub;
       case 'greet':
         return greet;
+      case 'a11y_accounts':
+        return a11y_accounts;
+      case 'a11y_self_avatar':
+        return a11y_self_avatar;
       case 'hero_time':
         return hero_time;
       case 'streak':
@@ -1775,6 +1945,40 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
+      case 'member_ci_q':
+        return member_ci_q;
+      case 'member_ci_note':
+        return member_ci_note;
+      case 'member_ci_note_child':
+        return member_ci_note_child;
+      case 'member_ci_cta':
+        return member_ci_cta;
+      case 'member_ci_done':
+        return member_ci_done;
+      case 'member_recent_empty':
+        return member_recent_empty;
+      case 'm_height':
+        return m_height;
+      case 'unit_cm':
+        return unit_cm;
+      case 'sc_blood':
+        return sc_blood;
+      case 'sc_allergies':
+        return sc_allergies;
+      case 'sc_conditions':
+        return sc_conditions;
+      case 'sc_meds':
+        return sc_meds;
+      case 'sc_measures':
+        return sc_measures;
+      case 'sc_entries':
+        return sc_entries;
+      case 'sc_recorded':
+        return sc_recorded;
+      case 'sc_next':
+        return sc_next;
+      case 'sc_full_profile':
+        return sc_full_profile;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':
@@ -1799,6 +2003,7 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get medications => "Medications";
   String get morning => "Morning";
   String get evening => "Evening";
+  String get sec_pm => "Afternoon";
   String get adherence => "Adherence";
   String get regimen => "Your daily regimen";
   String get last_7d => "Last 7 days";
@@ -1901,6 +2106,14 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String meds_empty_help(Gender gender) =>
       "No medications yet. Add one to get started.";
   String get meds_none_today => "Nothing scheduled today.";
+  String regimen_of(String name) => "$name's daily regimen";
+  String member_meds_empty(String name) => "No medicines for $name yet";
+  String member_meds_empty_h(Gender gender, String name) =>
+      "Add their medicines and times, and Balsm reminds you, even offline.";
+  String get med_edit_title => "Edit medication";
+  String get med_save_changes => "Save changes";
+  String get med_changes_saved => "Changes saved";
+  String med_edit_hint(Gender gender) => "Tap a medicine to edit it.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1930,6 +2143,8 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return morning;
       case 'evening':
         return evening;
+      case 'sec_pm':
+        return sec_pm;
       case 'adherence':
         return adherence;
       case 'regimen':
@@ -2116,6 +2331,20 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return meds_empty_help;
       case 'meds_none_today':
         return meds_none_today;
+      case 'regimen_of':
+        return regimen_of;
+      case 'member_meds_empty':
+        return member_meds_empty;
+      case 'member_meds_empty_h':
+        return member_meds_empty_h;
+      case 'med_edit_title':
+        return med_edit_title;
+      case 'med_save_changes':
+        return med_save_changes;
+      case 'med_changes_saved':
+        return med_changes_saved;
+      case 'med_edit_hint':
+        return med_edit_hint;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -2985,6 +3214,7 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get rec_empty => "No records yet";
   String get rec_source => "Source";
   String get rec_view => "View document";
+  String get rec_kind_image => "Image";
   String get rec_preview => "Document preview";
   String get rec_preview_failed => "Could not open this file";
   String get rec_share => "Share with doctor";
@@ -3035,6 +3265,10 @@ class RecordsStrings implements i69n.I69nMessageBundle {
       "The records and their files are removed from this device. This cannot be undone.";
   String get rec_delete_confirm => "Delete";
   String get rec_delete_1_title => "Delete this record?";
+  String rec_edit_title(String type) => "Edit · $type";
+  String get rec_changes_saved => "Changes saved";
+  String get rec_save_changes => "Save changes";
+  String rec_save_failed(Gender gender) => "Could not save. Try again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3086,6 +3320,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return rec_source;
       case 'rec_view':
         return rec_view;
+      case 'rec_kind_image':
+        return rec_kind_image;
       case 'rec_preview':
         return rec_preview;
       case 'rec_preview_failed':
@@ -3180,6 +3416,14 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return rec_delete_confirm;
       case 'rec_delete_1_title':
         return rec_delete_1_title;
+      case 'rec_edit_title':
+        return rec_edit_title;
+      case 'rec_changes_saved':
+        return rec_changes_saved;
+      case 'rec_save_changes':
+        return rec_save_changes;
+      case 'rec_save_failed':
+        return rec_save_failed;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3211,6 +3455,8 @@ class SettingsStrings implements i69n.I69nMessageBundle {
   String get cal_months_short =>
       "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC";
   String get cal_weekdays => "Su|Mo|Tu|We|Th|Fr|Sa";
+  String get cal_months_abbr =>
+      "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3256,6 +3502,8 @@ class SettingsStrings implements i69n.I69nMessageBundle {
         return cal_months_short;
       case 'cal_weekdays':
         return cal_weekdays;
+      case 'cal_months_abbr':
+        return cal_months_abbr;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3710,6 +3958,1417 @@ class WebStrings implements i69n.I69nMessageBundle {
         return other_tab_b;
       case 'other_tab_retry':
         return other_tab_retry;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class VaccStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const VaccStrings(this._parent);
+  String get title => "Vaccinations";
+  String get add => "Add vaccination";
+  String get empty_t => "No vaccinations recorded yet";
+  String empty_b(Gender gender) =>
+      "Copy the doses from the paper vaccination card, and set the next due date yourself.";
+  String get next_dose => "Next dose";
+  String dose(int n) => "Dose $n";
+  String in_days(int n) =>
+      "${_plural(n, one: 'in 1 day', other: 'in $n days')}";
+  String get past_due => "Past due, not yet recorded";
+  String was_due(String date) => "Was due $date";
+  String get due_today => "due today";
+  String days_ago(int n) =>
+      "${_plural(n, one: '1 day ago', other: '$n days ago')}";
+  String get record => "Record";
+  String get given => "Given";
+  String get f_name => "Vaccine name";
+  String get f_name_ph => "As written on the vaccination card";
+  String get f_dose => "Dose number";
+  String get f_date => "Date given";
+  String get f_clinic => "Where it was given";
+  String get f_clinic_ph => "e.g. your local health office";
+  String get f_next => "Next dose due";
+  String get optional => "Optional";
+  String f_next_hint(Gender gender) =>
+      "Set it yourself, as written on the vaccination card or as the doctor advised.";
+  String get f_next_clear => "Clear";
+  String get save => "Save vaccination";
+  String get edit_t => "Edit vaccination";
+  String get save_changes => "Save changes";
+  String get delete => "Delete this vaccination";
+  String get delete_t => "Delete this vaccination?";
+  String get delete_b =>
+      "It will be removed from the vaccination record on this phone.";
+  String tile_next(String date) => "Next dose $date";
+  String recorded_n(int n) =>
+      "${_plural(n, one: '1 recorded', other: '$n recorded')}";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'add':
+        return add;
+      case 'empty_t':
+        return empty_t;
+      case 'empty_b':
+        return empty_b;
+      case 'next_dose':
+        return next_dose;
+      case 'dose':
+        return dose;
+      case 'in_days':
+        return in_days;
+      case 'past_due':
+        return past_due;
+      case 'was_due':
+        return was_due;
+      case 'due_today':
+        return due_today;
+      case 'days_ago':
+        return days_ago;
+      case 'record':
+        return record;
+      case 'given':
+        return given;
+      case 'f_name':
+        return f_name;
+      case 'f_name_ph':
+        return f_name_ph;
+      case 'f_dose':
+        return f_dose;
+      case 'f_date':
+        return f_date;
+      case 'f_clinic':
+        return f_clinic;
+      case 'f_clinic_ph':
+        return f_clinic_ph;
+      case 'f_next':
+        return f_next;
+      case 'optional':
+        return optional;
+      case 'f_next_hint':
+        return f_next_hint;
+      case 'f_next_clear':
+        return f_next_clear;
+      case 'save':
+        return save;
+      case 'edit_t':
+        return edit_t;
+      case 'save_changes':
+        return save_changes;
+      case 'delete':
+        return delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
+      case 'tile_next':
+        return tile_next;
+      case 'recorded_n':
+        return recorded_n;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class GrowthStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const GrowthStrings(this._parent);
+  String get title => "Growth";
+  String get weight => "Weight (kg)";
+  String get height => "Height (cm)";
+  String get date => "Date";
+  String get add => "Add entry";
+  String get entries => "Entries";
+  String get empty => "No entries yet.";
+  String kg(String v) => "$v kg";
+  String cm(String v) => "$v cm";
+  String invalid(Gender gender) =>
+      "Check the numbers: weight 0.2–300 kg, height 20–250 cm.";
+  String tile_last(String date) => "Last entry $date";
+  String get tile_empty => "No entries yet";
+  String get editing => "Editing entry";
+  String get save_changes => "Save changes";
+  String get cancel_edit => "Cancel editing";
+  String tap_hint(Gender gender) => "Tap an entry to edit it.";
+  String get a11y_delete => "Delete entry";
+  String get delete_t => "Delete this entry?";
+  String get delete_b =>
+      "It will be removed from the growth record on this phone.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'weight':
+        return weight;
+      case 'height':
+        return height;
+      case 'date':
+        return date;
+      case 'add':
+        return add;
+      case 'entries':
+        return entries;
+      case 'empty':
+        return empty;
+      case 'kg':
+        return kg;
+      case 'cm':
+        return cm;
+      case 'invalid':
+        return invalid;
+      case 'tile_last':
+        return tile_last;
+      case 'tile_empty':
+        return tile_empty;
+      case 'editing':
+        return editing;
+      case 'save_changes':
+        return save_changes;
+      case 'cancel_edit':
+        return cancel_edit;
+      case 'tap_hint':
+        return tap_hint;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class PregnancyStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const PregnancyStrings(this._parent);
+  String get title => "Pregnancy";
+  String week_n(int n) => "Week $n";
+  String week_lower(int n) => "week $n";
+  String get week => "Week";
+  String day_n(int n) => "Day $n";
+  String guidance_week(int n) => "Week $n guidance";
+  String get all_weeks => "All weeks";
+  String get weeks_title => "Week by week";
+  String get this_week => "This week";
+  String get tri_1 => "First trimester";
+  String get tri_2 => "Second trimester";
+  String get tri_3 => "Third trimester";
+  String get tri_short_1 => "First";
+  String get tri_short_2 => "Second";
+  String get tri_short_3 => "Third";
+  String days_to_go(int n) =>
+      "${_plural(n, one: '1 day to go', other: '$n days to go')}";
+  String get days_to_due => "days to your due date";
+  String get due_today => "Due today";
+  String days_past_due(int n) =>
+      "${_plural(n, one: '1 day past your due date', other: '$n days past your due date')}";
+  String get days_past_due_label => "days past your due date";
+  String get due_date => "Due date";
+  String get next_visit => "Next visit";
+  String get prompt_b =>
+      "If you're pregnant, add your due date and your obstetrician";
+  String get hide_a11y => "Hide the pregnancy card";
+  String get hide_title => "Hide the pregnancy card?";
+  String get hide_sub => "This card won’t appear on Home again.";
+  String get hide_note =>
+      "You can turn on pregnancy tracking any time from Profile › Pregnancy.";
+  String get hide_btn => "Hide card";
+  String get row_off => "Off";
+  String get next_visit_t => "Next antenatal visit";
+  String get add_visit => "Add your next antenatal visit";
+  String get visit_date => "Date";
+  String get visit_time => "Time";
+  String get visit_time_ph => "e.g. 10:30";
+  String get visit_clinic => "Clinic";
+  String get visit_remove => "Remove this visit";
+  String get babies => "Babies";
+  String get baby => "Baby";
+  String baby_lettered(String x) => "Baby $x";
+  String get baby_letters => "A|B|C|D|E|F|G|H";
+  String get attach => "Attach";
+  String get last_measure => "Last measurement";
+  String get hr => "Heart rate";
+  String get bpm => "bpm";
+  String get efw => "Est. weight";
+  String get grams => "g";
+  String born_on(String date) => "Born $date";
+  String get add_baby => "Add a baby";
+  String get my_records => "My pregnancy records";
+  String get my_records_empty => "Your own results appear here.";
+  String get card_row => "Emergency card in pregnancy mode";
+  String get birth_sec => "Birth and closing";
+  String get arrived_one => "My baby has arrived";
+  String get arrived_multi => "A baby has arrived";
+  String get end_t => "End this pregnancy";
+  String get end_b =>
+      "This pregnancy's records stay saved with it on your phone.";
+  String get end_cta => "End tracking";
+  String get go_back => "Go back";
+  String get options => "Options";
+  String get rename => "Rename";
+  String get stop_t => "Stop following this baby";
+  String get stop_b =>
+      "Their records stay saved inside this pregnancy on your phone, and the card will no longer show.";
+  String get stop_cta => "Stop following";
+  String get shared_all => "Shared by all babies";
+  String get shared => "Shared";
+  String get list_sep => ", ";
+  String get pregnant => "Pregnant";
+  String get type_2 => "Twin pregnancy";
+  String get type_3 => "Triplet pregnancy";
+  String get type_4 => "Quadruplet pregnancy";
+  String type_n(int n) => "Multiple pregnancy ($n)";
+  String card_due(String date) => "Due date $date";
+  String get rh_neg => "Rh negative";
+  String get rh_pos => "Rh positive";
+  String get ob => "Obstetrician";
+  String get card_note => "Show this card on your phone in an emergency.";
+  String get start_note =>
+      "Pregnancy tracking appears on your own profile only, never on family profiles.";
+  String get mode_due => "I know my due date";
+  String get mode_lmp => "I know my last period";
+  String get lmp => "First day of your last period";
+  String get est_due => "Estimated due date";
+  String get pick_date => "Choose a date";
+  String get how_many => "How many babies?";
+  String get fewer_babies => "One fewer baby";
+  String get more_babies => "One more baby";
+  String get add_later =>
+      "You can add a baby later at any time, for example if a later scan shows twins.";
+  String get ob_name_ph => "Name";
+  String get phone => "Phone";
+  String get start_cta => "Start tracking";
+  String get name_hint => "You can choose a name if you like. It's optional.";
+  String get sec_scan => "Scans & reports";
+  String get sec_measure => "Measurements";
+  String get sec_doc => "Tests & documents";
+  String get nothing_yet => "Nothing yet.";
+  String get as_entered =>
+      "Measurements are shown exactly as you entered them.";
+  String get add_record => "Add a record";
+  String get name_sub => "Optional. Leave it empty to use the default label.";
+  String get name_ph => "Name or nickname";
+  String get attach_t => "Attach a record";
+  String get who => "Who is this record about?";
+  String get me => "Me — my own results";
+  String get all_babies => "All babies — shared report";
+  String get clear_babies => "Clear babies";
+  String get type => "Type";
+  String get kind_scan => "Scan or report";
+  String get kind_measure => "Measurements";
+  String get kind_doc => "Test or document";
+  String get one_at_a_time =>
+      "Measurements are recorded for one baby at a time.";
+  String get title_l => "Title";
+  String get title_ph_measure => "e.g. Today's visit";
+  String get title_ph => "e.g. Week 24 scan";
+  String get date => "Date";
+  String get hr_field => "Heart rate (bpm)";
+  String get efw_field => "Est. weight (g)";
+  String get other_field => "Other measurement";
+  String get other_ph => "e.g. Femur length";
+  String get value => "Value";
+  String get value_ph => "e.g. 44 mm";
+  String get as_written =>
+      "Enter the numbers as written in the report. Balsm doesn't interpret them.";
+  String get file => "File";
+  String get file_pick => "Take a photo or choose a file";
+  String get file_local => "Saved on this phone only";
+  String get file_attached => "File attached";
+  String birth_title(String baby) => "$baby's profile";
+  String get birth_title_one => "Baby's profile";
+  String get arrived_t => "Your baby has arrived";
+  String get arrived_b_multi =>
+      "Create each baby's profile when they're born. Pregnancy tracking stays open for the others.";
+  String get arrived_b =>
+      "Create your baby's profile now and choose which records move into it.";
+  String get which => "Which baby?";
+  String get blood_if_known => "if known";
+  String get moves => "Records that move to the child's profile";
+  String get no_records => "No records for this baby.";
+  String get me_stay => "Your “Me” records stay on your own profile.";
+  String get create_cta => "Create profile";
+  String title_of(String name) => "Pregnancy · $name";
+  String records_of(String name) => "$name's pregnancy records";
+  String get records_of_empty => "The mother's own results appear here.";
+  String start_note_of(String name, Gender gender) =>
+      "Pregnancy tracking appears on $name's profile only. You manage it from your phone.";
+  String start_cta_of(Gender gender) => "Start tracking";
+  String me_of(String name) => "$name — her own results";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'week_n':
+        return week_n;
+      case 'week_lower':
+        return week_lower;
+      case 'week':
+        return week;
+      case 'day_n':
+        return day_n;
+      case 'guidance_week':
+        return guidance_week;
+      case 'all_weeks':
+        return all_weeks;
+      case 'weeks_title':
+        return weeks_title;
+      case 'this_week':
+        return this_week;
+      case 'tri_1':
+        return tri_1;
+      case 'tri_2':
+        return tri_2;
+      case 'tri_3':
+        return tri_3;
+      case 'tri_short_1':
+        return tri_short_1;
+      case 'tri_short_2':
+        return tri_short_2;
+      case 'tri_short_3':
+        return tri_short_3;
+      case 'days_to_go':
+        return days_to_go;
+      case 'days_to_due':
+        return days_to_due;
+      case 'due_today':
+        return due_today;
+      case 'days_past_due':
+        return days_past_due;
+      case 'days_past_due_label':
+        return days_past_due_label;
+      case 'due_date':
+        return due_date;
+      case 'next_visit':
+        return next_visit;
+      case 'prompt_b':
+        return prompt_b;
+      case 'hide_a11y':
+        return hide_a11y;
+      case 'hide_title':
+        return hide_title;
+      case 'hide_sub':
+        return hide_sub;
+      case 'hide_note':
+        return hide_note;
+      case 'hide_btn':
+        return hide_btn;
+      case 'row_off':
+        return row_off;
+      case 'next_visit_t':
+        return next_visit_t;
+      case 'add_visit':
+        return add_visit;
+      case 'visit_date':
+        return visit_date;
+      case 'visit_time':
+        return visit_time;
+      case 'visit_time_ph':
+        return visit_time_ph;
+      case 'visit_clinic':
+        return visit_clinic;
+      case 'visit_remove':
+        return visit_remove;
+      case 'babies':
+        return babies;
+      case 'baby':
+        return baby;
+      case 'baby_lettered':
+        return baby_lettered;
+      case 'baby_letters':
+        return baby_letters;
+      case 'attach':
+        return attach;
+      case 'last_measure':
+        return last_measure;
+      case 'hr':
+        return hr;
+      case 'bpm':
+        return bpm;
+      case 'efw':
+        return efw;
+      case 'grams':
+        return grams;
+      case 'born_on':
+        return born_on;
+      case 'add_baby':
+        return add_baby;
+      case 'my_records':
+        return my_records;
+      case 'my_records_empty':
+        return my_records_empty;
+      case 'card_row':
+        return card_row;
+      case 'birth_sec':
+        return birth_sec;
+      case 'arrived_one':
+        return arrived_one;
+      case 'arrived_multi':
+        return arrived_multi;
+      case 'end_t':
+        return end_t;
+      case 'end_b':
+        return end_b;
+      case 'end_cta':
+        return end_cta;
+      case 'go_back':
+        return go_back;
+      case 'options':
+        return options;
+      case 'rename':
+        return rename;
+      case 'stop_t':
+        return stop_t;
+      case 'stop_b':
+        return stop_b;
+      case 'stop_cta':
+        return stop_cta;
+      case 'shared_all':
+        return shared_all;
+      case 'shared':
+        return shared;
+      case 'list_sep':
+        return list_sep;
+      case 'pregnant':
+        return pregnant;
+      case 'type_2':
+        return type_2;
+      case 'type_3':
+        return type_3;
+      case 'type_4':
+        return type_4;
+      case 'type_n':
+        return type_n;
+      case 'card_due':
+        return card_due;
+      case 'rh_neg':
+        return rh_neg;
+      case 'rh_pos':
+        return rh_pos;
+      case 'ob':
+        return ob;
+      case 'card_note':
+        return card_note;
+      case 'start_note':
+        return start_note;
+      case 'mode_due':
+        return mode_due;
+      case 'mode_lmp':
+        return mode_lmp;
+      case 'lmp':
+        return lmp;
+      case 'est_due':
+        return est_due;
+      case 'pick_date':
+        return pick_date;
+      case 'how_many':
+        return how_many;
+      case 'fewer_babies':
+        return fewer_babies;
+      case 'more_babies':
+        return more_babies;
+      case 'add_later':
+        return add_later;
+      case 'ob_name_ph':
+        return ob_name_ph;
+      case 'phone':
+        return phone;
+      case 'start_cta':
+        return start_cta;
+      case 'name_hint':
+        return name_hint;
+      case 'sec_scan':
+        return sec_scan;
+      case 'sec_measure':
+        return sec_measure;
+      case 'sec_doc':
+        return sec_doc;
+      case 'nothing_yet':
+        return nothing_yet;
+      case 'as_entered':
+        return as_entered;
+      case 'add_record':
+        return add_record;
+      case 'name_sub':
+        return name_sub;
+      case 'name_ph':
+        return name_ph;
+      case 'attach_t':
+        return attach_t;
+      case 'who':
+        return who;
+      case 'me':
+        return me;
+      case 'all_babies':
+        return all_babies;
+      case 'clear_babies':
+        return clear_babies;
+      case 'type':
+        return type;
+      case 'kind_scan':
+        return kind_scan;
+      case 'kind_measure':
+        return kind_measure;
+      case 'kind_doc':
+        return kind_doc;
+      case 'one_at_a_time':
+        return one_at_a_time;
+      case 'title_l':
+        return title_l;
+      case 'title_ph_measure':
+        return title_ph_measure;
+      case 'title_ph':
+        return title_ph;
+      case 'date':
+        return date;
+      case 'hr_field':
+        return hr_field;
+      case 'efw_field':
+        return efw_field;
+      case 'other_field':
+        return other_field;
+      case 'other_ph':
+        return other_ph;
+      case 'value':
+        return value;
+      case 'value_ph':
+        return value_ph;
+      case 'as_written':
+        return as_written;
+      case 'file':
+        return file;
+      case 'file_pick':
+        return file_pick;
+      case 'file_local':
+        return file_local;
+      case 'file_attached':
+        return file_attached;
+      case 'birth_title':
+        return birth_title;
+      case 'birth_title_one':
+        return birth_title_one;
+      case 'arrived_t':
+        return arrived_t;
+      case 'arrived_b_multi':
+        return arrived_b_multi;
+      case 'arrived_b':
+        return arrived_b;
+      case 'which':
+        return which;
+      case 'blood_if_known':
+        return blood_if_known;
+      case 'moves':
+        return moves;
+      case 'no_records':
+        return no_records;
+      case 'me_stay':
+        return me_stay;
+      case 'create_cta':
+        return create_cta;
+      case 'title_of':
+        return title_of;
+      case 'records_of':
+        return records_of;
+      case 'records_of_empty':
+        return records_of_empty;
+      case 'start_note_of':
+        return start_note_of;
+      case 'start_cta_of':
+        return start_cta_of;
+      case 'me_of':
+        return me_of;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class FamilyStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const FamilyStrings(this._parent);
+  String bar_viewing(Gender gender) => "Viewing";
+  String get bar_your_profile => "your profile";
+  String get bar_change => "Change";
+  String get bar_family => "Family";
+  String get bar_a11y => "Change whose profile is shown";
+  String picker_title(Gender gender) => "Whose profile?";
+  String picker_sub(Gender gender) =>
+      "Choose whose health information the app shows.";
+  String picker_you(Gender gender) => "You · account holder";
+  String get manage_family => "Manage family";
+  String picker_note(Gender gender) =>
+      "These are your family's profiles on this phone. To switch Balsm accounts, tap your photo at the top of Home.";
+  String get acc_sub =>
+      "Balsm accounts signed in on this phone. Each one has its own sign-in.";
+  String get acc_signed_in => "Signed-in account";
+  String acc_family_t(Gender gender) => "Looking for your children's profiles?";
+  String acc_family_b(Gender gender) =>
+      "Family profiles aren't accounts. They live in Family.";
+  String get title => "Family";
+  String get add_member => "Add family member";
+  String intro(Gender gender) =>
+      "You manage these profiles from your phone. Family members don't need an account or a sign-in.";
+  String get empty_t => "No family members yet";
+  String empty_b(Gender gender) =>
+      "Add your children or parents to keep an emergency card for each.";
+  String get stays_local => "Your family's data stays on this phone.";
+  String get manual_t => "Enter details manually";
+  String manual_b(Gender gender) =>
+      "For your child, or someone without a Balsm account. You manage their profile from your phone.";
+  String get group_family => "My family";
+  String get group_neighbours => "Neighbours";
+  String get new_group => "New group";
+  String get new_group_ph => "e.g. Work mates";
+  String get rel_son => "Son";
+  String get rel_daughter => "Daughter";
+  String get rel_child => "Child";
+  String get rel_mother => "Mother";
+  String get rel_father => "Father";
+  String get rel_parent => "Parent";
+  String get rel_brother => "Brother";
+  String get rel_sister => "Sister";
+  String get rel_sibling => "Sibling";
+  String rel_spouse(Gender gender) => "Spouse";
+  String get rel_wife => "Wife";
+  String get rel_husband => "Husband";
+  String get rel_partner => "Partner";
+  String get rel_grandparent => "Grandparent";
+  String get rel_relative => "Relative";
+  String get rel_friend => "Friend";
+  String get rel_neighbour => "Neighbour";
+  String get rel_guardian => "Guardian";
+  String get rel_caregiver => "Caregiver";
+  String get rel_other => "Relative";
+  String get pick_son => "Son";
+  String get pick_daughter => "Daughter";
+  String get pick_mother => "Mother";
+  String get pick_father => "Father";
+  String get pick_sister => "Sister";
+  String get pick_brother => "Brother";
+  String get pick_spouse => "Spouse";
+  String get pick_neighbour => "Neighbour";
+  String get pick_friend => "Friend";
+  String get pick_other => "Other";
+  String age_years(int n) => "${_plural(n, one: '1 year', other: '$n years')}";
+  String age_months(int n) =>
+      "${_plural(n, one: '1 month', other: '$n months')}";
+  String age_and(String years, String months) => "$years $months";
+  String born(String date) => "born $date";
+  String get tile_card => "Emergency card";
+  String get no_allergies => "No allergies";
+  String allergies_n(int n) =>
+      "${_plural(n, one: '1 allergy', other: '$n allergies')}";
+  String get tile_meds => "Medicines";
+  String get no_meds => "No medicines yet";
+  String meds_n(int n) =>
+      "${_plural(n, one: '1 medicine', other: '$n medicines')}";
+  String get tile_records => "Records";
+  String get no_records => "No documents yet";
+  String records_n(int n) =>
+      "${_plural(n, one: '1 record', other: '$n records')}";
+  String get tile_medical => "Medical profile";
+  String get no_blood => "No blood type";
+  String conditions_n(int n) =>
+      "${_plural(n, one: '1 condition', other: '$n conditions')}";
+  String get tile_trends => "Trends";
+  String trends_n(int n) =>
+      "${_plural(n, one: '1 measure', other: '$n measures')}";
+  String get trends_none => "Not enough data yet";
+  String tile_preg_off(Gender gender) => "Off · start tracking";
+  String medical_intro(String name) => "This shows on $name's emergency card.";
+  String get medical_conditions => "Long-term conditions";
+  String get medical_allergies_none => "No allergies recorded";
+  String get medical_conditions_none => "No conditions recorded";
+  String medical_allergy_ph(Gender gender) => "Add an allergy, e.g. Penicillin";
+  String medical_condition_ph(Gender gender) => "Add a condition, e.g. Asthma";
+  String get medical_add => "Add";
+  String medical_remove(String item) => "Remove $item";
+  String get medical_row_sub =>
+      "Blood type, allergies and long-term conditions";
+  String get medical_locked =>
+      "This profile is read-only, so it can't be edited here.";
+  String get trends_empty_t => "No data in this period";
+  String trends_empty_b(String name, Gender gender) =>
+      "$name's readings and growth show here over time. Try a longer range.";
+  String trends_nothing(String name) => "Nothing logged for $name yet.";
+  String get member_menu => "More options";
+  String get edit_details => "Edit details";
+  String get edit_medical => "Medical details";
+  String get close_profile => "Close profile";
+  String close_confirm_t(String name) => "Close $name's profile?";
+  String get close_confirm_b =>
+      "Their records stay on this phone, read-only. The profile no longer appears in the picker.";
+  String closed_toast(String name) => "$name's profile is closed";
+  String close_member(String name) => "Close $name's profile";
+  String get edit_title => "Edit profile";
+  String get save_changes => "Save changes";
+  String get step_basic => "Basic details";
+  String get step_1_of_2 => "Step 1 of 2 · Basic details";
+  String get step_2_of_2 => "Step 2 of 2 · Consent";
+  String get f_relation => "Relation";
+  String get f_name => "Name";
+  String f_name_ph(Gender gender) => "Name as you want it shown";
+  String get f_group => "Group";
+  String get f_dob => "Date of birth";
+  String get f_dob_ph => "DD / MM / YYYY";
+  String get consent_next => "we'll ask for their consent next";
+  String get f_sex => "Sex";
+  String get sex_female => "Female";
+  String get sex_male => "Male";
+  String get f_blood => "Blood type";
+  String get optional => "optional";
+  String get blood_unsure => "Not sure";
+  String get next => "Next";
+  String get save => "Save";
+  String consent_title(String name, Gender gender) =>
+      "Before you manage $name's profile";
+  String consent_body_f(String name, Gender gender) =>
+      "$name is an adult, and her health information belongs to her. Make sure she agrees to you recording and following it from your phone.";
+  String consent_body_m(String name, Gender gender) =>
+      "$name is an adult, and his health information belongs to him. Make sure he agrees to you recording and following it from your phone.";
+  String get consent_stays =>
+      "Their data stays on your phone and isn't sent anywhere.";
+  String consent_close(Gender gender) =>
+      "You can close the profile at any time.";
+  String consent_check_f(String name) =>
+      "I have their consent to manage their health information";
+  String consent_check_m(String name) =>
+      "I have their consent to manage their health information";
+  String get consent_hint => "We ask this once for each adult.";
+  String add_cta(String name) => "Add $name";
+  String save_failed(Gender gender) => "Couldn't save. Try again.";
+  String get card_brand => "Emergency card · Balsm";
+  String get card_allergies => "Allergies";
+  String get card_conditions => "Chronic conditions";
+  String get card_none => "None recorded";
+  String get card_contacts => "Emergency contacts";
+  String get card_no_contacts => "No contact added yet";
+  String card_note(Gender gender) =>
+      "Show this card on your phone in an emergency. Only your own card has a code a responder can scan.";
+  String get own_card_note =>
+      "This card is saved on your phone, so it opens without a connection. The card with a code a responder can scan is in Profile.";
+  String get add_contact => "Add a contact";
+  String get contact_name => "Contact name";
+  String get contact_phone => "Phone number";
+  String get contact_add => "Add";
+  String a11y_call(String name) => "Call $name";
+  String get contact_remove => "Remove contact";
+  String a11y_remove_contact(String name) => "Remove contact $name";
+  String contact_remove_t(String name) => "Remove $name?";
+  String get contact_remove_b =>
+      "The contact is removed from the emergency card on this phone.";
+  String get scan_t => "Scan their QR code";
+  String get scan_b =>
+      "For someone with their own Balsm account. They approve the request in their app.";
+  String get link_section => "Linked accounts";
+  String get link_requests => "Link requests";
+  String link_asks(String relation) => "Asked to add you as $relation";
+  String get link_waiting => "Waiting for approval";
+  String get link_read_only => "Read-only";
+  String get link_someone => "Balsm member";
+  String link_sent(Gender gender) =>
+      "Request sent. They'll see it in their Balsm app.";
+  String link_not_found(Gender gender) =>
+      "This code is no longer valid. Ask them to show their current code.";
+  String link_exists(Gender gender) =>
+      "You've already asked to link with this person, or you're already linked.";
+  String link_failed(Gender gender) => "Couldn't send the request. Try again.";
+  String link_offline(Gender gender) =>
+      "You're offline. Connect and try again.";
+  String link_action_failed(Gender gender) =>
+      "Couldn't update the link. Try again.";
+  String link_linked_toast(String name, Gender gender) =>
+      "You're now linked with $name";
+  String get link_card_section => "Their emergency card";
+  String link_card_updated(String date) => "Updated $date";
+  String get link_card_not_shared => "Not shared";
+  String get link_card_not_shared_b =>
+      "They haven't shared their emergency card with you.";
+  String link_card_stale(Gender gender) =>
+      "Ask them to open Balsm to refresh their card.";
+  String get link_share_t => "Share my emergency card";
+  String link_share_b(Gender gender) =>
+      "Only their phone can open it — not Balsm, and no one else. You can turn it off at any time.";
+  String link_share_failed(Gender gender) =>
+      "Couldn't change sharing. Try again.";
+  String get link_unlink => "Unlink";
+  String link_unlink_t(String name) => "Unlink from $name?";
+  String get link_unlink_b =>
+      "Neither of you will see the other's shared card any more.";
+  String get link_unlinked_toast => "Unlinked";
+  String get link_dot_a11y => "A link request is waiting";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'bar_viewing':
+        return bar_viewing;
+      case 'bar_your_profile':
+        return bar_your_profile;
+      case 'bar_change':
+        return bar_change;
+      case 'bar_family':
+        return bar_family;
+      case 'bar_a11y':
+        return bar_a11y;
+      case 'picker_title':
+        return picker_title;
+      case 'picker_sub':
+        return picker_sub;
+      case 'picker_you':
+        return picker_you;
+      case 'manage_family':
+        return manage_family;
+      case 'picker_note':
+        return picker_note;
+      case 'acc_sub':
+        return acc_sub;
+      case 'acc_signed_in':
+        return acc_signed_in;
+      case 'acc_family_t':
+        return acc_family_t;
+      case 'acc_family_b':
+        return acc_family_b;
+      case 'title':
+        return title;
+      case 'add_member':
+        return add_member;
+      case 'intro':
+        return intro;
+      case 'empty_t':
+        return empty_t;
+      case 'empty_b':
+        return empty_b;
+      case 'stays_local':
+        return stays_local;
+      case 'manual_t':
+        return manual_t;
+      case 'manual_b':
+        return manual_b;
+      case 'group_family':
+        return group_family;
+      case 'group_neighbours':
+        return group_neighbours;
+      case 'new_group':
+        return new_group;
+      case 'new_group_ph':
+        return new_group_ph;
+      case 'rel_son':
+        return rel_son;
+      case 'rel_daughter':
+        return rel_daughter;
+      case 'rel_child':
+        return rel_child;
+      case 'rel_mother':
+        return rel_mother;
+      case 'rel_father':
+        return rel_father;
+      case 'rel_parent':
+        return rel_parent;
+      case 'rel_brother':
+        return rel_brother;
+      case 'rel_sister':
+        return rel_sister;
+      case 'rel_sibling':
+        return rel_sibling;
+      case 'rel_spouse':
+        return rel_spouse;
+      case 'rel_wife':
+        return rel_wife;
+      case 'rel_husband':
+        return rel_husband;
+      case 'rel_partner':
+        return rel_partner;
+      case 'rel_grandparent':
+        return rel_grandparent;
+      case 'rel_relative':
+        return rel_relative;
+      case 'rel_friend':
+        return rel_friend;
+      case 'rel_neighbour':
+        return rel_neighbour;
+      case 'rel_guardian':
+        return rel_guardian;
+      case 'rel_caregiver':
+        return rel_caregiver;
+      case 'rel_other':
+        return rel_other;
+      case 'pick_son':
+        return pick_son;
+      case 'pick_daughter':
+        return pick_daughter;
+      case 'pick_mother':
+        return pick_mother;
+      case 'pick_father':
+        return pick_father;
+      case 'pick_sister':
+        return pick_sister;
+      case 'pick_brother':
+        return pick_brother;
+      case 'pick_spouse':
+        return pick_spouse;
+      case 'pick_neighbour':
+        return pick_neighbour;
+      case 'pick_friend':
+        return pick_friend;
+      case 'pick_other':
+        return pick_other;
+      case 'age_years':
+        return age_years;
+      case 'age_months':
+        return age_months;
+      case 'age_and':
+        return age_and;
+      case 'born':
+        return born;
+      case 'tile_card':
+        return tile_card;
+      case 'no_allergies':
+        return no_allergies;
+      case 'allergies_n':
+        return allergies_n;
+      case 'tile_meds':
+        return tile_meds;
+      case 'no_meds':
+        return no_meds;
+      case 'meds_n':
+        return meds_n;
+      case 'tile_records':
+        return tile_records;
+      case 'no_records':
+        return no_records;
+      case 'records_n':
+        return records_n;
+      case 'tile_medical':
+        return tile_medical;
+      case 'no_blood':
+        return no_blood;
+      case 'conditions_n':
+        return conditions_n;
+      case 'tile_trends':
+        return tile_trends;
+      case 'trends_n':
+        return trends_n;
+      case 'trends_none':
+        return trends_none;
+      case 'tile_preg_off':
+        return tile_preg_off;
+      case 'medical_intro':
+        return medical_intro;
+      case 'medical_conditions':
+        return medical_conditions;
+      case 'medical_allergies_none':
+        return medical_allergies_none;
+      case 'medical_conditions_none':
+        return medical_conditions_none;
+      case 'medical_allergy_ph':
+        return medical_allergy_ph;
+      case 'medical_condition_ph':
+        return medical_condition_ph;
+      case 'medical_add':
+        return medical_add;
+      case 'medical_remove':
+        return medical_remove;
+      case 'medical_row_sub':
+        return medical_row_sub;
+      case 'medical_locked':
+        return medical_locked;
+      case 'trends_empty_t':
+        return trends_empty_t;
+      case 'trends_empty_b':
+        return trends_empty_b;
+      case 'trends_nothing':
+        return trends_nothing;
+      case 'member_menu':
+        return member_menu;
+      case 'edit_details':
+        return edit_details;
+      case 'edit_medical':
+        return edit_medical;
+      case 'close_profile':
+        return close_profile;
+      case 'close_confirm_t':
+        return close_confirm_t;
+      case 'close_confirm_b':
+        return close_confirm_b;
+      case 'closed_toast':
+        return closed_toast;
+      case 'close_member':
+        return close_member;
+      case 'edit_title':
+        return edit_title;
+      case 'save_changes':
+        return save_changes;
+      case 'step_basic':
+        return step_basic;
+      case 'step_1_of_2':
+        return step_1_of_2;
+      case 'step_2_of_2':
+        return step_2_of_2;
+      case 'f_relation':
+        return f_relation;
+      case 'f_name':
+        return f_name;
+      case 'f_name_ph':
+        return f_name_ph;
+      case 'f_group':
+        return f_group;
+      case 'f_dob':
+        return f_dob;
+      case 'f_dob_ph':
+        return f_dob_ph;
+      case 'consent_next':
+        return consent_next;
+      case 'f_sex':
+        return f_sex;
+      case 'sex_female':
+        return sex_female;
+      case 'sex_male':
+        return sex_male;
+      case 'f_blood':
+        return f_blood;
+      case 'optional':
+        return optional;
+      case 'blood_unsure':
+        return blood_unsure;
+      case 'next':
+        return next;
+      case 'save':
+        return save;
+      case 'consent_title':
+        return consent_title;
+      case 'consent_body_f':
+        return consent_body_f;
+      case 'consent_body_m':
+        return consent_body_m;
+      case 'consent_stays':
+        return consent_stays;
+      case 'consent_close':
+        return consent_close;
+      case 'consent_check_f':
+        return consent_check_f;
+      case 'consent_check_m':
+        return consent_check_m;
+      case 'consent_hint':
+        return consent_hint;
+      case 'add_cta':
+        return add_cta;
+      case 'save_failed':
+        return save_failed;
+      case 'card_brand':
+        return card_brand;
+      case 'card_allergies':
+        return card_allergies;
+      case 'card_conditions':
+        return card_conditions;
+      case 'card_none':
+        return card_none;
+      case 'card_contacts':
+        return card_contacts;
+      case 'card_no_contacts':
+        return card_no_contacts;
+      case 'card_note':
+        return card_note;
+      case 'own_card_note':
+        return own_card_note;
+      case 'add_contact':
+        return add_contact;
+      case 'contact_name':
+        return contact_name;
+      case 'contact_phone':
+        return contact_phone;
+      case 'contact_add':
+        return contact_add;
+      case 'a11y_call':
+        return a11y_call;
+      case 'contact_remove':
+        return contact_remove;
+      case 'a11y_remove_contact':
+        return a11y_remove_contact;
+      case 'contact_remove_t':
+        return contact_remove_t;
+      case 'contact_remove_b':
+        return contact_remove_b;
+      case 'scan_t':
+        return scan_t;
+      case 'scan_b':
+        return scan_b;
+      case 'link_section':
+        return link_section;
+      case 'link_requests':
+        return link_requests;
+      case 'link_asks':
+        return link_asks;
+      case 'link_waiting':
+        return link_waiting;
+      case 'link_read_only':
+        return link_read_only;
+      case 'link_someone':
+        return link_someone;
+      case 'link_sent':
+        return link_sent;
+      case 'link_not_found':
+        return link_not_found;
+      case 'link_exists':
+        return link_exists;
+      case 'link_failed':
+        return link_failed;
+      case 'link_offline':
+        return link_offline;
+      case 'link_action_failed':
+        return link_action_failed;
+      case 'link_linked_toast':
+        return link_linked_toast;
+      case 'link_card_section':
+        return link_card_section;
+      case 'link_card_updated':
+        return link_card_updated;
+      case 'link_card_not_shared':
+        return link_card_not_shared;
+      case 'link_card_not_shared_b':
+        return link_card_not_shared_b;
+      case 'link_card_stale':
+        return link_card_stale;
+      case 'link_share_t':
+        return link_share_t;
+      case 'link_share_b':
+        return link_share_b;
+      case 'link_share_failed':
+        return link_share_failed;
+      case 'link_unlink':
+        return link_unlink;
+      case 'link_unlink_t':
+        return link_unlink_t;
+      case 'link_unlink_b':
+        return link_unlink_b;
+      case 'link_unlinked_toast':
+        return link_unlinked_toast;
+      case 'link_dot_a11y':
+        return link_dot_a11y;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class AttributionStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const AttributionStrings(this._parent);
+  String chip_a11y(String who) => "Edit history: $who";
+  String by(String name) => "By $name";
+  String edited_by(String name) => "Edited by $name";
+  String get someone => "Someone else";
+  String get you => "You";
+  String get history_title => "Edit history";
+  String get history_sub => "Who added or changed this entry, and when.";
+  String added_this(String name) => "$name added this";
+  String edited_this(String name) => "$name edited this";
+  String shared_this(String name) => "$name shared this";
+  String you_added(Gender gender) => "You added this";
+  String you_edited(Gender gender) => "You edited this";
+  String get role_family => "Family";
+  String get role_doctor => "Doctor";
+  String get role_clinic => "Care provider";
+  String get locked => "Balsm keeps this history and it can’t be changed.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'chip_a11y':
+        return chip_a11y;
+      case 'by':
+        return by;
+      case 'edited_by':
+        return edited_by;
+      case 'someone':
+        return someone;
+      case 'you':
+        return you;
+      case 'history_title':
+        return history_title;
+      case 'history_sub':
+        return history_sub;
+      case 'added_this':
+        return added_this;
+      case 'edited_this':
+        return edited_this;
+      case 'shared_this':
+        return shared_this;
+      case 'you_added':
+        return you_added;
+      case 'you_edited':
+        return you_edited;
+      case 'role_family':
+        return role_family;
+      case 'role_doctor':
+        return role_doctor;
+      case 'role_clinic':
+        return role_clinic;
+      case 'locked':
+        return locked;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class MaintenanceStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const MaintenanceStrings(this._parent);
+  String get eyebrow => "Maintenance";
+  String get strip_title => "Maintenance · view only";
+  String get strip_details => "Details";
+  String get ro_title => "Balsm is under maintenance";
+  String get ro_body =>
+      "We’re improving our servers. Everything on your phone is still here and readable.";
+  String get block_title => "Balsm is down for maintenance";
+  String get block_body =>
+      "We’re doing urgent work to keep your health data safe. The app will be back shortly.";
+  String get pre_body =>
+      "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.";
+  String get paused_title => "Adding and editing are paused for now";
+  String paused_body(Gender gender) =>
+      "Balsm’s servers are under maintenance. You can try again once it’s over, and nothing has been lost.";
+  String get still_available => "Still available";
+  String get paused_for_now => "Paused for now";
+  String get ok_view => "View your records, medicines and results";
+  String get ok_card => "Your emergency card and QR code";
+  String get ok_reminders => "Medicine reminders on your phone";
+  String get paused_log => "Logging readings, adding records and medicines";
+  String get paused_sync => "Syncing and sharing with doctors";
+  String get paused_signin => "Signing in and creating accounts";
+  String get got_it => "Got it";
+  String get open_card => "Open my emergency card";
+  String get device_only => "Use on this device only";
+  String call_emergency(String number, Gender gender) =>
+      "Call emergency $number";
+  String check_again(Gender gender) => "Check again";
+  String get checking => "Checking…";
+  String until(String time) => "Until about $time";
+  String until_tomorrow(String time) => "Until about $time tomorrow";
+  String get end_unknown => "We’ll share the end time soon";
+  String get sheet_eyebrow => "View-only mode";
+  String get close => "Close";
+  String left_hm(int h, int m) => "Back in about $h h $m min";
+  String left_h(int h) => "Back in about $h h";
+  String left_m(int m) => "Back in about $m min";
+  String get left_unknown => "Duration not announced yet";
+  String get progress_label => "Maintenance progress";
+  String strip_a11y(String countdown) => "Maintenance details. $countdown";
+  String get message_title => "Message from the Balsm team";
+  String get data_safe =>
+      "Your data on this phone is safe. Nothing will be deleted.";
+  String get fab_paused => "Adding is paused during maintenance";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eyebrow':
+        return eyebrow;
+      case 'strip_title':
+        return strip_title;
+      case 'strip_details':
+        return strip_details;
+      case 'ro_title':
+        return ro_title;
+      case 'ro_body':
+        return ro_body;
+      case 'block_title':
+        return block_title;
+      case 'block_body':
+        return block_body;
+      case 'pre_body':
+        return pre_body;
+      case 'paused_title':
+        return paused_title;
+      case 'paused_body':
+        return paused_body;
+      case 'still_available':
+        return still_available;
+      case 'paused_for_now':
+        return paused_for_now;
+      case 'ok_view':
+        return ok_view;
+      case 'ok_card':
+        return ok_card;
+      case 'ok_reminders':
+        return ok_reminders;
+      case 'paused_log':
+        return paused_log;
+      case 'paused_sync':
+        return paused_sync;
+      case 'paused_signin':
+        return paused_signin;
+      case 'got_it':
+        return got_it;
+      case 'open_card':
+        return open_card;
+      case 'device_only':
+        return device_only;
+      case 'call_emergency':
+        return call_emergency;
+      case 'check_again':
+        return check_again;
+      case 'checking':
+        return checking;
+      case 'until':
+        return until;
+      case 'until_tomorrow':
+        return until_tomorrow;
+      case 'end_unknown':
+        return end_unknown;
+      case 'sheet_eyebrow':
+        return sheet_eyebrow;
+      case 'close':
+        return close;
+      case 'left_hm':
+        return left_hm;
+      case 'left_h':
+        return left_h;
+      case 'left_m':
+        return left_m;
+      case 'left_unknown':
+        return left_unknown;
+      case 'progress_label':
+        return progress_label;
+      case 'strip_a11y':
+        return strip_a11y;
+      case 'message_title':
+        return message_title;
+      case 'data_safe':
+        return data_safe;
+      case 'fab_paused':
+        return fab_paused;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

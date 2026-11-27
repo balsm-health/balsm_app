@@ -7,8 +7,8 @@
 // Per-screen goldens are stubbed below as TODOs — they require their screen
 // widgets + router/provider fixtures which are added in their own tasks.
 import 'package:core/core.dart';
-import 'package:flutter/material.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Builds the BalsmCard sample under a given theme + direction.
 Widget _buildCard({required ThemeData theme, required bool rtl}) {
@@ -24,18 +24,18 @@ Widget _buildCard({required ThemeData theme, required bool rtl}) {
     ],
     home: Directionality(
       textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
+      child: const Scaffold(
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: BalsmCard(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Balsm',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: FontSizes.subhead, fontWeight: FontWeight.w700),
                   ),
                   SizedBox(height: 8),
                   Text('Sample card content for golden snapshot.'),

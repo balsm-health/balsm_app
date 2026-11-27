@@ -38,24 +38,27 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        goOnlineControllerProvider.overrideWithValue(controller),
-        offlineAccountServiceProvider.overrideWithValue(offline),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Consumer(
-            builder: (context, ref, _) => Scaffold(
-              body: Center(
-                child: TextButton(onPressed: () => onTap(context, ref), child: const Text('open')),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          goOnlineControllerProvider.overrideWithValue(controller),
+          offlineAccountServiceProvider.overrideWithValue(offline),
+        ],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Consumer(
+              builder: (context, ref, _) => Scaffold(
+                body: Center(
+                  child: TextButton(onPressed: () => onTap(context, ref), child: const Text('open')),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     return state;
   }
 
@@ -132,8 +135,11 @@ void main() {
 
   testWidgets('requireOnline is true at once when already online', (tester) async {
     bool? result;
-    final state = await pump(tester,
-        mode: AccountMode.online, onTap: (context, ref) async => result = await requireOnline(context));
+    final state = await pump(
+      tester,
+      mode: AccountMode.online,
+      onTap: (context, ref) async => result = await requireOnline(context),
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(result, isTrue);
@@ -142,8 +148,11 @@ void main() {
 
   testWidgets('requireOnline opens the sheet when device-only, false if dismissed', (tester) async {
     bool? result;
-    final state = await pump(tester,
-        mode: AccountMode.deviceOnly, onTap: (context, ref) async => result = await requireOnline(context));
+    final state = await pump(
+      tester,
+      mode: AccountMode.deviceOnly,
+      onTap: (context, ref) async => result = await requireOnline(context),
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(find.text(state.strings.offline.go_title), findsOneWidget);

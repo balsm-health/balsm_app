@@ -24,6 +24,7 @@ import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medications/medications.dart';
+import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
@@ -56,8 +57,9 @@ Future<void> seedDocshotsData(ProviderContainer container) async {
   // instead of skipping everything because one of them is already there.
   await _seedCareTeam(container, userId);
   await _seedHealthProfile(container, userId);
-  await _seedRecords(container, userId);
+  await _seedRecords(container, userId, profileId);
   await _seedCheckIns(container, profileId);
+  await _seedPregnancy(container, profileId);
 
   final meds = container.read(medicationsDataSourceProvider);
   if ((await meds.findAll()).isNotEmpty) {
@@ -103,13 +105,15 @@ Future<void> seedDocshotsData(ProviderContainer container) async {
             .subtract(Duration(days: day))
             .add(Duration(hours: int.parse(parts[0]), minutes: int.parse(parts[1])));
         final missed = day == 3 && time == '20:00' && name == 'Metformin';
-        await meds.insertDoseEvent(DoseEvent(
-          id: DoseEventId.uuid(),
-          medicationId: id,
-          scheduledAt: scheduledAt,
-          recordedAt: scheduledAt.add(const Duration(minutes: 4)),
-          outcome: missed ? DoseOutcome.missed : DoseOutcome.taken,
-        ));
+        await meds.insertDoseEvent(
+          DoseEvent(
+            id: DoseEventId.uuid(),
+            medicationId: id,
+            scheduledAt: scheduledAt,
+            recordedAt: scheduledAt.add(const Duration(minutes: 4)),
+            outcome: missed ? DoseOutcome.missed : DoseOutcome.taken,
+          ),
+        );
       }
     }
   }
@@ -241,9 +245,9 @@ Future<void> _seedHealthProfile(ProviderContainer container, UserId userId) asyn
 /// No `filePath`: these rows carry no attachment, because a fabricated scan
 /// image is exactly the kind of thing that escapes into places it should not.
 /// The list, the type chips and the counts are what a screenshot needs.
-Future<void> _seedRecords(ProviderContainer container, UserId userId) async {
+Future<void> _seedRecords(ProviderContainer container, UserId userId, HealthProfileId profileId) async {
   final records = container.read(recordsDataSourceProvider);
-  if ((await records.findAll(scope: userId)).isNotEmpty) return;
+  if ((await records.findAll(scope: profileId)).isNotEmpty) return;
 
   final today = DateTime.now();
   final vault = <(RecordType type, String title, String note, int daysAgo)>[
@@ -264,13 +268,11 @@ Future<void> _seedRecords(ProviderContainer container, UserId userId) async {
         userId: userId,
         type: type,
         title: title,
-        tags: const [],
-        source: RecordSource.self,
         resultNote: note,
         takenAt: takenAt,
         createdAt: takenAt,
       ),
-      scope: userId,
+      scope: profileId,
     );
   }
 
@@ -288,6 +290,24 @@ Future<void> _seedRecords(ProviderContainer container, UserId userId) async {
 /// fasting glucose in the 120s-140s mg/dL is consistent with the seeded conditions
 /// (type 2 diabetes, hypertension) under a working regimen. Nothing here is a
 /// real measurement of anybody.
+/// A pregnancy on the persona's own profile, at week 12 day 3 on the capture
+/// day: the last week the API's content has artwork for, so the pregnancy
+/// screens photograph with an illustration. One baby, a visit next week.
+/// Shown only where the docs run turns `mother_child` on (tool/docshots.dart).
+Future<void> _seedPregnancy(ProviderContainer container, HealthProfileId profileId) async {
+  if ((await container.read(pregnanciesDataSourceProvider).findActive(scope: profileId)) != null) return;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final started = await container.read(startPregnancyUseCaseProvider)(
+    motherId: profileId,
+    dueDate: today.add(const Duration(days: PregnancyDates.termDays - (12 * 7 + 3))),
+    babyCount: 1,
+    now: now,
+    nextVisitOn: today.add(const Duration(days: 9)),
+  );
+  if (started.isFailure) debugPrint('[docshots] pregnancy not seeded: ${started.error}');
+}
+
 Future<void> _seedCheckIns(ProviderContainer container, HealthProfileId profileId) async {
   final dao = container.read(checkInsDataSourceProvider);
   if ((await dao.findAll(scope: profileId)).isNotEmpty) return;

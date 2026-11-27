@@ -80,8 +80,9 @@ Future<void> initPostHog({
         // Person properties are never set from the app. They are attached to
         // the identified patient and outlive the event, so they are dropped
         // whole rather than scrubbed key by key.
-        event.userProperties = null;
-        event.userPropertiesSetOnce = null;
+        event
+          ..userProperties = null
+          ..userPropertiesSetOnce = null;
         return event;
       },
     ];

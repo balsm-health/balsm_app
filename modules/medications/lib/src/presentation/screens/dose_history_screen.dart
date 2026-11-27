@@ -1,45 +1,47 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../domain/entities/dose_event.dart';
 import '../../domain/value_objects/ids.dart';
+import '../i18n/i18n.dart';
 import '../providers.dart';
 
 /// Timeline of a medication's dose history, colored by outcome:
 /// taken = mint, skipped = neutral, missed = danger, snoozed = amber,
 /// correction = info.
 class DoseHistoryScreen extends ConsumerWidget {
-  const DoseHistoryScreen({super.key, required this.medicationId});
+  const DoseHistoryScreen({required this.medicationId, super.key});
 
   final MedicationId medicationId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(doseHistoryProvider(medicationId));
+    final m = ref.watch(medicationsStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       appBar: AppBar(
-        title: const Text('Dose history'),
-        backgroundColor: BalsmColors.surface,
+        title: Text(m.historyTitle),
+        backgroundColor: AppColors.surface,
         elevation: 0,
       ),
       body: historyAsync.when(
         loading: () => const BalsmLoadingIndicator(),
         error: (e, _) => BalsmErrorBanner(
-          message: 'Could not load dose history.',
+          message: m.historyLoadError,
           onRetry: () => ref.invalidate(doseHistoryProvider(medicationId)),
         ),
         data: (events) {
           if (events.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: const EdgeInsets.all(32),
                 child: Text(
-                  'No dose history yet.',
-                  style: TextStyle(color: BalsmColors.fg3),
+                  m.historyEmpty,
+                  style: const TextStyle(color: AppColors.textTertiary),
                 ),
               ),
             );
@@ -59,7 +61,7 @@ class DoseHistoryScreen extends ConsumerWidget {
   }
 }
 
-class _TimelineTile extends StatelessWidget {
+class _TimelineTile extends ConsumerWidget {
   const _TimelineTile({
     required this.event,
     required this.isFirst,
@@ -71,7 +73,8 @@ class _TimelineTile extends StatelessWidget {
   final bool isLast;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
     final color = _outcomeColor(event.outcome);
     return IntrinsicHeight(
       child: Row(
@@ -84,7 +87,7 @@ class _TimelineTile extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isFirst ? Colors.transparent : BalsmColors.ink200,
+                    color: isFirst ? Colors.transparent : AppColors.ink200,
                   ),
                 ),
                 Container(
@@ -95,7 +98,7 @@ class _TimelineTile extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isLast ? Colors.transparent : BalsmColors.ink200,
+                    color: isLast ? Colors.transparent : AppColors.ink200,
                   ),
                 ),
               ],
@@ -111,7 +114,7 @@ class _TimelineTile extends StatelessWidget {
                   Row(
                     children: [
                       BalsmPill(
-                        label: _outcomeLabel(event.outcome),
+                        label: _outcomeLabel(m, event.outcome),
                         variant: _outcomeVariant(event.outcome),
                         showDot: true,
                       ),
@@ -120,7 +123,7 @@ class _TimelineTile extends StatelessWidget {
                         DateFormat('HH:mm').format(event.scheduledAt),
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: BalsmColors.fg1,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -128,17 +131,17 @@ class _TimelineTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('EEE, d MMM yyyy').format(event.scheduledAt),
-                    style: const TextStyle(fontSize: 13, color: BalsmColors.fg3),
+                    style: const TextStyle(fontSize: FontSizes.bodySm, color: AppColors.textTertiary),
                   ),
                   if (event.outcome == DoseOutcome.snoozed && event.snoozeUntil != null)
                     Text(
-                      'Snoozed until ${DateFormat('HH:mm').format(event.snoozeUntil!)}',
-                      style: const TextStyle(fontSize: 12, color: BalsmColors.fg3),
+                      m.snoozedUntil(DateFormat('HH:mm').format(event.snoozeUntil!)),
+                      style: const TextStyle(fontSize: FontSizes.meta, color: AppColors.textTertiary),
                     ),
                   if (event.parentEventId != null)
-                    const Text(
-                      'Correction',
-                      style: TextStyle(fontSize: 12, color: BalsmColors.fg3),
+                    Text(
+                      m.correction,
+                      style: const TextStyle(fontSize: FontSizes.meta, color: AppColors.textTertiary),
                     ),
                 ],
               ),
@@ -151,11 +154,11 @@ class _TimelineTile extends StatelessWidget {
 }
 
 Color _outcomeColor(DoseOutcome o) => switch (o) {
-      DoseOutcome.taken => BalsmColors.hueMint,
-      DoseOutcome.skipped => BalsmColors.ink400,
-      DoseOutcome.missed => BalsmColors.danger,
-      DoseOutcome.snoozed => BalsmColors.warning,
-      DoseOutcome.correction => BalsmColors.hueBlue,
+      DoseOutcome.taken => AppColors.hueMint,
+      DoseOutcome.skipped => AppColors.ink400,
+      DoseOutcome.missed => AppColors.danger,
+      DoseOutcome.snoozed => AppColors.warning,
+      DoseOutcome.correction => AppColors.hueBlue,
     };
 
 BalsmPillVariant _outcomeVariant(DoseOutcome o) => switch (o) {
@@ -166,10 +169,10 @@ BalsmPillVariant _outcomeVariant(DoseOutcome o) => switch (o) {
       DoseOutcome.correction => BalsmPillVariant.info,
     };
 
-String _outcomeLabel(DoseOutcome o) => switch (o) {
-      DoseOutcome.taken => 'Taken',
-      DoseOutcome.skipped => 'Skipped',
-      DoseOutcome.missed => 'Missed',
-      DoseOutcome.snoozed => 'Snoozed',
-      DoseOutcome.correction => 'Corrected',
+String _outcomeLabel(Messages m, DoseOutcome o) => switch (o) {
+      DoseOutcome.taken => m.outcome.taken,
+      DoseOutcome.skipped => m.outcome.skipped,
+      DoseOutcome.missed => m.outcome.missed,
+      DoseOutcome.snoozed => m.outcome.snoozed,
+      DoseOutcome.correction => m.outcome.corrected,
     };

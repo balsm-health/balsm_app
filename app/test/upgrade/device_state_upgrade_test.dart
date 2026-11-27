@@ -7,7 +7,6 @@ import 'package:app/balsm_app/storage_target.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 // Not exported: only the database opener needs it, and this test.
-// ignore: implementation_imports
 import 'package:core/src/db/db_key.dart' show kDbKeyStorageKey;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,8 +77,11 @@ void main() {
         expect(await pa.feedbackSentAt(), DateTime.parse(prefs['pa.fbSentAt']! as String));
         expect(await pa.careCloudSync(), prefs['pa.careCloudSync']);
         expect(await pa.lastTimezone(), prefs['pa.lastTz']);
-        expect(await telemetry.analyticsEnabled(), prefs['telemetry.analyticsEnabled'],
-            reason: 'an analytics opt-out must survive an update');
+        expect(
+          await telemetry.analyticsEnabled(),
+          prefs['telemetry.analyticsEnabled'],
+          reason: 'an analytics opt-out must survive an update',
+        );
         expect(await telemetry.campaign(), jsonDecode(prefs['telemetry.campaign']! as String));
         expect(await update.manifest(), prefs['update.manifest']);
         expect(await update.skipped(), prefs['update.skipped']);
@@ -139,9 +141,12 @@ void main() {
       test('every key ${manifest.uri.pathSegments.last} lists is still used, or retired on purpose', () {
         final keys = manifest.readAsLinesSync().map((l) => l.trim()).where((l) => l.isNotEmpty && !l.startsWith('#'));
         final gone = keys.where((k) => !retired.containsKey(k) && !sources.contains("'$k"));
-        expect(gone, isEmpty,
-            reason: 'renaming or removing a stored key loses what patients have under it; '
-                'migrate the value and add the old key to `retired`');
+        expect(
+          gone,
+          isEmpty,
+          reason: 'renaming or removing a stored key loses what patients have under it; '
+              'migrate the value and add the old key to `retired`',
+        );
       });
     }
   });

@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 
 import '../app_failure.dart';
 import '../app_result.dart';
+import '../western_digits.dart';
 import 'country_code.dart';
 import 'value_object.dart';
 
@@ -84,20 +85,9 @@ class PhoneNumber extends ValueObject {
 
   // ── Normalization helpers ────────────────────────────────────────────────
 
-  /// Maps Arabic-Indic / Persian digits to Western and drops any non-digit.
+  /// Maps Arabic-Indic / Persian digits to Western and drops any non-digit (space, -, (), +).
   static String _normalize(String input) {
-    final out = StringBuffer();
-    for (final rune in input.runes) {
-      if (rune >= 0x30 && rune <= 0x39) {
-        out.writeCharCode(rune); // 0-9
-      } else if (rune >= 0x0660 && rune <= 0x0669) {
-        out.writeCharCode(rune - 0x0660 + 0x30); // Arabic-Indic ٠-٩
-      } else if (rune >= 0x06F0 && rune <= 0x06F9) {
-        out.writeCharCode(rune - 0x06F0 + 0x30); // Persian ۰-۹
-      }
-      // everything else (space, -, (), +) dropped
-    }
-    return out.toString();
+    return toWesternDigits(input).replaceAll(RegExp('[^0-9]'), '');
   }
 
   static String _stripLeadingZeros(String s) {

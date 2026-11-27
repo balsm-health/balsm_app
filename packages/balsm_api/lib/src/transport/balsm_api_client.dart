@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../../balsm_api.dart' show HttpLogInterceptor;
+import 'http_log_interceptor.dart' show HttpLogInterceptor;
 import 'phi_leak_interceptor.dart';
 
 /// Owns the shared [Dio] instance for all Balsm API areas.
@@ -9,6 +11,24 @@ import 'phi_leak_interceptor.dart';
 class BalsmApiClient {
   BalsmApiClient({required Dio dio}) : _dio = dio;
 
+  /// The full-request/response console logger ([HttpLogInterceptor]) is NOT
+  /// added here — it must run after the auth interceptor to see the bearer, so
+  /// `BalsmApiController.create` appends it last, behind `kDebugMode`.
+  factory BalsmApiClient.create({
+    required String baseUrl,
+  }) {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      ),
+    );
+    dio.interceptors.add(PhiLeakInterceptor());
+    return BalsmApiClient(dio: dio);
+  }
+
   final Dio _dio;
 
   Dio get dio => _dio;
@@ -16,20 +36,4 @@ class BalsmApiClient {
   String get baseUrl => _dio.options.baseUrl;
 
   set baseUrl(String value) => _dio.options.baseUrl = value;
-
-  /// The full-request/response console logger ([HttpLogInterceptor]) is NOT
-  /// added here — it must run after the auth interceptor to see the bearer, so
-  /// `BalsmApiController.create` appends it last, behind `kDebugMode`.
-  factory BalsmApiClient.create({
-    required String baseUrl,
-  }) {
-    final dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
-    ));
-    dio.interceptors.add(PhiLeakInterceptor());
-    return BalsmApiClient(dio: dio);
-  }
 }

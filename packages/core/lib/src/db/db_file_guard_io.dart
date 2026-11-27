@@ -16,6 +16,10 @@ bool isPlaintextSqlite(File file) {
   }
 }
 
+/// True when [file] holds an encrypted database: present, not empty, and not
+/// a plaintext SQLite file. Without its key such a file can never be opened.
+bool isEncryptedDatabase(File file) => file.existsSync() && file.lengthSync() > 0 && !isPlaintextSqlite(file);
+
 /// Called when there is no stored DB key. A plaintext database left by a
 /// pre-encryption build can't be opened with a key and holds nothing worth
 /// migrating (spec D7), so it is deleted, as is an empty file. Anything else on disk is an
@@ -24,7 +28,7 @@ bool isPlaintextSqlite(File file) {
 void prepareDbFileForNewKey(File file) {
   if (!file.existsSync()) return;
   // An empty file holds no data under any key.
-  if (file.lengthSync() > 0 && !isPlaintextSqlite(file)) {
+  if (isEncryptedDatabase(file)) {
     throw StateError('database key missing for an existing encrypted database');
   }
   file.deleteSync();

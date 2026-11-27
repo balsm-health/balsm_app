@@ -139,14 +139,12 @@ class _GoOnlineAuthApi extends FakeAuthApi {
           refreshToken: E2eFixture.refreshToken,
           userId: _newServerId,
           isNewUser: true,
-          adoptedClientId: false,
         );
       case _Outcome.existing:
         return const AuthTokensResponse(
           accessToken: E2eFixture.accessToken,
           refreshToken: E2eFixture.refreshToken,
           userId: E2eFixture.userId,
-          isNewUser: false,
         );
     }
   }
@@ -171,7 +169,10 @@ class _RecordingAdapter implements dio.HttpClientAdapter {
 
   @override
   Future<dio.ResponseBody> fetch(
-      dio.RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    dio.RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     requests.add(options);
     return dio.ResponseBody.fromString('', 503);
   }
@@ -212,8 +213,13 @@ void main() {
   }
 
   /// Same, for an async condition (keychain / database state).
-  Future<void> pumpUntilTrue(WidgetTester tester, Future<bool> Function() cond, String what,
-      {Duration timeout = const Duration(seconds: 30), Future<String> Function()? diag}) async {
+  Future<void> pumpUntilTrue(
+    WidgetTester tester,
+    Future<bool> Function() cond,
+    String what, {
+    Duration timeout = const Duration(seconds: 30),
+    Future<String> Function()? diag,
+  }) async {
     final end = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(end)) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -333,7 +339,7 @@ void main() {
       await acceptDisclosure(tester);
     }
     await pumpUntil(tester, find.text('Meds').hitTestable());
-    await settle(tester, 10);
+    await settle(tester);
   }
 
   Future<void> createDeviceOnlyAccount(WidgetTester tester, {en.Strings t = _en}) async {
@@ -343,7 +349,7 @@ void main() {
     await pumpUntil(tester, find.text(t.privacy.pv_agree));
     await acceptDisclosure(tester, t: t);
     await pumpUntil(tester, find.text(t.nav.tab_meds).hitTestable());
-    await settle(tester, 10);
+    await settle(tester);
   }
 
   Future<void> addMedication(WidgetTester tester) async {
@@ -387,8 +393,11 @@ void main() {
       await settle(tester, 3);
       if (tester.widget<EditableText>(editable).controller.text == password) break;
     }
-    expect(tester.widget<EditableText>(editable).controller.text.length, password.length,
-        reason: 'password did not reach the unlock field');
+    expect(
+      tester.widget<EditableText>(editable).controller.text.length,
+      password.length,
+      reason: 'password did not reach the unlock field',
+    );
     FocusManager.instance.primaryFocus?.unfocus();
     await settle(tester, 3);
     await tapWhenReady(tester, find.text(t.auth.unlock_btn));
@@ -397,7 +406,7 @@ void main() {
   Future<void> unlock(WidgetTester tester) async {
     await submitUnlock(tester, _password);
     await pumpUntil(tester, find.text('Meds').hitTestable());
-    await settle(tester, 10);
+    await settle(tester);
   }
 
   /// Profile → Go online → (prefilled email) Send code → six digits.
@@ -420,8 +429,10 @@ void main() {
 
   /// The medication's owners straight from the encrypted database.
   Future<List<String>> medOwners() async {
-    final rows = await db().customSelect('SELECT user_id FROM medications WHERE name = ?',
-        variables: [Variable.withString(_medName)]).get();
+    final rows = await db().customSelect(
+      'SELECT user_id FROM medications WHERE name = ?',
+      variables: [Variable.withString(_medName)],
+    ).get();
     return rows.map((r) => r.read<String>('user_id')).toList();
   }
 
@@ -453,7 +464,7 @@ void main() {
   Future<Uint8List?> readAttachment(String path, {String? owner}) =>
       files().read(path, scope: owner == null ? null : UserId.value(owner));
 
-  Future<bool> partitionExists(String owner) async => Directory('${(await vaultDir()).path}/$owner').exists();
+  Future<bool> partitionExists(String owner) async => Directory('${(await vaultDir()).path}/$owner').existsSync();
 
   Future<String?> key(String k) => storage.read(key: k);
 
@@ -521,8 +532,11 @@ void main() {
       await pumpUntil(tester, find.text('Wrong password.'));
       // The screen clears the field after the keychain write lands; wait for
       // that (button disabled again) so the next entry is not wiped.
-      await pumpUntilTrue(tester, () async => tester.widget<PButton>(pButton('Unlock')).onTap == null,
-          'field cleared after attempt $i');
+      await pumpUntilTrue(
+        tester,
+        () async => tester.widget<PButton>(pButton('Unlock')).onTap == null,
+        'field cleared after attempt $i',
+      );
       await settle(tester, 3);
       expect(find.textContaining('Too many attempts'), findsNothing);
     }
@@ -536,7 +550,7 @@ void main() {
     await settle(tester, 3);
     expect(tester.widget<PButton>(pButton('Unlock')).onTap, isNull);
     await tester.tap(find.text('Unlock'), warnIfMissed: false);
-    await settle(tester, 10);
+    await settle(tester);
     expect(find.text('Unlock Balsm'), findsOneWidget);
     expect(find.text('Meds').hitTestable(), findsNothing);
     expect(await container!.read(offlineAccountServiceProvider).unlock(_password), isA<LockedUntil>());
@@ -572,7 +586,7 @@ void main() {
     await fillCredentials(tester, 'short7!');
     expect(tester.widget<PButton>(pButton('Create account on device')).onTap, isNull);
     await tester.tap(find.text('Create account on device'), warnIfMissed: false);
-    await settle(tester, 10);
+    await settle(tester);
     expect(find.text('Account on this device'), findsOneWidget);
     expect(find.text('I agree & continue'), findsNothing);
     expect(await key('balsm.user_id'), isNull);
@@ -837,21 +851,26 @@ void main() {
     await shutDown(tester);
     await launch(tester, auth);
     await unlock(tester);
-    check(container!.read(currentUserIdProvider)?.value == offlineId,
-        'session id after relaunch is ${container!.read(currentUserIdProvider)?.value == _newServerId ? 'the server id' : 'not the pinned local id'}');
+    check(
+      container!.read(currentUserIdProvider)?.value == offlineId,
+      'session id after relaunch is ${container!.read(currentUserIdProvider)?.value == _newServerId ? 'the server id' : 'not the pinned local id'}',
+    );
     final owners = await medOwners();
     check(
-        owners.length == 1 && owners.single == offlineId,
-        'after the failed attempt the med is owned by ${owners.isEmpty ? 'nobody' : owners.single == _newServerId ? 'the NEW server id' : 'another id'}, not the pinned local id');
+      owners.length == 1 && owners.single == offlineId,
+      'after the failed attempt the med is owned by ${owners.isEmpty ? 'nobody' : owners.single == _newServerId ? 'the NEW server id' : 'another id'}, not the pinned local id',
+    );
     await tapWhenReady(tester, find.text('Meds'));
     await settle(tester, 20);
     check(find.text(_medName).evaluate().isNotEmpty, 'med NOT visible in Meds after relaunch (offline data hidden)');
     Uint8List? fileNow;
     try {
       fileNow = await readAttachment(path);
-    } catch (_) {}
-    check(fileNow != null && listEquals(fileNow, _attachment),
-        'attachment not readable as the active user after relaunch');
+    } on Object catch (_) {}
+    check(
+      fileNow != null && listEquals(fileNow, _attachment),
+      'attachment not readable as the active user after relaunch',
+    );
 
     // ── Retry going online ──
     await goOnline(tester);
@@ -867,9 +886,11 @@ void main() {
     Uint8List? fileAfter;
     try {
       fileAfter = await readAttachment(path, owner: _newServerId);
-    } catch (_) {}
-    check(fileAfter != null && listEquals(fileAfter, _attachment),
-        'attachment not readable under the server id after retry');
+    } on Object catch (_) {}
+    check(
+      fileAfter != null && listEquals(fileAfter, _attachment),
+      'attachment not readable under the server id after retry',
+    );
     await tapWhenReady(tester, find.text('Meds'));
     await settle(tester, 20);
     check(find.text(_medName).evaluate().isNotEmpty, 'med not visible after retry');
@@ -898,7 +919,7 @@ void main() {
     Object? deviceOnlyError;
     try {
       await container!.read(careTeamApiProvider).pull(healthProfileId: 'e2e-profile');
-    } catch (e) {
+    } on Object catch (e) {
       deviceOnlyError = e;
     }
     expect(deviceOnlyError, isNotNull);
@@ -908,8 +929,11 @@ void main() {
     await settle(tester);
     // A device-only account is removed from the phone here. (Its Sign out
     // only locks the app, #122.)
-    await tester.scrollUntilVisible(find.text('Remove this account from this phone'), 200,
-        scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Remove this account from this phone'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await settle(tester, 2);
     await tapWhenReady(tester, find.text('Remove this account from this phone'));
     await pumpUntil(tester, find.text('Remove this account and its data?'));
@@ -935,7 +959,9 @@ void main() {
     }
     await fillCredentials(tester, 'online-e2e-pass');
     await tapWhenReady(
-        tester, older ? find.text('Continue') : find.widgetWithText(PButton, _en.auth.pw_signin).hitTestable().last);
+      tester,
+      older ? find.text('Continue') : find.widgetWithText(PButton, _en.auth.pw_signin).hitTestable().last,
+    );
     await enterAppAcceptingDisclosure(tester);
     expect(auth.passwordSignIns, 1);
     expect(await key('balsm.user_id'), E2eFixture.userId);
@@ -944,13 +970,15 @@ void main() {
     network.requests.clear();
     try {
       await container!.read(careTeamApiProvider).pull(healthProfileId: 'e2e-profile');
-    } catch (_) {
+    } on Object catch (_) {
       // The recorder answers 503; only the request matters.
     }
     final sent = network.requests.where((r) => r.path.contains('care-team') || r.path.contains('care_team')).toList();
     expect(sent, isNotEmpty, reason: 'the care-team request never reached the network layer');
     expect(
-        sent.first.headers['Authorization'] ?? sent.first.headers['authorization'], 'Bearer ${E2eFixture.accessToken}');
+      sent.first.headers['Authorization'] ?? sent.first.headers['authorization'],
+      'Bearer ${E2eFixture.accessToken}',
+    );
 
     // A relaunch reaches the app, not Unlock.
     await shutDown(tester);
@@ -1086,7 +1114,7 @@ void main() {
     await pumpUntil(tester, find.text('Send code'));
     expect(find.text('Go online'), findsWidgets);
     Navigator.of(tester.element(find.text('Send code'))).pop();
-    await settle(tester, 10);
+    await settle(tester);
     expect(find.text('Send code'), findsNothing);
     expect(await mode(), AccountMode.deviceOnly);
 
@@ -1098,7 +1126,7 @@ void main() {
     await settle(tester, 5);
     expect(find.text('Send code'), findsNothing);
     Navigator.of(tester.element(find.byType(CareTeamScreen))).pop();
-    await settle(tester, 10);
+    await settle(tester);
 
     // Storage & sync: iCloud / Google Drive "Coming soon", Balsm Cloud "Go online".
     await tester.scrollUntilVisible(find.text('Storage & sync'), -200, scrollable: find.byType(Scrollable).first);

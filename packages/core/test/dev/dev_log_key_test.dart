@@ -18,10 +18,13 @@ void main() {
     keychain = {};
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => switch (call.method) {
-        'read' => keychain[call.arguments['key'] as String],
-        'write' => keychain[call.arguments['key'] as String] = call.arguments['value'] as String,
-        _ => <String, String>{},
+      (call) async {
+        final args = call.arguments as Map<Object?, Object?>;
+        return switch (call.method) {
+          'read' => keychain[args['key']! as String],
+          'write' => keychain[args['key']! as String] = args['value']! as String,
+          _ => <String, String>{},
+        };
       },
     );
   });

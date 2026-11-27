@@ -68,12 +68,14 @@ class RefreshPermanentQrUseCase {
         // Offline-minted token the server has never seen: the idempotent mint
         // (client-supplied token_id) creates it — or refreshes it if an
         // earlier attempt landed without the ack reaching us.
-        await _api.mint(MintQrRequest(
-          ciphertextBase64: ciphertextBase64,
-          ttlSeconds: 0,
-          profileEtag: etag,
-          tokenId: record.jti,
-        ));
+        await _api.mint(
+          MintQrRequest(
+            ciphertextBase64: ciphertextBase64,
+            ttlSeconds: 0,
+            profileEtag: etag,
+            tokenId: record.jti,
+          ),
+        );
       } else {
         await _api.updateCiphertext(
           record.jti,

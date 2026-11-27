@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import '../telemetry/fire_and_forget.dart';
 
 import 'dev_log_buffer.dart';
 
@@ -26,11 +28,13 @@ class DevDiagnostics {
       .replaceAll(_date, '[date]');
 
   static List<Map<String, String>> _redactedLogs(List<DevLogEntry> entries) => entries
-      .map((e) => {
-            'level': e.level,
-            'msg': redactLine(e.message),
-            'ts': e.ts.toUtc().toIso8601String(),
-          })
+      .map(
+        (e) => {
+          'level': e.level,
+          'msg': redactLine(e.message),
+          'ts': e.ts.toUtc().toIso8601String(),
+        },
+      )
       .toList();
 
   // ── Encrypted bundle (AES-256-GCM) — mirrors devconfig.jsx saveEncryptedLogs ──
@@ -82,19 +86,20 @@ class DevDiagnostics {
     final logs = _redactedLogs(entries);
     final id = await Sentry.captureMessage(
       '[DevConfig] diagnostic bundle · $envLabel',
-      level: SentryLevel.info,
       withScope: (scope) {
-        scope.setContexts('dev_diagnostics', {
-          'env': envLabel,
-          'url': envUrl,
-          'total': entries.length,
-          'errors': entries.where((e) => e.level == 'error').length,
-          // Cap the payload; Sentry truncates large contexts anyway.
-          'recent': logs.length > 100 ? logs.sublist(logs.length - 100) : logs,
-        });
+        fireAndForget(
+          scope.setContexts('dev_diagnostics', {
+            'env': envLabel,
+            'url': envUrl,
+            'total': entries.length,
+            'errors': entries.where((e) => e.level == 'error').length,
+            // Cap the payload; Sentry truncates large contexts anyway.
+            'recent': logs.length > 100 ? logs.sublist(logs.length - 100) : logs,
+          }),
+        );
       },
     );
-    return id != SentryId.empty();
+    return id != const SentryId.empty();
   }
 
   /// Sentry level for a Report bug severity.
@@ -131,27 +136,31 @@ class DevDiagnostics {
       withScope: (scope) {
         // One issue per report title, not one pile for every report.
         scope.fingerprint = ['dev-bug-report', heading];
-        scope.setTag('bug.severity', severity);
-        scope.setTag('bug.screenshot', screenshot == null ? 'no' : 'yes');
-        scope.setContexts('bug_report', {
-          'severity': severity,
-          'steps': steps.trim().isEmpty ? '(none)' : steps.trim(),
-          'env': envLabel,
-          'url': envUrl,
-          'viewport': viewport,
-          'log_total': entries.length,
-          'recent': logs.length > 50 ? logs.sublist(logs.length - 50) : logs,
-        });
+        unawaited(scope.setTag('bug.severity', severity));
+        unawaited(scope.setTag('bug.screenshot', screenshot == null ? 'no' : 'yes'));
+        fireAndForget(
+          scope.setContexts('bug_report', {
+            'severity': severity,
+            'steps': steps.trim().isEmpty ? '(none)' : steps.trim(),
+            'env': envLabel,
+            'url': envUrl,
+            'viewport': viewport,
+            'log_total': entries.length,
+            'recent': logs.length > 50 ? logs.sublist(logs.length - 50) : logs,
+          }),
+        );
         if (screenshot != null) {
-          scope.addAttachment(SentryAttachment.fromUint8List(
-            screenshot,
-            'screenshot.png',
-            contentType: 'image/png',
-          ));
+          scope.addAttachment(
+            SentryAttachment.fromUint8List(
+              screenshot,
+              'screenshot.png',
+              contentType: 'image/png',
+            ),
+          );
         }
       },
     );
-    return id != SentryId.empty();
+    return id != const SentryId.empty();
   }
 
   // ── Bug report text — mirrors devconfig.jsx copyReport ──────────────────────
@@ -173,7 +182,7 @@ class DevDiagnostics {
       'Title:    ${title.isEmpty ? '(untitled)' : title}',
       '',
       '## Steps to reproduce',
-      steps.isEmpty ? '(none)' : steps,
+      if (steps.isEmpty) '(none)' else steps,
       '',
       '## Last 20 log entries (redacted)',
       ...recent.map((e) => '[${e.level.toUpperCase().padRight(5)}] ${redactLine(e.message)}'),

@@ -1,26 +1,31 @@
+import 'dart:async';
 import 'package:auth/auth.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart';
+import 'package:deletion/deletion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:pregnancy/pregnancy.dart';
 import 'package:sessions/sessions.dart';
-import 'package:deletion/deletion.dart';
+
 import '../app_state.dart';
-import '../routes.dart';
+import '../dev/shake_to_dev_config.dart';
+import '../flags.dart';
 import '../kit.dart';
 import '../responsive.dart';
-import '../tokens.dart';
+import '../routes.dart';
 import '../shell.dart';
-import 'personal_details.dart';
+import '../widgets/badges.dart';
+import 'care_team_screen.dart';
 import 'ecosystem_sheet.dart';
 import 'feedback_sheet.dart';
 import 'go_online_sheet.dart';
-import 'remove_device_account.dart';
-import 'care_team_screen.dart';
+import 'personal_details.dart';
+import 'pregnancy/pregnancy_screen.dart';
 import 'profile_subscreens.dart';
+import 'remove_device_account.dart';
 import 'storage_sheet.dart';
-import '../widgets/badges.dart';
 
 /// Profile tab (home.jsx ProfileScreen) — main screen + language/country sheets.
 class ProfileScreen extends ConsumerWidget {
@@ -31,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
     // Real account summary → profile head (name + handle). Null while loading /
     // signed out, in which case the head renders neutrally.
     final account = ref.watch(accountSummaryProvider);
-    final summary = account.valueOrNull;
+    final summary = account.value;
     final displayName = (summary?.displayName ?? '').trim();
     final curLang = s.lang;
     // Reflects the active backup target (StorageTarget).
@@ -39,12 +44,13 @@ class ProfileScreen extends ConsumerWidget {
     // Design order (home.jsx ProfileScreen): personal → conditions → care →
     // emergency → notif → privacy → feedback → ecosystem → help. Governance
     // (sessions / status / deletion) stays in its own card below.
-    final rows = <(IconData, String, VoidCallback?, bool)>[
+    final rows = <(IconData, String, VoidCallback, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
       (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
-      (LucideIcons.bell, 'profile.p_notif', null, false),
+      // Reminders has no screen yet: hidden rather than a row that does
+      // nothing when tapped.
       (
         LucideIcons.shieldCheck,
         'profile.p_privacy',
@@ -53,127 +59,166 @@ class ProfileScreen extends ConsumerWidget {
       ),
       (LucideIcons.star, 'feedback.fb_row', () => showFeedbackSheet(context), false),
       (LucideIcons.flower2, 'ecosystem.eco_row', () => showEcosystemSheet(context), false),
-      (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
+      // Help opens Service status, which carries the support address.
+      (LucideIcons.lifeBuoy, 'profile.p_help', () => _pushGovernance(context, const StatusScreen()), false),
     ];
     return ContentColumn(
-        maxWidth: 720,
-        child: ListView(padding: EdgeInsets.zero, children: [
+      maxWidth: 720,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
           const PadTop(),
-          AppBarRow(children: [
-            Expanded(child: Text(s.strings.common.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-            // `home.jsx` moved QR sharing here from Account details.
-            Semantics(
-              label: s.strings.profile.pd_share_qr,
-              button: true,
-              child: RoundBtn(
-                icon: LucideIcons.qrCode,
-                semanticLabel: s.strings.common.a11y_qr,
-                onTap: () => openQrShare(context, s: s, name: displayName),
+          AppBarRow(
+            children: [
+              Expanded(
+                child: Text(
+                  s.strings.common.profile,
+                  style: Typo.heading(ar: s.rtl).copyWith(fontSize: FontSizes.heading),
+                ),
               ),
-            ),
-          ]),
+              // `home.jsx` moved QR sharing here from Account details.
+              Semantics(
+                label: s.strings.profile.pd_share_qr,
+                button: true,
+                child: RoundBtn(
+                  icon: LucideIcons.qrCode,
+                  semanticLabel: s.strings.common.a11y_qr,
+                  onTap: () => openQrShare(context, s: s, name: displayName),
+                ),
+              ),
+            ],
+          ),
 
           // Profile head — real account summary (name + handle) plus the
           // patient's own chronic conditions (`.profile-head`). Everything here
           // is real data: the design's "patient since" line has no counterpart
           // on AccountSummary, so it is omitted rather than fabricated.
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-            child: Column(children: [
-              Avatar(initials: accountInitials(displayName), color: T.hueAqua, size: 84, fontSize: FS.xl3, ar: s.rtl),
-              if (displayName.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2, fontWeight: FontWeight.w800)),
-              ],
-              // A failed `GET /account/self` used to render exactly like a
-              // signed-out or still-loading head — a nameless avatar, forever,
-              // with no way to retry. Say so, and offer the retry.
-              if (account.hasError) ...[
-                const SizedBox(height: 14),
-                Text(s.strings.profile.acct_load_failed,
-                    textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                const SizedBox(height: 8),
-                PButton(s.strings.profile.acct_retry,
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 20),
+            child: Column(
+              children: [
+                Avatar(
+                  initials: accountInitials(displayName),
+                  color: AppColors.hueAqua,
+                  size: 84,
+                  fontSize: FontSizes.display,
+                  ar: s.rtl,
+                  semanticLabel: s.strings.home.a11y_self_avatar,
+                ),
+                if (displayName.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    displayName,
+                    style: Typo.title(ar: s.rtl).copyWith(fontSize: FontSizes.title, fontWeight: FontWeight.w800),
+                  ),
+                ],
+                // A failed `GET /account/self` used to render exactly like a
+                // signed-out or still-loading head — a nameless avatar, forever,
+                // with no way to retry. Say so, and offer the retry.
+                if (account.hasError) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    s.strings.profile.acct_load_failed,
+                    textAlign: TextAlign.center,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                  ),
+                  const SizedBox(height: 8),
+                  PButton(
+                    s.strings.profile.acct_retry,
                     icon: LucideIcons.rotateCcw,
                     variant: BtnVariant.soft,
                     size: BtnSize.sm,
                     accent: s.accent,
                     ar: s.rtl,
-                    onTap: () => refreshAccountSummary(ref)),
+                    onTap: () => refreshAccountSummary(ref),
+                  ),
+                ],
+                // The handle doubles as the QR entry point — tapping it opens
+                // the same sheet as the app-bar button.
+                if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _HandleQrPill(handle: summary.handle!, name: displayName),
+                ],
+                // `.profile-head .chip-wrap` — the patient's own chronic
+                // conditions. Real on-device PHI shown to the data subject; the
+                // strip stays hidden until the profile actually has conditions,
+                // so nothing is ever fabricated. (There is no "patient since"
+                // line: AccountSummary carries no creation date, and inventing
+                // one would be fake data.)
+                const _ConditionChips(),
               ],
-              // The handle doubles as the QR entry point — tapping it opens
-              // the same sheet as the app-bar button.
-              if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _HandleQrPill(handle: summary.handle!, name: displayName),
-              ],
-              // `.profile-head .chip-wrap` — the patient's own chronic
-              // conditions. Real on-device PHI shown to the data subject; the
-              // strip stays hidden until the profile actually has conditions,
-              // so nothing is ever fabricated. (There is no "patient since"
-              // line: AccountSummary carries no creation date, and inventing
-              // one would be fake data.)
-              const _ConditionChips(),
-            ]),
+            ),
           ),
 
           // Completion card — profile setup left the registration flow;
           // shown only while a mandatory field is actually missing, and it
           // names what's left.
-          if (ref.watch(profileGapsProvider).valueOrNull case final gaps? when gaps.isNotEmpty)
+          if (ref.watch(profileGapsProvider).value case final gaps? when gaps.isNotEmpty)
             _CompleteProfileCard(gaps: gaps),
 
           // Language + country
-          _ListCard(children: [
-            _ListRow(
+          _ListCard(
+            children: [
+              _ListRow(
                 icon: LucideIcons.languages,
                 label: s.strings.profile.p_lang,
                 trailing: curLang.nativeName,
                 first: true,
-                onTap: () => _showLanguageSheet(context)),
-            _ListRow(
+                onTap: () => _showLanguageSheet(context),
+              ),
+              _ListRow(
                 icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane,
                 label: s.strings.profile.p_country,
                 trailing: s.country.name(kCatalog, locale: s.lang.value),
-                iconBg: s.isHomeCountry ? null : T.sun500,
-                iconFg: s.isHomeCountry ? null : Colors.white,
-                onTap: () => _showCountrySheet(context)),
-          ]),
+                iconBg: s.isHomeCountry ? null : AppColors.sun500,
+                iconFg: s.isHomeCountry ? null : AppColors.white,
+                onTap: () => _showCountrySheet(context),
+              ),
+            ],
+          ),
 
           // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
-          _ListCard(children: [
-            _ListRow(
+          _ListCard(
+            children: [
+              _ListRow(
                 icon: stCfg.icon,
                 label: s.strings.storage.storage,
                 iconBg: stCfg.bg,
                 iconFg: stCfg.color,
-                trailingWidget:
-                    Pill(s.storageProvider.label(s.strings.storage), kind: PillKind.neutral, dot: false, ar: s.rtl),
+                trailingWidget: Pill(s.storageProvider.label(s.strings.storage), dot: false, ar: s.rtl),
                 first: true,
-                onTap: () => showStorageSync(context)),
-            // Device-only accounts: the way to a server account (Balsm Cloud,
-            // sharing). Same row widget as Storage, directly beneath it.
-            if (s.accountMode == AccountMode.deviceOnly)
-              _ListRow(
+                onTap: () => showStorageSync(context),
+              ),
+              // Device-only accounts: the way to a server account (Balsm Cloud,
+              // sharing). Same row widget as Storage, directly beneath it.
+              if (s.accountMode == AccountMode.deviceOnly)
+                _ListRow(
                   icon: LucideIcons.cloud,
                   label: s.strings.offline.go_row,
                   sub: s.strings.offline.go_row_sub,
-                  onTap: () => showGoOnlineSheet(context)),
-          ]),
+                  onTap: () => showGoOnlineSheet(context),
+                ),
+            ],
+          ),
 
           // Menu
           _ListCard(
-            children: rows.indexed
-                .map((entry) => _ListRow(
-                      icon: entry.$2.$1,
-                      label: s.t(entry.$2.$2),
-                      first: entry.$1 == 0,
-                      onTap: entry.$2.$3 ?? () {},
-                      iconBg: entry.$2.$4 ? T.dangerBg : null,
-                      iconFg: entry.$2.$4 ? T.danger : null,
-                      labelColor: entry.$2.$4 ? T.danger : null,
-                    ))
-                .toList(),
+            children: [
+              for (final entry in rows.indexed) ...[
+                _ListRow(
+                  icon: entry.$2.$1,
+                  label: s.t(entry.$2.$2),
+                  first: entry.$1 == 0,
+                  onTap: entry.$2.$3,
+                  iconBg: entry.$2.$4 ? AppColors.dangerBackground : null,
+                  iconFg: entry.$2.$4 ? AppColors.danger : null,
+                  labelColor: entry.$2.$4 ? AppColors.danger : null,
+                ),
+                // Mother & Child: pregnancy after the medical profile, as in
+                // the design (home-base-mc.jsx `mc_preg`).
+                if (entry.$2.$2 == 'profile.p_cond' && s.flags.isOn(AppFlags.motherChild)) const _PregnancyRow(),
+              ],
+            ],
           ),
 
           // Account & security — real governance screens (sessions, service
@@ -182,45 +227,50 @@ class ProfileScreen extends ConsumerWidget {
           // system + re-auth).
 
           // → StatusScreen hop.
-          _ListCard(children: [
-            // Devices & sessions is hidden for now; its screen and route stay
-            // in place for when it returns.
-            _ListRow(
-              icon: LucideIcons.activity,
-              label: s.strings.nav.gov_status,
-              first: true,
-              onTap: () => _pushGovernance(context, const StatusScreen()),
-            ),
-            // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
-            // '.cancelled') + go('/')). It is hosted in a scoped GoRouter whose
-            // deletion screens nest under an invisible exit-base, so every pop and
-            // every go('/') resolves — see [_pushDeletionRouted].
-            _ListRow(
-              icon: LucideIcons.trash2,
-              label: s.strings.nav.gov_delete,
-              iconBg: T.dangerBg,
-              iconFg: T.danger,
-              labelColor: T.danger,
-              onTap: () => _pushDeletionRouted(context),
-            ),
-            // Dev-only API server switcher (Local / Staging / Prod / custom). Gated
-            // on serverSwitchingEnabled (dev/staging), so it never renders in prod.
-            // (Prod can still reach the read-only Dev Config via the shake gesture.)
-            // The choice persists (reconfigure) and survives relaunch (init() in
-            // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
-            // plain _pushGovernance push is sufficient.
-            if (FlavorConfig.current.serverSwitchingEnabled)
+          _ListCard(
+            children: [
+              // Devices & sessions is hidden for now; its screen and route stay
+              // in place for when it returns.
               _ListRow(
-                icon: LucideIcons.server,
-                label: 'Switch server (dev)',
-                onTap: () => _pushGovernance(
-                  context,
-                  ServerSelectorScreen(
-                    controller: ref.watch(balsmApiControllerProvider),
+                icon: LucideIcons.activity,
+                label: s.strings.nav.gov_status,
+                first: true,
+                onTap: () => _pushGovernance(context, const StatusScreen()),
+              ),
+              // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
+              // '.cancelled') + go('/')). It is hosted in a scoped GoRouter whose
+              // deletion screens nest under an invisible exit-base, so every pop and
+              // every go('/') resolves — see [_pushDeletionRouted].
+              _ListRow(
+                icon: LucideIcons.trash2,
+                label: s.strings.nav.gov_delete,
+                iconBg: AppColors.dangerBackground,
+                iconFg: AppColors.danger,
+                labelColor: AppColors.danger,
+                onTap: () => _pushDeletionRouted(context),
+              ),
+              // Dev-only API server switcher (Local / Staging / Prod / custom). Gated
+              // on serverSwitchingEnabled (dev/staging), so it never renders in prod.
+              // (Prod can still reach the read-only Dev Config via the shake gesture.)
+              // The choice persists (reconfigure) and survives relaunch (init() in
+              // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
+              // plain _pushGovernance push is sufficient.
+              // A real phone opens Dev Config (and its server switch) with a
+              // shake; the English dev row only shows where a shake can't —
+              // emulators, desktop, web — as the Welcome screen's pill does.
+              if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).value == false)
+                _ListRow(
+                  icon: LucideIcons.server,
+                  label: 'Switch server (dev)',
+                  onTap: () => _pushGovernance(
+                    context,
+                    ServerSelectorScreen(
+                      controller: ref.watch(balsmApiControllerProvider),
+                    ),
                   ),
                 ),
-              ),
-          ]),
+            ],
+          ),
 
           // Sign out. A device-only account has no session to end on a
           // server and nowhere else to sign back in, so for it Sign out locks
@@ -228,20 +278,23 @@ class ProfileScreen extends ConsumerWidget {
           // nothing deleted (#122).
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, s.accountMode == AccountMode.deviceOnly ? 12 : 24),
-            child: PButton(s.strings.profile.p_signout,
-                icon: LucideIcons.logOut,
-                variant: BtnVariant.secondary,
-                block: true,
-                ar: s.rtl,
-                color: T.danger, onTap: () async {
-              if (s.accountMode == AccountMode.deviceOnly) return lockDeviceAccount(s);
-              // Clears tokens + best-effort server sign-out + publishes
-              // UserSignedOut (the main listener clears currentUserId).
-              await ref.read(signOutUseCaseProvider).call();
-              // Account-scoped UI state must not leak to the next account.
-              s.resetForSignOut();
-              if (context.mounted) s.go(AppRoutes.welcome);
-            }),
+            child: PButton(
+              s.strings.profile.p_signout,
+              icon: LucideIcons.logOut,
+              variant: BtnVariant.secondary,
+              block: true,
+              ar: s.rtl,
+              color: AppColors.danger,
+              onTap: () async {
+                if (s.accountMode == AccountMode.deviceOnly) return lockDeviceAccount(s);
+                // Clears tokens + best-effort server sign-out + publishes
+                // UserSignedOut (the main listener clears currentUserId).
+                await ref.read(signOutUseCaseProvider).call();
+                // Account-scoped UI state must not leak to the next account.
+                s.resetForSignOut();
+                if (context.mounted) s.go(AppRoutes.welcome);
+              },
+            ),
           ),
 
           // A device-only account exists only on this phone, so it can also be
@@ -249,21 +302,26 @@ class ProfileScreen extends ConsumerWidget {
           // server is never called.
           if (s.accountMode == AccountMode.deviceOnly)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              child: PButton(s.strings.auth.remove_device_account,
-                  icon: LucideIcons.trash2,
-                  variant: BtnVariant.secondary,
-                  block: true,
-                  ar: s.rtl,
-                  color: T.danger, onTap: () async {
-                if (!await confirmRemoveDeviceAccount(context, s)) return;
-                if (!await removeDeviceAccount(ref, s) && context.mounted) {
-                  ScaffoldMessenger.maybeOf(context)
-                      ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed(s.gender))));
-                }
-              }),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
+              child: PButton(
+                s.strings.auth.remove_device_account,
+                icon: LucideIcons.trash2,
+                variant: BtnVariant.secondary,
+                block: true,
+                ar: s.rtl,
+                color: AppColors.danger,
+                onTap: () async {
+                  if (!await confirmRemoveDeviceAccount(context, s)) return;
+                  if (!await removeDeviceAccount(ref, s) && context.mounted) {
+                    ScaffoldMessenger.maybeOf(context)
+                        ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed(s.gender))));
+                  }
+                },
+              ),
             ),
-        ]));
+        ],
+      ),
+    );
   }
 }
 
@@ -271,13 +329,15 @@ class ProfileScreen extends ConsumerWidget {
 /// full-screen route on the root navigator, wrapped in the app's [Directionality]
 /// and [AdaptiveFrame] so it width-caps on tablet/desktop. Mirrors the
 /// lockout / 404 → [StatusScreen] hop. The pushed screens carry their own
-/// design system (BalsmAppBar / BalsmColors) and, for deletion, their own
+/// design system (BalsmAppBar / AppColors) and, for deletion, their own
 /// re-auth — none of which is touched here.
 void _pushGovernance(BuildContext context, Widget screen) {
   final s = AppScope.of(context);
-  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
-    builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: screen)),
-  ));
+  Navigator.of(context, rootNavigator: true).push(
+    MaterialPageRoute<void>(
+      builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: screen)),
+    ),
+  );
 }
 
 /// Pushes the real [SessionsScreen] wrapped in a SMALL, SCOPED [GoRouter] so its
@@ -327,17 +387,19 @@ void _pushSessionsRouted(BuildContext context) {
       ),
     ],
   );
-  rootNav.push(MaterialPageRoute<void>(
-    builder: (_) => MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      theme: theme,
-      routerConfig: router,
-      builder: (_, child) => Directionality(
-        textDirection: s.dir,
-        child: AdaptiveFrame(child: child ?? const SizedBox.shrink()),
+  rootNav.push(
+    MaterialPageRoute<void>(
+      builder: (_) => MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        routerConfig: router,
+        builder: (_, child) => Directionality(
+          textDirection: s.dir,
+          child: AdaptiveFrame(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     ),
-  ));
+  );
 }
 
 /// One-shot observer for the scoped sessions router. The only pop its navigator
@@ -380,18 +442,20 @@ void _pushDeletionRouted(BuildContext context) {
   final s = AppScope.of(context);
   final theme = Theme.of(context);
   final rootNav = Navigator.of(context, rootNavigator: true);
-  rootNav.push(MaterialPageRoute<void>(
-    builder: (_) => _ScopedDeletionHost(
-      dir: s.dir,
-      theme: theme,
-      onExit: () {
-        // Defer to avoid re-entrant navigation during the scoped route change.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (rootNav.canPop()) rootNav.pop();
-        });
-      },
+  rootNav.push(
+    MaterialPageRoute<void>(
+      builder: (_) => _ScopedDeletionHost(
+        dir: s.dir,
+        theme: theme,
+        onExit: () {
+          // Defer to avoid re-entrant navigation during the scoped route change.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (rootNav.canPop()) rootNav.pop();
+          });
+        },
+      ),
     ),
-  ));
+  );
 }
 
 /// Owns the throwaway [GoRouter] for the deletion flow and exits back to the
@@ -484,26 +548,45 @@ class _ListCard extends StatelessWidget {
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => PCard(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        margin: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(T.rLg),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           child: Column(children: children),
         ),
       );
 }
 
+/// Profile → Pregnancy: the current week, or "Off"; opens the tracker or
+/// the start screen.
+class _PregnancyRow extends ConsumerWidget {
+  const _PregnancyRow();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final p = s.strings.pregnancy;
+    final preg = ref.watch(activePregnancyProvider);
+    return _ListRow(
+      icon: LucideIcons.sprout,
+      label: p.title,
+      trailing: preg == null ? p.row_off : p.week_n(preg.infoOn(DateTime.now()).week),
+      onTap: () => openPregnancy(context, ref),
+    );
+  }
+}
+
 class _ListRow extends StatelessWidget {
-  const _ListRow(
-      {required this.icon,
-      required this.label,
-      this.sub,
-      this.trailing,
-      this.trailingWidget,
-      this.onTap,
-      this.iconBg,
-      this.iconFg,
-      this.labelColor,
-      this.first = false});
+  const _ListRow({
+    required this.icon,
+    required this.label,
+    this.sub,
+    this.trailing,
+    this.trailingWidget,
+    this.onTap,
+    this.iconBg,
+    this.iconFg,
+    this.labelColor,
+    this.first = false,
+  });
   final IconData icon;
   final String label;
 
@@ -523,25 +606,38 @@ class _ListRow extends StatelessWidget {
     return PressHighlight(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+        decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: AppColors.ink100))),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-        child: Row(children: [
-          IconSquare(icon, bg: iconBg ?? s.accent.bg, fg: iconFg ?? s.accent.d, size: 34, iconSize: 19, radius: T.rSm),
-          const SizedBox(width: 14),
-          Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1)),
-            if (sub != null)
-              Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub!, style: Typo.meta(ar: s.rtl))),
-          ])),
-          if (trailingWidget != null) trailingWidget!,
-          if (trailing != null)
-            Padding(
-                padding: const EdgeInsets.only(right: 8, left: 8),
-                child:
-                    Text(trailing!, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3))),
-          Chevron(rtl: s.rtl),
-        ]),
+        child: Row(
+          children: [
+            IconSquare(icon, bg: iconBg ?? s.accent.bg, fg: iconFg ?? s.accent.d, size: 34, radius: AppRadii.sm),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Typo.body(ar: s.rtl)
+                        .copyWith(fontWeight: FontWeight.w500, color: labelColor ?? AppColors.textPrimary),
+                  ),
+                  if (sub case final sub?)
+                    Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub, style: Typo.meta(ar: s.rtl))),
+                ],
+              ),
+            ),
+            if (trailingWidget case final trailingWidget?) trailingWidget,
+            if (trailing case final trailing?)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8, start: 8),
+                child: Text(
+                  trailing,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+                ),
+              ),
+            Chevron(rtl: s.rtl),
+          ],
+        ),
       ),
     );
   }
@@ -570,39 +666,46 @@ class _CompleteProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final sep = s.rtl ? '، ' : ', ';
+    final sep = s.lang.listSeparator;
     final missing = s.strings.profile.pc_missing(gaps.map((g) => _label(s, g)).join(sep));
     // Route to where the gap actually gets filled: blood type lives on the
     // Medical profile screen; everything else is Personal details.
     final onlyBlood = gaps.length == 1 && gaps.contains(ProfileGap.bloodType);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 14),
       child: Material(
         color: s.accent.bg,
-        borderRadius: BorderRadius.circular(T.rLg),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: InkWell(
-          borderRadius: BorderRadius.circular(T.rLg),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           onTap: () => onlyBlood ? openMedicalProfile(context) : openPersonalDetails(context),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(color: s.accent.main, borderRadius: BorderRadius.circular(T.rMd)),
-                child: const Icon(LucideIcons.userRoundPen, size: 20, color: Colors.white),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.strings.profile.pc_title(s.gender),
-                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                  const SizedBox(height: 2),
-                  Text(missing, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
-                ]),
-              ),
-              Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),
-            ]),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(color: s.accent.main, borderRadius: BorderRadius.circular(AppRadii.md)),
+                  child: const Icon(LucideIcons.userRoundPen, size: 20, color: AppColors.white),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.strings.profile.pc_title(s.gender),
+                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(missing, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+                Icon(forwardChevron(context), size: 18, color: AppColors.textTertiary),
+              ],
+            ),
           ),
         ),
       ),
@@ -616,7 +719,7 @@ class _ConditionChips extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final conditions = ref.watch(healthProfileProvider).valueOrNull?.conditions ?? const [];
+    final conditions = ref.watch(healthProfileProvider).value?.conditions ?? const [];
     if (conditions.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -628,8 +731,11 @@ class _ConditionChips extends ConsumerWidget {
           for (final c in conditions)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rPill)),
-              child: Text(c.name, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.ink700)),
+              decoration: BoxDecoration(color: AppColors.ink100, borderRadius: BorderRadius.circular(AppRadii.pill)),
+              child: Text(
+                c.name,
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.ink700),
+              ),
             ),
         ],
       ),
@@ -640,57 +746,70 @@ class _ConditionChips extends ConsumerWidget {
 // ── Language sheet ───────────────────────────────────────────
 void _showLanguageSheet(BuildContext context) {
   final s = AppScope.of(context);
-  showAppSheet<void>(
-    context,
-    textDirection: s.dir,
-    builder: (ctx) => _SheetShell(title: s.strings.settings.choose_lang(s.gender), children: [
-      ...LanguageCode.supported.indexed.map((e) => _SelectRow(
-            label: e.$2.nativeName,
-            sub: e.$2.name(kCatalog),
-            code: e.$2.value.toUpperCase(),
-            selected: e.$2 == s.lang,
-            last: e.$1 == LanguageCode.supported.length - 1,
-            badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
-            badgeOk: e.$2.isFullySupported,
-            enabled: e.$2.isFullySupported,
-            onTap: e.$2.isFullySupported
-                ? () {
-                    s.setLang(e.$2);
-                    Navigator.pop(ctx);
-                  }
-                : null,
-          )),
-    ]),
+  unawaited(
+    showAppSheet<void>(
+      context,
+      textDirection: s.dir,
+      builder: (ctx) => _SheetShell(
+        title: s.strings.settings.choose_lang(s.gender),
+        children: [
+          ...LanguageCode.supported.indexed.map(
+            (e) => _SelectRow(
+              label: e.$2.nativeName,
+              sub: e.$2.name(kCatalog),
+              code: e.$2.value.toUpperCase(),
+              selected: e.$2 == s.lang,
+              last: e.$1 == LanguageCode.supported.length - 1,
+              badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
+              badgeOk: e.$2.isFullySupported,
+              enabled: e.$2.isFullySupported,
+              onTap: e.$2.isFullySupported
+                  ? () {
+                      s.setLang(e.$2);
+                      Navigator.pop(ctx);
+                    }
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
 void _showCountrySheet(BuildContext context) {
   final s = AppScope.of(context);
-  showAppSheet<void>(
-    context,
-    textDirection: s.dir,
-    builder: (ctx) =>
-        _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [
-      ...CountryCode.known.indexed.map((e) => _SelectRow(
-            label: e.$2.name(kCatalog, locale: s.lang.value),
-            sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
-            code: e.$2.value.toUpperCase(),
-            codeMono: true,
-            selected: e.$2 == s.country,
-            last: e.$1 == CountryCode.known.length - 1,
-            badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
-            badgeOk: true,
-            onTap: () {
-              s.setCountry(e.$2);
-              Navigator.pop(ctx);
-            },
-          )),
-    ]),
+  unawaited(
+    showAppSheet<void>(
+      context,
+      textDirection: s.dir,
+      builder: (ctx) => _SheetShell(
+        title: s.strings.settings.choose_country,
+        subtitle: s.strings.settings.travel_help,
+        children: [
+          ...CountryCode.known.indexed.map(
+            (e) => _SelectRow(
+              label: e.$2.name(kCatalog, locale: s.lang.value),
+              sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
+              code: e.$2.value.toUpperCase(),
+              codeMono: true,
+              selected: e.$2 == s.country,
+              last: e.$1 == CountryCode.known.length - 1,
+              badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
+              onTap: () {
+                s.setCountry(e.$2);
+                Navigator.pop(ctx);
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
 class _SheetShell extends StatelessWidget {
-  const _SheetShell({required this.title, this.subtitle, required this.children});
+  const _SheetShell({required this.title, required this.children, this.subtitle});
   final String title;
   final String? subtitle;
   final List<Widget> children;
@@ -699,44 +818,56 @@ class _SheetShell extends StatelessWidget {
     final s = AppScope.of(context);
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
-      decoration:
-          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+      ),
       padding: const EdgeInsets.only(bottom: 38),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(children: [
-              Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)))
-            ])),
-        if (subtitle != null)
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
           Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
+              ],
+            ),
+          ),
+          if (subtitle case final subtitle?)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 6, 20, 0),
               child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(subtitle!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)))),
-        const SizedBox(height: 8),
-        Flexible(
-            child: ListView(shrinkWrap: true, padding: const EdgeInsets.symmetric(horizontal: 12), children: children)),
-      ]),
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Flexible(
+            child: ListView(shrinkWrap: true, padding: const EdgeInsets.symmetric(horizontal: 12), children: children),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _SelectRow extends StatelessWidget {
-  const _SelectRow(
-      {required this.label,
-      this.sub,
-      this.code,
-      this.codeMono = false,
-      this.selected = false,
-      this.last = false,
-      this.badge,
-      this.badgeOk = true,
-      this.enabled = true,
-      this.onTap});
+  const _SelectRow({
+    required this.label,
+    this.sub,
+    this.code,
+    this.codeMono = false,
+    this.selected = false,
+    this.last = false,
+    this.badge,
+    this.badgeOk = true,
+    this.enabled = true,
+    this.onTap,
+  });
   final String label;
   final String? sub;
 
@@ -758,44 +889,61 @@ class _SelectRow extends StatelessWidget {
       opacity: enabled ? 1 : 0.5,
       child: PressHighlight(
         onTap: onTap,
-        radius: T.rMd,
+        radius: AppRadii.md,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink50))),
-          child: Row(children: [
-            if (code != null) ...[
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration:
-                    BoxDecoration(color: selected ? s.accent.bg : T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
-                child: codeMono
-                    ? Text(code!,
-                        style: Typo.num(size: 15, weight: FontWeight.w600, color: selected ? s.accent.d : T.fg2))
-                    : Text(code!,
-                        style: Typo.display(ar: s.rtl)
-                            .copyWith(fontSize: 17, fontWeight: FontWeight.w700, color: selected ? s.accent.d : T.fg2)),
-              ),
-              const SizedBox(width: 14),
-            ],
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                if (sub != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Text(sub!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink50))),
+          child: Row(
+            children: [
+              if (code case final code?) ...[
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? s.accent.bg : AppColors.ink50,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
                   ),
-              ]),
-            ),
-            if (badge != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 8, left: 8),
-                child: Pill(badge!, kind: badgeOk ? PillKind.neutral : PillKind.warn, dot: false, ar: s.rtl),
+                  child: codeMono
+                      ? Text(
+                          code,
+                          style: Typo.num(size: 15, color: selected ? s.accent.d : AppColors.textSecondary),
+                        )
+                      : Text(
+                          code,
+                          style: Typo.display(ar: s.rtl).copyWith(
+                            fontSize: FontSizes.subheadSm,
+                            fontWeight: FontWeight.w700,
+                            color: selected ? s.accent.d : AppColors.textSecondary,
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 14),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                    if (sub case final sub?)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                      ),
+                  ],
+                ),
               ),
-            if (selected) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
-          ]),
+              if (badge case final badge?)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8, start: 8),
+                  child: Pill(badge, kind: badgeOk ? PillKind.neutral : PillKind.warn, dot: false, ar: s.rtl),
+                ),
+              if (selected) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
+            ],
+          ),
         ),
       ),
     );
@@ -822,21 +970,26 @@ class _HandleQrPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: s.accent.bg,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: T.ink100),
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(color: AppColors.ink100),
           ),
           child: Directionality(
             textDirection: TextDirection.ltr,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(LucideIcons.qrCode, size: 15, color: s.accent.d),
-              const SizedBox(width: 7),
-              Flexible(
-                child: Text('@$handle',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(LucideIcons.qrCode, size: 15, color: s.accent.d),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    '@$handle',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Typo.num(size: FS.sm, color: s.accent.d).copyWith(fontWeight: FontWeight.w600)),
-              ),
-            ]),
+                    style: Typo.num(size: FontSizes.bodySm, color: s.accent.d).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

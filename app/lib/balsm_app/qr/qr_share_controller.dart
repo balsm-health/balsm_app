@@ -59,14 +59,14 @@ class QrShareState {
 ///
 /// autoDispose: the sheet closing drops the state; reopening restores from
 /// the keystore, so nothing token-shaped lingers without a listener.
-class QrShareController extends AutoDisposeNotifier<QrShareState> {
+class QrShareController extends Notifier<QrShareState> {
   Timer? _ticker;
 
   @override
   QrShareState build() {
     ref.onDispose(() => _ticker?.cancel());
     // Kick the keystore restore after the first state is installed.
-    Future.microtask(_restorePermanent);
+    unawaited(Future.microtask(_restorePermanent));
     return const QrShareState();
   }
 
@@ -75,6 +75,7 @@ class QrShareController extends AutoDisposeNotifier<QrShareState> {
   /// ciphertext refresh in case the identity changed since the last sync.
   Future<void> _restorePermanent() async {
     final record = await ref.read(permanentQrStoreProvider).read();
+    if (!ref.mounted) return;
     if (record == null) return;
     state = state.copyWith(
       mint: (
@@ -96,6 +97,7 @@ class QrShareController extends AutoDisposeNotifier<QrShareState> {
   Future<bool> mint() async {
     state = state.copyWith(minting: true, error: null);
     final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: kPermanentQrTtlSeconds);
+    if (!ref.mounted) return false;
     return result.fold(
       (m) {
         state = state.copyWith(
@@ -120,6 +122,7 @@ class QrShareController extends AutoDisposeNotifier<QrShareState> {
     if (m == null) return false;
     state = state.copyWith(revoking: true);
     final result = await ref.read(revokeEmergencyQrTokenUseCaseProvider).call(tokenId: m.token.jti);
+    if (!ref.mounted) return false;
     return result.fold(
       (_) {
         _ticker?.cancel();
@@ -138,6 +141,7 @@ class QrShareController extends AutoDisposeNotifier<QrShareState> {
   Future<bool> rotate() async {
     state = state.copyWith(rotating: true);
     final result = await ref.read(rotatePermanentQrUseCaseProvider)();
+    if (!ref.mounted) return false;
     return result.fold(
       (m) {
         state = state.copyWith(mint: m, rotating: false);
@@ -169,4 +173,5 @@ class QrShareController extends AutoDisposeNotifier<QrShareState> {
   }
 }
 
-final qrShareControllerProvider = NotifierProvider.autoDispose<QrShareController, QrShareState>(QrShareController.new);
+final NotifierProvider<QrShareController, QrShareState> qrShareControllerProvider =
+    NotifierProvider.autoDispose<QrShareController, QrShareState>(QrShareController.new);

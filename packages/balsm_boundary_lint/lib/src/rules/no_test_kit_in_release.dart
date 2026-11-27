@@ -7,7 +7,7 @@ class NoTestKitInRelease extends DartLintRule {
       LintCode(name: 'no_test_kit_in_release', problemMessage: 'test_kit imports are blocked in non-dev builds.');
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     const flavor = String.fromEnvironment('FLAVOR', defaultValue: 'prod');
     if (flavor == 'dev') return;
     context.registry.addImportDirective((node) {

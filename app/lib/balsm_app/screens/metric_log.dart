@@ -1,19 +1,28 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:self_report/self_report.dart';
+
 import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
-import '../tokens.dart';
 import '../widgets/body_map.dart';
-import '../widgets/num_pad.dart';
 import '../widgets/date_time_row.dart';
+import '../widgets/num_pad.dart';
 import '../widgets/photo_attach.dart';
 import 'checkin_shared.dart';
+import 'metric_drafts.dart';
+
+// Fits the swatch label on one line under its 44pt swatch.
+const _swatchLabelFontSize = 10.5;
+// The live reading, the largest figure in the app.
+const _liveReadingFontSize = 64.0;
 
 /// How a metric capture is hosted.
 enum MetricLogHost {
@@ -27,6 +36,7 @@ enum MetricLogHost {
 }
 
 /// What a metric template currently holds. PHI — never log these values.
+@immutable
 class MetricLogCapture {
   const MetricLogCapture({
     this.summary = '',
@@ -100,7 +110,7 @@ class _CurrentProfileBodyMap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gender = ref.watch(currentProfileGenderProvider).valueOrNull ?? s.gender;
+    final gender = ref.watch(currentProfileGenderProvider).value ?? s.gender;
     return BodyMap(
       gender: gender,
       selected: selected,
@@ -113,23 +123,32 @@ class _CurrentProfileBodyMap extends ConsumerWidget {
 /// and as a full check-in step.
 class MetricLog extends StatelessWidget {
   const MetricLog({
-    super.key,
     required this.metric,
     required this.s,
     required this.host,
+    super.key,
     this.onSave,
     this.onCancel,
     this.onChanged,
     this.focusedSymptom,
     this.belowField,
+    this.initial,
+    this.subject,
   });
 
   final CheckInMetric metric;
+
+  /// Gender of the family member being logged for (from their [Sex]); null
+  /// for the account holder. Copy that describes that person follows it.
+  final Gender? subject;
   final PatientAppState s;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
 
   /// Quick-log one-symptom detail: skip the multi-select picker and capture
   /// just this catalog entry (body map only when the design marks it located).
@@ -141,46 +160,106 @@ class MetricLog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (focusedSymptom != null) {
+    if (focusedSymptom case final focusedSymptom?) {
       return _OneSymptomLog(
         s: s,
         host: host,
         belowField: belowField,
-        symptom: focusedSymptom!,
+        symptom: focusedSymptom,
         onSave: onSave,
         onCancel: onCancel,
         onChanged: onChanged,
+        initial: initial,
       );
     }
     if (metric == CheckInMetric.mood) {
       return _MoodLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+        subject: subject,
+      );
     }
     if (metric == CheckInMetric.bloodPressure) {
-      return _BpLog(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+      return _BpLog(
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     if (metric == CheckInMetric.glucose) {
       return _GlucoseLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     if (metric == CheckInMetric.weight) {
       return _WeightLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     if (metric == CheckInMetric.spo2) {
-      return _O2Log(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+      return _O2Log(
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     if (metric == CheckInMetric.heartRate) {
       return _PulseLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     if (metric == CheckInMetric.pain) {
       return _PainLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     if (metric == CheckInMetric.symptoms) {
       return _SymptomsLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+        s: s,
+        host: host,
+        belowField: belowField,
+        onSave: onSave,
+        onCancel: onCancel,
+        onChanged: onChanged,
+        initial: initial,
+      );
     }
     return const SizedBox.shrink();
   }
@@ -189,12 +268,12 @@ class MetricLog extends StatelessWidget {
 /// Symptoms the design pairs with the body map (`loc: true`). Derived from the
 /// catalog so the screen and the domain cannot disagree — they did while
 /// tingling and itching were missing from [SymptomId] entirely.
-final _locatedSymptomIds = {
+final Set<String> _locatedSymptomIds = {
   for (final s in SymptomId.catalog)
     if (s.hasLocation) s.id,
 };
 
-mixin _MetricLogState<T extends StatefulWidget> on State<T> {
+mixin _MetricLogState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   PatientAppState get s;
   MetricLogHost get host;
   MetricLogSave? get onSave;
@@ -203,13 +282,39 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   bool get valid;
   MetricLogCapture get capture;
 
+  /// The stored entry the form opened on, when editing one.
+  MetricLogCapture? get initial;
+
   /// Rendered between the field and the date/time group. The full check-in
   /// puts its "I didn't measure this today" row here (report.jsx).
   Widget? get belowField => null;
 
+  /// One token per open form, so two forms never share a draft.
+  final Object _form = Object();
+
+  /// The key every draft provider of this form is read with.
+  DraftKey get draftKey => (form: _form, initial: initial?.vitals);
+
+  // Built once: the photo in it has identity equality, so a fresh one per read
+  // would be a different provider every time.
+  late final ExtrasKey _extrasKey = (
+    form: _form,
+    when: initial?.when,
+    photo: switch (initial?.photoBytes) {
+      final bytes? => PickedAttach(kind: 'image', bytes: bytes is Uint8List ? bytes : Uint8List.fromList(bytes)),
+      _ => null,
+    },
+  );
+
+  /// The form's own draft provider, when it has one; a change re-reports the capture.
+  ProviderListenable<Object?>? get draft => null;
+
   @override
   void initState() {
     super.initState();
+    // Listening keeps the auto-dispose drafts alive for as long as the form is.
+    ref.listenManual(entryExtrasProvider(_extrasKey), (_, __) => emit());
+    if (draft case final d?) ref.listenManual(d, (_, __) => emit());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) onChanged?.call(capture, valid: valid);
     });
@@ -228,31 +333,34 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
     final field = belowField == null
         ? child
         : PCard(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18), child: child);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      field,
-      if (belowField != null) belowField!,
-      DateTimeWhen(
-          when: when,
-          onChanged: (v) {
-            setState(() => when = v);
-            emit();
-          }),
-      if (host == MetricLogHost.standalone) ...[
-        _NoteField(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        field,
+        if (belowField case final belowField?) belowField,
+        DateTimeWhen(
+          when: ref.watch(entryExtrasProvider(_extrasKey)).when,
+          onChanged: (v) => ref.read(entryExtrasProvider(_extrasKey).notifier).setWhen(v),
+        ),
+        if (host == MetricLogHost.standalone) ...[
+          _NoteField(
             s: s,
             controller: noteCtrl,
-            photo: photo,
+            photo: ref.watch(entryExtrasProvider(_extrasKey)).photo,
             onPhoto: (p) {
-              setState(() => photo = p);
-              emit();
-            }),
-        _FlowSubmit(s: s, valid: valid, onSave: () => onSave?.call(capture), onCancel: onCancel),
+              // The picker answers after an await; the form may be closed by then.
+              if (!mounted) return;
+              ref.read(entryExtrasProvider(_extrasKey).notifier).setPhoto(p);
+            },
+          ),
+          _FlowSubmit(s: s, valid: valid, onSave: () => onSave?.call(capture), onCancel: onCancel),
+        ],
       ],
-    ]);
+    );
   }
 
-  DateTime when = DateTime.now();
-  PickedAttach? photo;
+  DateTime get when => ref.read(entryExtrasProvider(_extrasKey)).when;
+  PickedAttach? get photo => ref.read(entryExtrasProvider(_extrasKey)).photo;
   TextEditingController get noteCtrl;
 }
 
@@ -265,34 +373,43 @@ class _NoteField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ar = s.rtl;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // `NoteAttach` opens with a rule — it closes the metric block above it.
-      const Padding(padding: EdgeInsets.only(top: 18), child: Divider(height: 1, color: T.ink100)),
-      Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 8),
-        child: Text(s.strings.checkin.note_lbl,
-            style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-      ),
-      TextField(
-        controller: controller,
-        minLines: 2,
-        maxLines: 4,
-        textDirection: s.dir,
-        style: Typo.body(ar: ar).copyWith(color: T.fg1),
-        decoration: InputDecoration(
-          hintText: s.strings.checkin.note_ph(s.gender),
-          hintStyle: Typo.body(ar: ar).copyWith(color: T.fg4),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.all(14),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // `NoteAttach` opens with a rule — it closes the metric block above it.
+        const Padding(padding: EdgeInsets.only(top: 18), child: Divider(height: 1, color: AppColors.ink100)),
+        Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 8),
+          child: Text(
+            s.strings.checkin.note_lbl,
+            style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+          ),
         ),
-      ),
-      NotePhotoAttach(photo: photo, onChanged: onPhoto),
-    ]);
+        TextField(
+          controller: controller,
+          minLines: 2,
+          maxLines: 4,
+          textDirection: s.dir,
+          style: Typo.body(ar: ar).copyWith(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: s.strings.checkin.note_ph(s.gender),
+            hintStyle: Typo.body(ar: ar).copyWith(color: AppColors.textHint),
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.all(14),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderSide: BorderSide(color: s.accent.main, width: 1.5),
+            ),
+          ),
+        ),
+        NotePhotoAttach(photo: photo, onChanged: onPhoto),
+      ],
+    );
   }
 }
 
@@ -309,27 +426,41 @@ class _FlowSubmit extends StatelessWidget {
     final ar = s.rtl;
     return Padding(
       padding: const EdgeInsetsDirectional.only(top: 20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Opacity(
-          opacity: valid ? 1 : 0.4,
-          child: PButton(s.strings.checkin.ql_save,
-              variant: BtnVariant.primary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Opacity(
+            opacity: valid ? 1 : 0.4,
+            child: PButton(
+              s.strings.checkin.ql_save,
               large: true,
               block: true,
               accent: s.accent,
               ar: ar,
-              onTap: valid ? onSave : null),
-        ),
-        if (!valid)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(top: 8),
-            child: Text(s.strings.checkin.ql_save_hint(s.gender),
-                textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(color: T.fg3)),
+              onTap: valid ? onSave : null,
+            ),
           ),
-        const SizedBox(height: 10),
-        PButton(s.strings.common.cancel,
-            variant: BtnVariant.ghost, large: true, block: true, accent: s.accent, ar: ar, onTap: onCancel),
-      ]),
+          if (!valid)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(top: 8),
+              child: Text(
+                s.strings.checkin.ql_save_hint(s.gender),
+                textAlign: TextAlign.center,
+                style: Typo.meta(ar: ar).copyWith(color: AppColors.textTertiary),
+              ),
+            ),
+          const SizedBox(height: 10),
+          PButton(
+            s.strings.common.cancel,
+            variant: BtnVariant.ghost,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: ar,
+            onTap: onCancel,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -352,14 +483,16 @@ class _BigReading extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? s.accent.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
+            color: active ? s.accent.bg : AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
             // `.vital-num` carries a transparent 1.5px border at rest so the
             // box does not jump when the accent border appears.
             border: Border.all(color: active ? s.accent.main : Colors.transparent, width: 1.5),
           ),
-          child: Text(value.isEmpty ? '—' : value,
-              style: Typo.num(size: FS.xl4, weight: FontWeight.w600, color: value.isEmpty ? T.ink300 : T.fg1)),
+          child: Text(
+            value.isEmpty ? '—' : value,
+            style: Typo.num(size: FontSizes.hero, color: value.isEmpty ? AppColors.ink300 : AppColors.textPrimary),
+          ),
         ),
       );
 }
@@ -379,13 +512,15 @@ class _Chip extends StatelessWidget {
           curve: Motion.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
-            color: selected ? s.accent.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
+            color: selected ? s.accent.bg : AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(color: selected ? s.accent.main : AppColors.border, width: 1.5),
           ),
-          child: Text(label,
-              style:
-                  Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg2)),
+          child: Text(
+            label,
+            style: Typo.bodySm(ar: s.rtl)
+                .copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : AppColors.textSecondary),
+          ),
         ),
       );
 }
@@ -397,19 +532,32 @@ String? _trimmedNote(TextEditingController c) {
 
 // ── Mood ─────────────────────────────────────────────────────
 
-class _MoodLog extends StatefulWidget {
-  const _MoodLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _MoodLog extends ConsumerStatefulWidget {
+  const _MoodLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+    this.subject,
+  });
   final PatientAppState s;
+  final Gender? subject;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_MoodLog> createState() => _MoodLogState();
+  ConsumerState<_MoodLog> createState() => _MoodLogState();
 }
 
-class _MoodLogState extends State<_MoodLog> with _MetricLogState {
+class _MoodLogState extends ConsumerState<_MoodLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -423,16 +571,18 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  int mood = 0;
+  late int mood = widget.initial?.mood?.score ?? 0;
 
   @override
   bool get valid => mood > 0;
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary: mood > 0 ? moodLabel(s, mood) : '',
+        summary: mood > 0 ? moodLabel(s, mood, subject: widget.subject) : '',
         note: _trimmedNote(noteCtrl),
         mood: mood > 0 ? Mood(mood) : null,
         when: when,
@@ -449,39 +599,54 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
   Widget build(BuildContext context) => chrome(
         // Gaps between the cells, not padding inside them: padding on one
         // side left the first four 10dp narrower than the last.
-        child: Row(children: [
-          for (var i = 0; i < 5; i++) ...[
-            if (i > 0) const SizedBox(width: 10),
-            Expanded(
-              child: MoodCell(
+        child: Row(
+          children: [
+            for (var i = 0; i < 5; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: MoodCell(
                   lv: i + 1,
                   selected: mood == i + 1,
                   s: s,
+                  subject: widget.subject,
                   onTap: () => setState(() {
-                        mood = i + 1;
-                        emit();
-                      })),
-            ),
+                    mood = i + 1;
+                    emit();
+                  }),
+                ),
+              ),
+            ],
           ],
-        ]),
+        ),
       );
 }
 
 // ── Blood pressure ───────────────────────────────────────────
 
-class _BpLog extends StatefulWidget {
-  const _BpLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _BpLog extends ConsumerStatefulWidget {
+  const _BpLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_BpLog> createState() => _BpLogState();
+  ConsumerState<_BpLog> createState() => _BpLogState();
 }
 
-class _BpLogState extends State<_BpLog> with _MetricLogState {
+class _BpLogState extends ConsumerState<_BpLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -495,21 +660,26 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
-
-  String sys = '';
-  String dia = '';
-  bool onSys = true;
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
   @override
-  bool get valid => sys.length >= 2 && dia.length >= 2;
+  ProviderListenable<Object?> get draft => bpDraftProvider(draftKey);
+
+  BpDraft get _bp => ref.read(bpDraftProvider(draftKey));
+  BpDraftNotifier get _bpNotifier => ref.read(bpDraftProvider(draftKey).notifier);
+
+  @override
+  bool get valid => _bp.valid;
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary:
-            valid ? s.strings.checkin.reading_unit(s.strings.checkin.bp_pair(sys, dia), s.strings.checkin.unit_bp) : '',
+        summary: valid
+            ? s.strings.checkin.reading_unit(s.strings.checkin.bp_pair(_bp.sys, _bp.dia), s.strings.checkin.unit_bp)
+            : '',
         note: _trimmedNote(noteCtrl),
-        vitals: valid ? Vitals(systolic: int.parse(sys), diastolic: int.parse(dia)) : Vitals.empty,
+        vitals: _bp.vitals,
         when: when,
         photoBytes: photo?.bytes,
       );
@@ -520,78 +690,95 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
     super.dispose();
   }
 
-  void _key(String d) => setState(() {
-        if (onSys) {
-          if (sys.length < 3) sys += d;
-          if (sys.length == 3) onSys = false;
-        } else if (dia.length < 3) {
-          dia += d;
-        }
-        emit();
-      });
-
-  void _back() => setState(() {
-        if (!onSys && dia.isEmpty) {
-          onSys = true;
-        } else if (!onSys) {
-          dia = dia.substring(0, dia.length - 1);
-        } else if (sys.isNotEmpty) {
-          sys = sys.substring(0, sys.length - 1);
-        }
-        emit();
-      });
-
   @override
   Widget build(BuildContext context) {
     final ar = s.rtl;
+    final bp = ref.watch(bpDraftProvider(draftKey));
+    final sys = bp.sys;
+    final dia = bp.dia;
+    final onSys = bp.onSys;
     return chrome(
-      child: Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _BigReading(value: sys, s: s, active: onSys, onTap: () => setState(() => onSys = true), width: 108),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('/',
-                style:
-                    Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.xl3, fontWeight: FontWeight.w700, color: T.ink300)),
+      child: Column(
+        children: [
+          // Blood pressure is written systolic/diastolic left to right in every
+          // language ("120/80", as Home and Trends show it). Mirrored under RTL
+          // the entry read "80 / 120"; the boxes and their labels stay LTR.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            textDirection: TextDirection.ltr,
+            children: [
+              _BigReading(value: sys, s: s, active: onSys, onTap: () => _bpNotifier.focus(systolic: true)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '/',
+                  style: Typo.subhead(ar: s.rtl)
+                      .copyWith(fontSize: FontSizes.display, fontWeight: FontWeight.w700, color: AppColors.ink300),
+                ),
+              ),
+              _BigReading(value: dia, s: s, active: !onSys, onTap: () => _bpNotifier.focus(systolic: false)),
+            ],
           ),
-          _BigReading(value: dia, s: s, active: !onSys, onTap: () => setState(() => onSys = false), width: 108),
-        ]),
-        const SizedBox(height: 4),
-        Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-          Text(s.strings.checkin.sys,
-              style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? s.accent.main : T.fg3)),
-          const SizedBox(width: 60),
-          Text(s.strings.checkin.dia,
-              style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? T.fg3 : s.accent.main)),
-        ]),
-        const SizedBox(height: 4),
-        Text(s.strings.checkin.unit_bp,
-            style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
-        const SizedBox(height: 16),
-        NumPad(onKey: _key, onBack: _back),
-      ]),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              Text(
+                s.strings.checkin.sys,
+                style: Typo.meta(ar: ar)
+                    .copyWith(fontWeight: FontWeight.w600, color: onSys ? s.accent.main : AppColors.textTertiary),
+              ),
+              const SizedBox(width: 60),
+              Text(
+                s.strings.checkin.dia,
+                style: Typo.meta(ar: ar)
+                    .copyWith(fontWeight: FontWeight.w600, color: onSys ? AppColors.textTertiary : s.accent.main),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            s.strings.checkin.unit_bp,
+            style: Typo.bodySm(ar: ar)
+                .copyWith(fontSize: FontSizes.body, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 16),
+          NumPad(onKey: _bpNotifier.key, onBack: _bpNotifier.back),
+        ],
+      ),
     );
   }
 }
 
 // ── Glucose ──────────────────────────────────────────────────
 
-enum _GluCtx { fasting, meal, random }
-
-class _GlucoseLog extends StatefulWidget {
-  const _GlucoseLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _GlucoseLog extends ConsumerStatefulWidget {
+  const _GlucoseLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_GlucoseLog> createState() => _GlucoseLogState();
+  ConsumerState<_GlucoseLog> createState() => _GlucoseLogState();
 }
 
-class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
-  static const _contexts = [_GluCtx.fasting, _GluCtx.meal, _GluCtx.random];
+class _GlucoseLogState extends ConsumerState<_GlucoseLog> with _MetricLogState {
+  static const List<GlucoseContext> _contexts = GlucoseContext.values;
 
   @override
   PatientAppState get s => widget.s;
@@ -604,35 +791,32 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  String glu = '';
-  _GluCtx ctx = _GluCtx.fasting;
+  @override
+  ProviderListenable<Object?> get draft => glucoseDraftProvider(draftKey);
 
-  String get _ctxLabel => switch (ctx) {
-        _GluCtx.fasting => s.strings.checkin.glu_fast,
-        _GluCtx.meal => s.strings.checkin.glu_meal,
-        _GluCtx.random => s.strings.checkin.glu_random,
+  GlucoseDraft get _glu => ref.read(glucoseDraftProvider(draftKey));
+  GlucoseDraftNotifier get _gluNotifier => ref.read(glucoseDraftProvider(draftKey).notifier);
+
+  String _ctxLabel(GlucoseContext c) => switch (c) {
+        GlucoseContext.fasting => s.strings.checkin.glu_fast,
+        GlucoseContext.postMeal => s.strings.checkin.glu_meal,
+        GlucoseContext.random => s.strings.checkin.glu_random,
       };
 
   @override
-  bool get valid => glu.length >= 2;
-
-  Vitals _vitals() {
-    if (!valid) return Vitals.empty;
-    final value = int.parse(glu);
-    return Vitals(
-      glucoseFasting: ctx == _GluCtx.fasting ? value : null,
-      glucosePostMeal: ctx == _GluCtx.meal ? value : null,
-      glucoseRandom: ctx == _GluCtx.random ? value : null,
-    );
-  }
+  bool get valid => _glu.valid;
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary: valid ? s.strings.checkin.reading_unit_ctx(glu, s.strings.checkin.unit_glu, _ctxLabel) : '',
+        summary: valid
+            ? s.strings.checkin.reading_unit_ctx(_glu.digits, s.strings.checkin.unit_glu, _ctxLabel(_glu.context))
+            : '',
         note: _trimmedNote(noteCtrl),
-        vitals: _vitals(),
+        vitals: _glu.vitals,
         when: when,
         photoBytes: photo?.bytes,
       );
@@ -644,62 +828,68 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
   }
 
   @override
-  Widget build(BuildContext context) => chrome(
-        child: Column(children: [
+  Widget build(BuildContext context) {
+    final glu = ref.watch(glucoseDraftProvider(draftKey));
+    return chrome(
+      child: Column(
+        children: [
           Wrap(
             spacing: 10,
             runSpacing: 10,
             alignment: WrapAlignment.center,
             children: _contexts
-                .map((c) => _Chip(
-                    label: switch (c) {
-                      _GluCtx.fasting => s.strings.checkin.glu_fast,
-                      _GluCtx.meal => s.strings.checkin.glu_meal,
-                      _GluCtx.random => s.strings.checkin.glu_random,
-                    },
-                    selected: ctx == c,
+                .map(
+                  (c) => _Chip(
+                    label: _ctxLabel(c),
+                    selected: glu.context == c,
                     s: s,
-                    onTap: () => setState(() {
-                          ctx = c;
-                          emit();
-                        })))
+                    onTap: () => _gluNotifier.setContext(c),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 16),
-          _BigReading(value: glu, s: s, width: 150),
+          _BigReading(value: glu.digits, s: s, width: 150),
           const SizedBox(height: 8),
-          Text(s.strings.checkin.unit_glu,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
-          const SizedBox(height: 16),
-          NumPad(
-            onKey: (d) => setState(() {
-              glu = glu.length >= 3 ? glu : glu + d;
-              emit();
-            }),
-            onBack: () => setState(() {
-              glu = glu.isEmpty ? glu : glu.substring(0, glu.length - 1);
-              emit();
-            }),
+          Text(
+            s.strings.checkin.unit_glu,
+            style: Typo.bodySm(ar: s.rtl)
+                .copyWith(fontSize: FontSizes.body, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
           ),
-        ]),
-      );
+          const SizedBox(height: 16),
+          NumPad(onKey: _gluNotifier.key, onBack: _gluNotifier.back),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Weight ───────────────────────────────────────────────────
 
-class _WeightLog extends StatefulWidget {
-  const _WeightLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _WeightLog extends ConsumerStatefulWidget {
+  const _WeightLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_WeightLog> createState() => _WeightLogState();
+  ConsumerState<_WeightLog> createState() => _WeightLogState();
 }
 
-class _WeightLogState extends State<_WeightLog> with _MetricLogState {
+class _WeightLogState extends ConsumerState<_WeightLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -713,22 +903,24 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
-
-  String kg = '';
-  String decimals = '';
-  bool hasDot = false;
-
-  String get display => kg.isEmpty ? '' : (hasDot ? '$kg.${decimals.isEmpty ? '0' : decimals}' : kg);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
   @override
-  bool get valid => kg.length >= 2;
+  ProviderListenable<Object?> get draft => weightDraftProvider(draftKey);
+
+  WeightDraft get _w => ref.read(weightDraftProvider(draftKey));
+  WeightDraftNotifier get _wNotifier => ref.read(weightDraftProvider(draftKey).notifier);
+
+  @override
+  bool get valid => _w.valid;
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary: valid ? s.strings.checkin.reading_unit(display, s.strings.profile.pd_kg) : '',
+        summary: valid ? s.strings.checkin.reading_unit(_w.display, s.strings.profile.pd_kg) : '',
         note: _trimmedNote(noteCtrl),
-        vitals: valid ? Vitals(weightKg: double.parse(display)) : Vitals.empty,
+        vitals: _w.vitals,
         when: when,
         photoBytes: photo?.bytes,
       );
@@ -739,59 +931,53 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
     super.dispose();
   }
 
-  void _key(String d) => setState(() {
-        if (hasDot) {
-          if (decimals.isEmpty) decimals = d;
-        } else if (kg.length < 3) {
-          kg += d;
-        }
-        emit();
-      });
-
-  void _back() => setState(() {
-        if (hasDot && decimals.isNotEmpty) {
-          decimals = '';
-        } else if (hasDot) {
-          hasDot = false;
-        } else if (kg.isNotEmpty) {
-          kg = kg.substring(0, kg.length - 1);
-        }
-        emit();
-      });
-
   @override
-  Widget build(BuildContext context) => chrome(
-        child: Column(children: [
-          _BigReading(value: display, s: s, width: 170),
+  Widget build(BuildContext context) {
+    final w = ref.watch(weightDraftProvider(draftKey));
+    return chrome(
+      child: Column(
+        children: [
+          _BigReading(value: w.display, s: s, width: 170),
           const SizedBox(height: 8),
-          Text(s.strings.profile.pd_kg,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
-          const SizedBox(height: 16),
-          NumPad(
-            onKey: _key,
-            onBack: _back,
-            decimal: true,
-            onDot: () => setState(() => hasDot = hasDot || kg.isNotEmpty),
+          Text(
+            s.strings.profile.pd_kg,
+            style: Typo.bodySm(ar: s.rtl)
+                .copyWith(fontSize: FontSizes.body, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
           ),
-        ]),
-      );
+          const SizedBox(height: 16),
+          NumPad(onKey: _wNotifier.key, onBack: _wNotifier.back, decimal: true, onDot: _wNotifier.dot),
+        ],
+      ),
+    );
+  }
 }
 
 // ── SpO₂ ─────────────────────────────────────────────────────
 
-class _O2Log extends StatefulWidget {
-  const _O2Log({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _O2Log extends ConsumerStatefulWidget {
+  const _O2Log({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_O2Log> createState() => _O2LogState();
+  ConsumerState<_O2Log> createState() => _O2LogState();
 }
 
-class _O2LogState extends State<_O2Log> with _MetricLogState {
+class _O2LogState extends ConsumerState<_O2Log> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -805,23 +991,24 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
-
-  String digits = '';
-
-  int? get _pct => digits.isEmpty ? null : int.tryParse(digits);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
   @override
-  bool get valid {
-    final n = _pct;
-    return digits.length >= 2 && n != null && n <= 100;
-  }
+  ProviderListenable<Object?> get draft => spo2DraftProvider(draftKey);
+
+  Spo2Draft get _o2 => ref.read(spo2DraftProvider(draftKey));
+  Spo2DraftNotifier get _o2Notifier => ref.read(spo2DraftProvider(draftKey).notifier);
+
+  @override
+  bool get valid => _o2.valid;
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary: valid ? '$digits${s.strings.checkin.unit_spo2}' : '',
+        summary: valid ? '${_o2.digits}${s.strings.checkin.unit_spo2}' : '',
         note: _trimmedNote(noteCtrl),
-        vitals: valid ? Vitals(spo2: _pct) : Vitals.empty,
+        vitals: _o2.vitals,
         when: when,
         photoBytes: photo?.bytes,
       );
@@ -832,51 +1019,55 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
     super.dispose();
   }
 
-  void _key(String d) => setState(() {
-        // Two digits for 11–99; a third digit only completes 10 → 100.
-        if (digits.length >= 3) return;
-        if (digits.length == 2 && (digits != '10' || d != '0')) return;
-        digits += d;
-        emit();
-      });
-
-  void _back() => setState(() {
-        if (digits.isNotEmpty) digits = digits.substring(0, digits.length - 1);
-        emit();
-      });
-
   @override
-  Widget build(BuildContext context) => chrome(
-        child: Column(children: [
-          _BigReading(value: digits, s: s, width: 150),
+  Widget build(BuildContext context) {
+    final o2 = ref.watch(spo2DraftProvider(draftKey));
+    return chrome(
+      child: Column(
+        children: [
+          _BigReading(value: o2.digits, s: s, width: 150),
           const SizedBox(height: 8),
-          Text(s.strings.checkin.unit_spo2,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
+          Text(
+            s.strings.checkin.unit_spo2,
+            style: Typo.bodySm(ar: s.rtl)
+                .copyWith(fontSize: FontSizes.body, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+          ),
           const SizedBox(height: 16),
-          NumPad(onKey: _key, onBack: _back),
-        ]),
-      );
+          NumPad(onKey: _o2Notifier.key, onBack: _o2Notifier.back),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Pulse ────────────────────────────────────────────────────
 
 /// quicklog.jsx `QuickPulse` — type the rate in bpm, or "Count with me": tap
-/// each beat for [_pulseSecs] seconds and the rate is the count × 4.
-class _PulseLog extends StatefulWidget {
-  const _PulseLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+/// each beat for [kPulseCountSeconds] seconds and the rate is the count × 4.
+class _PulseLog extends ConsumerStatefulWidget {
+  const _PulseLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_PulseLog> createState() => _PulseLogState();
+  ConsumerState<_PulseLog> createState() => _PulseLogState();
 }
 
-const _pulseSecs = 15;
-
-class _PulseLogState extends State<_PulseLog> with _MetricLogState {
+class _PulseLogState extends ConsumerState<_PulseLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -890,32 +1081,29 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  String digits = '';
+  @override
+  ProviderListenable<Object?> get draft => pulseDraftProvider(draftKey);
 
-  /// Tapping beats instead of typing.
-  bool counting = false;
-  int beats = 0;
+  PulseDraft get _p => ref.read(pulseDraftProvider(draftKey));
+  PulseDraftNotifier get _pNotifier => ref.read(pulseDraftProvider(draftKey).notifier);
 
-  /// Seconds left in the count; null until the first tap starts it.
-  int? left;
+  /// Drives the once-a-second countdown. The clock is view plumbing; the count
+  /// itself lives in the draft.
   Timer? _tick;
 
-  int? get _bpm => digits.isEmpty ? null : int.tryParse(digits);
-
-  /// The design's plausible range: a rate outside it is a mistyped digit.
+  /// A rate outside [VitalLimits]'s range is a mistyped digit.
   @override
-  bool get valid {
-    final n = _bpm;
-    return !counting && digits.length >= 2 && n != null && n >= 30 && n <= 220;
-  }
+  bool get valid => _p.valid;
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary: valid ? s.strings.checkin.reading_unit(digits, s.strings.checkin.unit_bpm) : '',
+        summary: valid ? s.strings.checkin.reading_unit(_p.digits, s.strings.checkin.unit_bpm) : '',
         note: _trimmedNote(noteCtrl),
-        vitals: valid ? Vitals(heartRate: _bpm) : Vitals.empty,
+        vitals: _p.vitals,
         when: when,
         photoBytes: photo?.bytes,
       );
@@ -927,133 +1115,132 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
     super.dispose();
   }
 
-  void _key(String d) => setState(() {
-        if (digits.length >= 3) return;
-        digits += d;
-        emit();
-      });
+  void _startCounting() {
+    _tick?.cancel();
+    _pNotifier.startCounting();
+  }
 
-  void _back() => setState(() {
-        if (digits.isNotEmpty) digits = digits.substring(0, digits.length - 1);
-        emit();
-      });
-
-  void _startCounting() => setState(() {
-        _tick?.cancel();
-        counting = true;
-        beats = 0;
-        left = null;
-        emit();
-      });
-
-  void _typeInstead() => setState(() {
-        _tick?.cancel();
-        counting = false;
-        beats = 0;
-        left = null;
-        emit();
-      });
+  void _typeInstead() {
+    _tick?.cancel();
+    _pNotifier.typeInstead();
+  }
 
   /// The first tap starts the clock and is itself the first beat.
-  void _beat() => setState(() {
-        if (left == null) {
-          left = _pulseSecs;
-          beats = 1;
-          _tick = Timer.periodic(const Duration(seconds: 1), (_) => _second());
-        } else if (left! > 0) {
-          beats++;
-        }
-      });
+  void _beat() {
+    final starting = _p.left == null;
+    _pNotifier.beat();
+    if (starting) _tick = Timer.periodic(const Duration(seconds: 1), (_) => _second());
+  }
 
   void _second() {
     if (!mounted) return;
-    setState(() {
-      left = left! - 1;
-      if (left! > 0) return;
-      _tick?.cancel();
-      digits = '${beats * (60 ~/ _pulseSecs)}';
-      counting = false;
-      left = null;
-      emit();
-    });
+    _pNotifier.tick();
+    if (!_p.counting) _tick?.cancel();
   }
 
   @override
   Widget build(BuildContext context) {
     final c = s.strings.checkin;
     final ar = s.rtl;
-    if (!counting) {
+    final p = ref.watch(pulseDraftProvider(draftKey));
+    final digits = p.digits;
+    final beats = p.beats;
+    final left = p.left;
+    if (!p.counting) {
       return chrome(
-        child: Column(children: [
-          _BigReading(value: digits, s: s, width: 150),
-          const SizedBox(height: 8),
-          Text(c.unit_bpm,
-              style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(top: 4, bottom: 12),
-            child: PButton(c.pulse_count,
+        child: Column(
+          children: [
+            _BigReading(value: digits, s: s, width: 150),
+            const SizedBox(height: 8),
+            Text(
+              c.unit_bpm,
+              style: Typo.bodySm(ar: ar)
+                  .copyWith(fontSize: FontSizes.body, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(top: 4, bottom: 12),
+              child: PButton(
+                c.pulse_count,
                 icon: LucideIcons.timer,
                 variant: BtnVariant.secondary,
                 accent: s.accent,
                 ar: ar,
-                onTap: _startCounting),
-          ),
-          NumPad(onKey: _key, onBack: _back),
-        ]),
+                onTap: _startCounting,
+              ),
+            ),
+            NumPad(onKey: _pNotifier.key, onBack: _pNotifier.back),
+          ],
+        ),
       );
     }
     final running = left != null;
-    final progress = running ? (_pulseSecs - left!) / _pulseSecs : 0.0;
+    final progress = running ? (kPulseCountSeconds - left) / kPulseCountSeconds : 0.0;
     return chrome(
       child: Padding(
         padding: const EdgeInsetsDirectional.only(top: 4, bottom: 8),
-        child: Column(children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 300),
-            child: Text(running ? c.pulse_keep : c.pulse_how(s.gender),
-                textAlign: TextAlign.center, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.5)),
-          ),
-          const SizedBox(height: 14),
-          Semantics(
-            button: true,
-            label: c.pulse_beat,
-            child: Pressable(
-              onTap: _beat,
-              scale: 0.97,
-              child: SizedBox.square(
-                dimension: 196,
-                child: Stack(alignment: Alignment.center, children: [
-                  Container(decoration: const BoxDecoration(color: T.hueViolet50, shape: BoxShape.circle)),
-                  Positioned.fill(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(end: progress),
-                      duration: const Duration(seconds: 1),
-                      builder: (_, p, __) => CircularProgressIndicator(
-                        value: p,
-                        strokeWidth: 6,
-                        strokeCap: StrokeCap.round,
-                        color: T.hueViolet,
-                        backgroundColor: T.ink100,
-                      ),
-                    ),
-                  ),
-                  Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.heart, size: 30, color: T.hueViolet),
-                    const SizedBox(height: 4),
-                    Text('$beats',
-                        style: Typo.num(size: 44, weight: FontWeight.w800, color: T.fg1).copyWith(height: 1)),
-                    const SizedBox(height: 4),
-                    Text(running ? c.pulse_left('$left') : c.pulse_start(s.gender),
-                        style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-                  ]),
-                ]),
+        child: Column(
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: Text(
+                running ? c.pulse_keep : c.pulse_how(s.gender),
+                textAlign: TextAlign.center,
+                style: Typo.bodySm(ar: ar).copyWith(color: AppColors.textSecondary, height: 1.5),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          PButton(c.pulse_type, variant: BtnVariant.ghost, accent: s.accent, ar: ar, onTap: _typeInstead),
-        ]),
+            const SizedBox(height: 14),
+            Semantics(
+              button: true,
+              label: c.pulse_beat,
+              child: Pressable(
+                onTap: _beat,
+                scale: 0.97,
+                child: SizedBox.square(
+                  dimension: 196,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(decoration: const BoxDecoration(color: AppColors.hueViolet50, shape: BoxShape.circle)),
+                      Positioned.fill(
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(end: progress),
+                          duration: const Duration(seconds: 1),
+                          builder: (_, p, __) => CircularProgressIndicator(
+                            value: p,
+                            strokeWidth: 6,
+                            strokeCap: StrokeCap.round,
+                            color: AppColors.hueViolet,
+                            backgroundColor: AppColors.ink100,
+                          ),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(LucideIcons.heart, size: 30, color: AppColors.hueViolet),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$beats',
+                            style: Typo.num(size: 44, weight: FontWeight.w800).copyWith(height: 1),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            running ? c.pulse_left('$left') : c.pulse_start(s.gender),
+                            style:
+                                Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            PButton(c.pulse_type, variant: BtnVariant.ghost, accent: s.accent, ar: ar, onTap: _typeInstead),
+          ],
+        ),
       ),
     );
   }
@@ -1061,19 +1248,30 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
 
 // ── Pain ─────────────────────────────────────────────────────
 
-class _PainLog extends StatefulWidget {
-  const _PainLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _PainLog extends ConsumerStatefulWidget {
+  const _PainLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_PainLog> createState() => _PainLogState();
+  ConsumerState<_PainLog> createState() => _PainLogState();
 }
 
-class _PainLogState extends State<_PainLog> with _MetricLogState {
+class _PainLogState extends ConsumerState<_PainLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -1087,10 +1285,12 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  double pain = 0;
-  final Set<PainSite> locations = {};
+  late double pain = (widget.initial?.painLevel.value ?? 0).toDouble();
+  late final Set<PainSite> locations = {...?widget.initial?.painSites};
 
   @override
   bool get valid => pain > 0 || locations.isNotEmpty;
@@ -1121,55 +1321,80 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
     final ar = s.rtl;
     final info = painInfo(s, pain.round());
     return chrome(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Center(
-            child: Column(children: [
-          Text('${pain.round()}',
-              style: Typo.display(ar: s.rtl).copyWith(fontSize: 64, fontWeight: FontWeight.w800, color: info.color)),
-          Text(info.lbl, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-        ])),
-        PainSlider(
-          value: pain,
-          knobColor: info.color,
-          onChanged: (v) => setState(() {
-            pain = v;
-            emit();
-          }),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: Text(s.strings.checkin.body_location,
-              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-        ),
-        _CurrentProfileBodyMap(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  '${pain.round()}',
+                  style: Typo.display(ar: s.rtl)
+                      .copyWith(fontSize: _liveReadingFontSize, fontWeight: FontWeight.w800, color: info.color),
+                ),
+                Text(
+                  info.lbl,
+                  style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+                ),
+              ],
+            ),
+          ),
+          PainSlider(
+            value: pain,
+            knobColor: info.color,
+            onChanged: (v) => setState(() {
+              pain = v;
+              emit();
+            }),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
+            child: Text(
+              s.strings.checkin.body_location,
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+            ),
+          ),
+          _CurrentProfileBodyMap(
             s: s,
             selected: locations,
             onToggle: (site) => setState(() {
-                  if (!canToggleSite(locations, site)) return;
-                  locations.contains(site) ? locations.remove(site) : locations.add(site);
-                  emit();
-                })),
-      ]),
+              if (!canToggleSite(locations, site)) return;
+              locations.contains(site) ? locations.remove(site) : locations.add(site);
+              emit();
+            }),
+          ),
+        ],
+      ),
     );
   }
 }
 
 // ── Symptoms ─────────────────────────────────────────────────
 
-class _SymptomsLog extends StatefulWidget {
-  const _SymptomsLog(
-      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+class _SymptomsLog extends ConsumerStatefulWidget {
+  const _SymptomsLog({
+    required this.s,
+    required this.host,
+    this.onSave,
+    this.onCancel,
+    this.onChanged,
+    this.belowField,
+    this.initial,
+  });
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_SymptomsLog> createState() => _SymptomsLogState();
+  ConsumerState<_SymptomsLog> createState() => _SymptomsLogState();
 }
 
-class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
+class _SymptomsLogState extends ConsumerState<_SymptomsLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -1183,7 +1408,9 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
   final Set<SymptomId> symptoms = {};
   bool noSymptoms = false;
@@ -1236,57 +1463,71 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   Widget build(BuildContext context) {
     final ar = s.rtl;
     return chrome(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // `SymptomPicker` — a `.b-check-group--row`: checkboxes in the full
-        // check-in, radios in the one-metric log. Not chips.
-        Wrap(spacing: 16, runSpacing: 11, children: [
-          ...symptomIcons.map((e) => BCheck(
-              label: symptomLabel(s, e.$1),
-              checked: symptoms.contains(e.$1),
-              icon: e.$2,
-              radio: !_multi,
-              accent: s.accent,
-              ar: ar,
-              onTap: () => _select(e.$1))),
-          BCheck(
-              label: s.strings.checkin.s_none,
-              checked: noSymptoms,
-              icon: LucideIcons.checkCircle2,
-              radio: !_multi,
-              accent: s.accent,
-              ar: ar,
-              onTap: () => setState(() {
-                    noSymptoms = !noSymptoms;
-                    if (noSymptoms) {
-                      symptoms.clear();
-                      locations.clear();
-                    }
-                    emit();
-                  })),
-        ]),
-        if (_showMap) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 16, bottom: 8),
-            child: Text(s.strings.checkin.body_location,
-                style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // `SymptomPicker` — a `.b-check-group--row`: checkboxes in the full
+          // check-in, radios in the one-metric log. Not chips.
+          Wrap(
+            spacing: 16,
+            runSpacing: 11,
+            children: [
+              ...symptomIcons.map(
+                (e) => BCheck(
+                  label: symptomLabel(s, e.$1),
+                  checked: symptoms.contains(e.$1),
+                  icon: e.$2,
+                  radio: !_multi,
+                  accent: s.accent,
+                  ar: ar,
+                  onTap: () => _select(e.$1),
+                ),
+              ),
+              BCheck(
+                label: s.strings.checkin.s_none,
+                checked: noSymptoms,
+                icon: LucideIcons.checkCircle2,
+                radio: !_multi,
+                accent: s.accent,
+                ar: ar,
+                onTap: () => setState(() {
+                  noSymptoms = !noSymptoms;
+                  if (noSymptoms) {
+                    symptoms.clear();
+                    locations.clear();
+                  }
+                  emit();
+                }),
+              ),
+            ],
           ),
-          _CurrentProfileBodyMap(
+          if (_showMap) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 8),
+              child: Text(
+                s.strings.checkin.body_location,
+                style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+              ),
+            ),
+            _CurrentProfileBodyMap(
               s: s,
               selected: locations,
               onToggle: (site) => setState(() {
-                    if (!canToggleSite(locations, site)) return;
-                    locations.contains(site) ? locations.remove(site) : locations.add(site);
-                    emit();
-                  })),
+                if (!canToggleSite(locations, site)) return;
+                locations.contains(site) ? locations.remove(site) : locations.add(site);
+                emit();
+              }),
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
 
 /// One catalog symptom from the quick-log list — note + save, body map
 /// only when the design marks the entry located.
-class _OneSymptomLog extends StatefulWidget {
+class _OneSymptomLog extends ConsumerStatefulWidget {
   const _OneSymptomLog({
     required this.s,
     required this.host,
@@ -1295,6 +1536,7 @@ class _OneSymptomLog extends StatefulWidget {
     this.onCancel,
     this.onChanged,
     this.belowField,
+    this.initial,
   });
   final PatientAppState s;
   final MetricLogHost host;
@@ -1303,11 +1545,14 @@ class _OneSymptomLog extends StatefulWidget {
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
-  State<_OneSymptomLog> createState() => _OneSymptomLogState();
+  ConsumerState<_OneSymptomLog> createState() => _OneSymptomLogState();
 }
 
-class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
+class _OneSymptomLogState extends ConsumerState<_OneSymptomLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
   @override
@@ -1321,12 +1566,14 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  final Set<PainSite> locations = {};
+  late final Set<PainSite> locations = {...?widget.initial?.painSites};
 
   /// Only urine and stool carry one (`SymptomId.hasDetail`).
-  SymptomDetail detail = const SymptomDetail();
+  late SymptomDetail detail = widget.initial?.symptomDetails[widget.symptom] ?? const SymptomDetail();
 
   bool get _showMap => _locatedSymptomIds.contains(widget.symptom.id);
 
@@ -1373,34 +1620,39 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
     if (!_showMap && !hasDetail) return chrome(child: const SizedBox.shrink());
     final ar = s.rtl;
     return chrome(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (_showMap) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(s.strings.checkin.body_location,
-                style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-          ),
-          _CurrentProfileBodyMap(
-            s: s,
-            selected: locations,
-            onToggle: (site) => setState(() {
-              if (!canToggleSite(locations, site)) return;
-              locations.contains(site) ? locations.remove(site) : locations.add(site);
-              emit();
-            }),
-          ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_showMap) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                s.strings.checkin.body_location,
+                style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+              ),
+            ),
+            _CurrentProfileBodyMap(
+              s: s,
+              selected: locations,
+              onToggle: (site) => setState(() {
+                if (!canToggleSite(locations, site)) return;
+                locations.contains(site) ? locations.remove(site) : locations.add(site);
+                emit();
+              }),
+            ),
+          ],
+          if (hasDetail)
+            _SymptomDetailCard(
+              s: s,
+              symptom: widget.symptom,
+              detail: detail,
+              onChanged: (d) => setState(() {
+                detail = d;
+                emit();
+              }),
+            ),
         ],
-        if (hasDetail)
-          _SymptomDetailCard(
-            s: s,
-            symptom: widget.symptom,
-            detail: detail,
-            onChanged: (d) => setState(() {
-              detail = d;
-              emit();
-            }),
-          ),
-      ]),
+      ),
     );
   }
 }
@@ -1412,7 +1664,7 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
 /// a severity legend, not a progress bar), which is why it is not split into
 /// active/inactive halves.
 class PainSlider extends StatelessWidget {
-  const PainSlider({super.key, required this.value, required this.knobColor, required this.onChanged});
+  const PainSlider({required this.value, required this.knobColor, required this.onChanged, super.key});
 
   final double value; // 0..10
   final Color knobColor;
@@ -1426,60 +1678,70 @@ class PainSlider extends StatelessWidget {
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 18, 4, 6),
-      child: Column(children: [
-        SizedBox(
-          height: 56,
-          child: LayoutBuilder(builder: (context, c) {
-            // The knob centre travels between half-knob insets so it never
-            // overhangs the rail ends.
-            final travel = c.maxWidth - _knob;
-            void report(double dx) {
-              final raw = ((dx - _knob / 2) / travel).clamp(0.0, 1.0);
-              final t = rtl ? 1 - raw : raw;
-              onChanged((t * 10).roundToDouble());
-            }
+      padding: const EdgeInsetsDirectional.fromSTEB(4, 18, 4, 6),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 56,
+            child: LayoutBuilder(
+              builder: (context, c) {
+                // The knob centre travels between half-knob insets so it never
+                // overhangs the rail ends.
+                final travel = c.maxWidth - _knob;
+                void report(double dx) {
+                  final raw = ((dx - _knob / 2) / travel).clamp(0.0, 1.0);
+                  final t = rtl ? 1 - raw : raw;
+                  onChanged((t * 10).roundToDouble());
+                }
 
-            final fraction = (rtl ? 10 - value : value) / 10;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (d) => report(d.localPosition.dx),
-              onHorizontalDragUpdate: (d) => report(d.localPosition.dx),
-              child: Stack(alignment: Alignment.centerLeft, children: [
-                Center(
-                  child: Container(
-                    height: _railHeight,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(T.rPill),
-                      gradient: const LinearGradient(
-                        colors: [T.hueMint, T.sun400, T.danger],
+                final fraction = (rtl ? 10 - value : value) / 10;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (d) => report(d.localPosition.dx),
+                  onHorizontalDragUpdate: (d) => report(d.localPosition.dx),
+                  child: Stack(
+                    alignment: AlignmentDirectional.centerStart,
+                    children: [
+                      Center(
+                        child: Container(
+                          height: _railHeight,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(AppRadii.pill),
+                            gradient: const LinearGradient(
+                              colors: [AppColors.hueMint, AppColors.sun400, AppColors.danger],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      PositionedDirectional(
+                        start: fraction * travel,
+                        child: Container(
+                          width: _knob,
+                          height: _knob,
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: knobColor, width: 3),
+                            boxShadow: AppShadows.md,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Positioned(
-                  left: fraction * travel,
-                  child: Container(
-                    width: _knob,
-                    height: _knob,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: knobColor, width: 3),
-                      boxShadow: T.shadowMd,
-                    ),
-                  ),
-                ),
-              ]),
-            );
-          }),
-        ),
-        // `.pain-ticks` — the endpoints and midpoint, in tabular figures.
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          for (final n in const [0, 5, 10])
-            Text('$n', style: Typo.num(size: FS.xs2, weight: FontWeight.w600, color: T.fg4)),
-        ]),
-      ]),
+                );
+              },
+            ),
+          ),
+          // `.pain-ticks` — the endpoints and midpoint, in tabular figures.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (final n in const [0, 5, 10])
+                Text('$n', style: Typo.num(size: FontSizes.eyebrow, color: AppColors.textHint)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1511,107 +1773,128 @@ class _SymptomDetailCard extends StatelessWidget {
     final ar = s.rtl;
     return PCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        if (symptom.asksUrineDetail) ...[
-          _Head(icon: LucideIcons.palette, label: c.sd_color, accent: s.accent.main, ar: ar),
-          const SizedBox(height: 14),
-          Row(children: [
-            for (final colour in UrineColor.values)
-              Expanded(
-                child: _Swatch(
-                  s: s,
-                  colour: colour,
-                  selected: detail.urineColor == colour,
-                  // Tapping the selected swatch clears it — nothing reported.
-                  onTap: () => onChanged(detail.urineColor == colour
-                      ? detail.copyWith(clearUrineColor: true)
-                      : detail.copyWith(urineColor: colour)),
-                ),
-              ),
-          ]),
-          const SizedBox(height: 20),
-          const Divider(height: 1, color: T.ink100),
-          const SizedBox(height: 18),
-          _Head(icon: LucideIcons.beaker, label: c.sd_quantity, accent: s.accent.main, ar: ar),
-          const SizedBox(height: 14),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _StepBtn(
-              icon: LucideIcons.minus,
-              // Never below zero, and stepping down from nothing stays nothing.
-              onTap: detail.urineMl == null || detail.urineMl == 0
-                  ? null
-                  : () => onChanged(detail.copyWith(urineMl: math.max(0, detail.urineMl! - _step))),
-            ),
-            const SizedBox(width: 18),
-            // `min-width: 90` — a fixed width clips at three digits.
-            ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 90),
-              child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '${detail.urineMl ?? 0}',
-                      textDirection: TextDirection.ltr,
-                      style: Typo.num(
-                          size: FS.xl2, weight: FontWeight.w700, color: detail.urineMl == null ? T.fg4 : T.fg1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (symptom.asksUrineDetail) ...[
+            _Head(icon: LucideIcons.palette, label: c.sd_color, accent: s.accent.main, ar: ar),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                for (final colour in UrineColor.values)
+                  Expanded(
+                    child: _Swatch(
+                      s: s,
+                      colour: colour,
+                      selected: detail.urineColor == colour,
+                      // Tapping the selected swatch clears it — nothing reported.
+                      onTap: () => onChanged(
+                        detail.urineColor == colour
+                            ? detail.copyWith(clearUrineColor: true)
+                            : detail.copyWith(urineColor: colour),
+                      ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(c.sd_ml, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-                  ]),
+                  ),
+              ],
             ),
-            const SizedBox(width: 18),
-            _StepBtn(
-              icon: LucideIcons.plus,
-              onTap: () => onChanged(detail.copyWith(urineMl: (detail.urineMl ?? 0) + _step)),
-            ),
-          ]),
-          const SizedBox(height: 20),
-          const Divider(height: 1, color: T.ink100),
-          const SizedBox(height: 16),
-        ],
-        // Both urine and stool ask about blood.
-        Pressable(
-          onTap: () => onChanged(detail.copyWith(blood: !detail.blood)),
-          child: AnimatedContainer(
-            duration: Motion.fast,
-            curve: Motion.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: detail.blood ? T.dangerBg : T.ink50,
-              borderRadius: BorderRadius.circular(T.rMd),
-            ),
-            child: Row(children: [
-              Icon(LucideIcons.droplet, size: 17, color: detail.blood ? T.danger : T.fg3),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  c.sd_blood,
-                  style:
-                      Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: detail.blood ? T.danger : T.fg2),
+            const SizedBox(height: 20),
+            const Divider(height: 1, color: AppColors.ink100),
+            const SizedBox(height: 18),
+            _Head(icon: LucideIcons.beaker, label: c.sd_quantity, accent: s.accent.main, ar: ar),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _StepBtn(
+                  icon: LucideIcons.minus,
+                  // Never below zero, and stepping down from nothing stays nothing.
+                  onTap: detail.urineMl == null || detail.urineMl == 0
+                      ? null
+                      : () => onChanged(detail.copyWith(urineMl: math.max(0, detail.urineMl! - _step))),
                 ),
-              ),
-              // The row is already the tap target, so this is the indicator
-              // only — `BCheck` would draw its own label and hit area.
-              AnimatedContainer(
-                duration: Motion.fast,
-                curve: Motion.easeOut,
-                width: 22,
-                height: 22,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: detail.blood ? T.danger : Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: detail.blood ? T.danger : T.borderStrong, width: 1.5),
+                const SizedBox(width: 18),
+                // `min-width: 90` — a fixed width clips at three digits.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 90),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '${detail.urineMl ?? 0}',
+                        textDirection: TextDirection.ltr,
+                        style: Typo.num(
+                          size: FontSizes.title,
+                          weight: FontWeight.w700,
+                          color: detail.urineMl == null ? AppColors.textHint : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        c.sd_ml,
+                        style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+                      ),
+                    ],
+                  ),
                 ),
-                child: detail.blood ? const Icon(LucideIcons.check, size: 14, color: Colors.white) : null,
+                const SizedBox(width: 18),
+                _StepBtn(
+                  icon: LucideIcons.plus,
+                  onTap: () => onChanged(detail.copyWith(urineMl: (detail.urineMl ?? 0) + _step)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Divider(height: 1, color: AppColors.ink100),
+            const SizedBox(height: 16),
+          ],
+          // Both urine and stool ask about blood.
+          Pressable(
+            onTap: () => onChanged(detail.copyWith(blood: !detail.blood)),
+            child: AnimatedContainer(
+              duration: Motion.fast,
+              curve: Motion.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: detail.blood ? AppColors.dangerBackground : AppColors.ink50,
+                borderRadius: BorderRadius.circular(AppRadii.md),
               ),
-            ]),
+              child: Row(
+                children: [
+                  Icon(LucideIcons.droplet, size: 17, color: detail.blood ? AppColors.danger : AppColors.textTertiary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      c.sd_blood,
+                      style: Typo.bodySm(ar: ar).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: detail.blood ? AppColors.danger : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  // The row is already the tap target, so this is the indicator
+                  // only — `BCheck` would draw its own label and hit area.
+                  AnimatedContainer(
+                    duration: Motion.fast,
+                    curve: Motion.easeOut,
+                    width: 22,
+                    height: 22,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: detail.blood ? AppColors.danger : AppColors.white,
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      border: Border.all(color: detail.blood ? AppColors.danger : AppColors.borderStrong, width: 1.5),
+                    ),
+                    child: detail.blood ? const Icon(LucideIcons.check, size: 14, color: AppColors.white) : null,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -1624,11 +1907,13 @@ class _Head extends StatelessWidget {
   final bool ar;
 
   @override
-  Widget build(BuildContext context) => Row(children: [
-        Icon(icon, size: 15, color: accent),
-        const SizedBox(width: 8),
-        Text(label, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-      ]);
+  Widget build(BuildContext context) => Row(
+        children: [
+          Icon(icon, size: 15, color: accent),
+          const SizedBox(width: 8),
+          Text(label, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+        ],
+      );
 }
 
 /// One urine colour, as a 42px disc with its label under it.
@@ -1652,50 +1937,52 @@ class _Swatch extends StatelessWidget {
     final accent = s.accent.main;
     return Pressable(
       onTap: onTap,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        AnimatedScale(
-          scale: selected ? 1.06 : 1,
-          duration: Motion.fast,
-          curve: Motion.easeOut,
-          child: Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Color(colour.swatch),
-              shape: BoxShape.circle,
-              // Design: a white gap ring, then the accent ring, when selected.
-              border: Border.all(color: Colors.white, width: selected ? 2.5 : 0),
-              boxShadow: [
-                BoxShadow(
-                  color: selected ? accent : const Color(0x1A14202B),
-                  spreadRadius: selected ? 2 : 1,
-                  blurRadius: 0,
-                ),
-              ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedScale(
+            scale: selected ? 1.06 : 1,
+            duration: Motion.fast,
+            curve: Motion.easeOut,
+            child: Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Color(colour.swatch),
+                shape: BoxShape.circle,
+                // Design: a white gap ring, then the accent ring, when selected.
+                border: Border.all(color: AppColors.white, width: selected ? 2.5 : 0),
+                boxShadow: [
+                  BoxShadow(
+                    color: selected ? accent : AppColors.hairline,
+                    spreadRadius: selected ? 2 : 1,
+                  ),
+                ],
+              ),
+              child: selected
+                  ? Icon(
+                      LucideIcons.check,
+                      size: 17,
+                      // The two pale swatches need dark ink to stay legible.
+                      color: colour.isLightSwatch ? AppColors.onSun : AppColors.white,
+                    )
+                  : null,
             ),
-            child: selected
-                ? Icon(
-                    LucideIcons.check,
-                    size: 17,
-                    // The two pale swatches need dark ink to stay legible.
-                    color: colour.isLightSwatch ? const Color(0xFF3A2E05) : Colors.white,
-                  )
-                : null,
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _label(s.strings.checkin),
-          textAlign: TextAlign.center,
-          style: Typo.bodySm(ar: s.rtl).copyWith(
-            fontSize: 10.5,
-            height: 1.2,
-            fontWeight: FontWeight.w600,
-            color: selected ? accent : T.fg3,
+          const SizedBox(height: 6),
+          Text(
+            _label(s.strings.checkin),
+            textAlign: TextAlign.center,
+            style: Typo.bodySm(ar: s.rtl).copyWith(
+              fontSize: _swatchLabelFontSize,
+              height: 1.2,
+              fontWeight: FontWeight.w600,
+              color: selected ? accent : AppColors.textTertiary,
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -1716,11 +2003,11 @@ class _StepBtn extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.white,
               shape: BoxShape.circle,
-              border: Border.all(color: T.border, width: 1.5),
+              border: Border.all(color: AppColors.border, width: 1.5),
             ),
-            child: Icon(icon, size: 17, color: T.fg2),
+            child: Icon(icon, size: 17, color: AppColors.textSecondary),
           ),
         ),
       );

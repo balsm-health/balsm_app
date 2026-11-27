@@ -30,7 +30,7 @@ typedef PrefsMigrationStep = Future<void> Function(PrefsMigrator m);
 /// root via `globalKVDataSourceProvider` or constructed directly) — consumers
 /// never see the storage technology.
 abstract class ModulePreferences {
-  const ModulePreferences(this._kv, {required this.namespace});
+  const ModulePreferences(KeyValueDataSource kv, {required this.namespace}) : _kv = kv;
 
   final KeyValueDataSource _kv;
 

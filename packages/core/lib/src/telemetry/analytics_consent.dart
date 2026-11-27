@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
+import '../../core.dart' show PostHogAnalyticsLogger;
 import '../data_source/key_value_data_source.dart';
 import '../data_source/module_preferences.dart';
+import 'posthog_analytics_logger.dart' show PostHogAnalyticsLogger;
 
 /// Product analytics is ON until the patient turns it off (opt-OUT model) —
 /// Profile → Privacy & data → "Anonymous analytics".
@@ -41,6 +43,8 @@ class TelemetryPrefs extends ModulePreferences {
 /// A telemetry backend whose egress is gated on the patient's product-analytics
 /// consent. Implemented by [PostHogAnalyticsLogger]; Sentry does not implement
 /// it (see [kAnalyticsConsentDefault]).
+// Port interface; PostHog implements it and tests substitute fakes.
+// ignore: one_member_abstracts
 abstract class AnalyticsConsentSink {
   /// Called with the current consent at boot and again on every change.
   void setAnalyticsEnabled(bool enabled);

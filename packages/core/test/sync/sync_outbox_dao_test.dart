@@ -17,7 +17,12 @@ void main() {
 
   test('enqueue then pending returns the entry', () async {
     await dao.enqueue(
-        entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{"a":1}', userId: 'u-1');
+      entity: 'care_provider',
+      entityId: 'cp-1',
+      op: OutboxOp.upsert,
+      payload: '{"a":1}',
+      userId: 'u-1',
+    );
 
     final pending = await dao.pending();
     expect(pending, hasLength(1));
@@ -87,7 +92,12 @@ void main() {
     // patient's PHI under the next patient's token on a shared phone.
     await dao.enqueue(entity: 'care_provider', entityId: 'cp-mine', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
     await dao.enqueue(
-        entity: 'care_provider', entityId: 'cp-theirs', op: OutboxOp.upsert, payload: '{}', userId: 'u-2');
+      entity: 'care_provider',
+      entityId: 'cp-theirs',
+      op: OutboxOp.upsert,
+      payload: '{}',
+      userId: 'u-2',
+    );
 
     final mine = await dao.pending(userId: 'u-1');
 

@@ -1,5 +1,6 @@
-import 'package:core/core.dart';
 import 'package:equatable/equatable.dart';
+
+import '../../core.dart';
 
 /// Data partitioned by user. Null scope = current authenticated user
 /// (`currentUserIdProvider`); explicit [UserId] overrides.
@@ -11,10 +12,9 @@ import 'package:equatable/equatable.dart';
 abstract class UserEntityDataSource<K, V> extends ScopedDataSource<K, V, UserEntityFilter> {}
 
 class UserEntityFilter extends Equatable {
+  const UserEntityFilter({this.userId, this.entityId});
   final UserId? userId;
   final EntityId? entityId;
-
-  UserEntityFilter({this.userId, this.entityId});
 
   @override
   List<Object?> get props => [userId, entityId];

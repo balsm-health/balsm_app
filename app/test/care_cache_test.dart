@@ -19,8 +19,7 @@ CareEntity _place(String id) => CareEntity(
 void main() {
   group('CareDirectoryCache', () {
     test('returns a stored result and misses on an unknown key', () {
-      final cache = CareDirectoryCache();
-      cache.put('k1', [_place('a')]);
+      final cache = CareDirectoryCache()..put('k1', [_place('a')]);
 
       expect(cache.get('k1')!.single.id, 'a');
       expect(cache.get('k2'), isNull);
@@ -28,8 +27,7 @@ void main() {
 
     test('expires entries past the TTL', () {
       var now = DateTime(2026, 1, 1, 12);
-      final cache = CareDirectoryCache(ttl: const Duration(minutes: 10), clock: () => now);
-      cache.put('k', [_place('a')]);
+      final cache = CareDirectoryCache(clock: () => now)..put('k', [_place('a')]);
 
       now = now.add(const Duration(minutes: 9));
       expect(cache.get('k'), isNotNull, reason: 'still inside the TTL');
@@ -39,14 +37,14 @@ void main() {
     });
 
     test('evicts the least recently used once full', () {
-      final cache = CareDirectoryCache(maxEntries: 3);
-      cache.put('a', [_place('a')]);
-      cache.put('b', [_place('b')]);
-      cache.put('c', [_place('c')]);
+      final cache = CareDirectoryCache(maxEntries: 3)
+        ..put('a', [_place('a')])
+        ..put('b', [_place('b')])
+        ..put('c', [_place('c')])
 
-      // Touching 'a' must make 'b' the coldest, not 'a'.
-      cache.get('a');
-      cache.put('d', [_place('d')]);
+        // Touching 'a' must make 'b' the coldest, not 'a'.
+        ..get('a')
+        ..put('d', [_place('d')]);
 
       expect(cache.length, 3);
       expect(cache.get('b'), isNull, reason: 'b was least recently used');
@@ -56,20 +54,19 @@ void main() {
     });
 
     test('overwriting a key does not grow the cache', () {
-      final cache = CareDirectoryCache(maxEntries: 2);
-      cache.put('a', [_place('a1')]);
-      cache.put('a', [_place('a2')]);
+      final cache = CareDirectoryCache(maxEntries: 2)
+        ..put('a', [_place('a1')])
+        ..put('a', [_place('a2')]);
 
       expect(cache.length, 1);
       expect(cache.get('a')!.single.id, 'a2');
     });
 
     test('remove drops a single entry', () {
-      final cache = CareDirectoryCache();
-      cache.put('a', [_place('a')]);
-      cache.put('b', [_place('b')]);
-
-      cache.remove('a');
+      final cache = CareDirectoryCache()
+        ..put('a', [_place('a')])
+        ..put('b', [_place('b')])
+        ..remove('a');
 
       expect(cache.get('a'), isNull);
       expect(cache.get('b'), isNotNull);
@@ -77,8 +74,7 @@ void main() {
 
     test('values omits expired entries rather than returning them', () {
       var now = DateTime(2026, 1, 1, 12);
-      final cache = CareDirectoryCache(ttl: const Duration(minutes: 10), clock: () => now);
-      cache.put('old', [_place('old')]);
+      final cache = CareDirectoryCache(clock: () => now)..put('old', [_place('old')]);
 
       now = now.add(const Duration(minutes: 11));
       cache.put('fresh', [_place('fresh')]);

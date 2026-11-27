@@ -61,10 +61,12 @@ void main() {
 
   test('a fresh list is not refetched', () async {
     var calls = 0;
-    final a = adapterWith(_FakeGeofenceApi(() async {
-      calls++;
-      return const DeniedCountriesResponse(deniedCodes: ['IL']);
-    }));
+    final a = adapterWith(
+      _FakeGeofenceApi(() async {
+        calls++;
+        return const DeniedCountriesResponse(deniedCodes: ['IL']);
+      }),
+    );
     await a.isDenied('IL');
     await a.isDenied('IL');
     expect(calls, 1);
@@ -89,7 +91,7 @@ void main() {
   });
 
   test('the pre-migration keychain entry is deleted', () async {
-    final a = adapterWith(_FakeGeofenceApi(() async => const DeniedCountriesResponse(deniedCodes: [])));
+    final a = adapterWith(_FakeGeofenceApi(() async => const DeniedCountriesResponse()));
     await a.isDenied('EG');
     expect(legacy.deleted, contains('balsm.denied_countries_cache'));
   });

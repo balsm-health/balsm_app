@@ -26,7 +26,7 @@ class RemoveCareProviderUseCase {
       await _providers.delete(providerId);
       _bus.publish(HealthProfileUpdated(userId: userId, fieldChanged: 'care_provider_removed'));
       return AppResult.success(null);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

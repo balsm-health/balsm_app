@@ -38,9 +38,11 @@ void main() {
 
       await expectLater(
         () => api.passwordSignIn(signIn()),
-        throwsA(isA<ApiException>()
-            .having((e) => e.code, 'code', 'account_locked')
-            .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 90)),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'code', 'account_locked')
+              .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 90),
+        ),
       );
     });
 
@@ -115,7 +117,7 @@ void main() {
   });
 
   test('e2eApiOverrides binds every Provider<XxxApi> to a fake', () {
-    final container = ProviderContainer(overrides: e2eApiOverrides());
+    final container = ProviderContainer(retry: noProviderRetry, overrides: e2eApiOverrides());
     addTearDown(container.dispose);
 
     expect(container.read(authApiProvider), isA<FakeAuthApi>());
@@ -126,11 +128,44 @@ void main() {
     expect(container.read(disclosureApiProvider), isA<FakeDisclosureApi>());
     expect(container.read(geofenceApiProvider), isA<FakeGeofenceApi>());
     expect(container.read(careDirectoryApiProvider), isA<FakeCareDirectoryApi>());
+    expect(container.read(familyLinksApiProvider), isA<FakeFamilyLinksApi>());
+    expect(container.read(contentApiProvider), isA<FakeContentApi>());
+  });
+
+  test('FakeContentApi answers 304 to its current ETag and 404 when it has nothing', () async {
+    final api = FakeContentApi();
+    await expectLater(
+      api.pregnancyWeeks(lang: 'en'),
+      throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)),
+    );
+
+    api.weeks = PregnancyWeeksResponse.fromJson(const {
+      'version': 'v-test',
+      'weeks': [
+        {'week': 4},
+      ],
+    });
+    final fresh = await api.pregnancyWeeks(lang: 'ar');
+    final again = await api.pregnancyWeeks(lang: 'ar', etag: (fresh as Modified<PregnancyWeeksResponse>).etag);
+
+    expect(again, isA<NotModified<PregnancyWeeksResponse>>());
+    expect(api.sentEtags, [null, null, '"fake-etag"']);
+    expect(api.sentLangs, ['en', 'ar', 'ar']);
+  });
+
+  test('FakeFamilyLinksApi answers 404 for an unknown jti and stores a pending request', () async {
+    final api = FakeFamilyLinksApi()..knownJtis.add('jti-known');
+    const ask = CreateFamilyLinkRequest(id: 'l1', jti: 'jti-unknown', relation: 'son', publicKey: 'k');
+
+    await expectLater(api.create(ask), throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)));
+    await api.create(const CreateFamilyLinkRequest(id: 'l1', jti: 'jti-known', relation: 'son', publicKey: 'k'));
+
+    expect((await api.outgoing()).single.status, 'pending');
   });
 
   test('e2eApiOverrides accepts a pre-configured fake so a test can force state', () {
     final auth = FakeAuthApi()..lockedOut = true;
-    final container = ProviderContainer(overrides: e2eApiOverrides(auth: auth));
+    final container = ProviderContainer(retry: noProviderRetry, overrides: e2eApiOverrides(auth: auth));
     addTearDown(container.dispose);
 
     expect(identical(container.read(authApiProvider), auth), isTrue);
@@ -154,7 +189,7 @@ void main() {
     });
 
     test('filters by radius', () async {
-      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, radiusKm: 1.0));
+      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, radiusKm: 1));
       expect(res.every((p) => (p.distanceKm ?? 0) <= 1.0), isTrue);
       expect(res.length, lessThan((await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357))).length));
     });

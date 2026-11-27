@@ -43,15 +43,18 @@ void main() {
     final points =
         careClustersFor(index, const LatLng(30.043, 31.234), const LatLng(30.047, 31.238), kCareClusterMaxZoom + 1.0);
 
-    expect(points.every((p) => p.isCluster != true), isTrue,
-        reason: 'above the cluster ceiling every place gets its own pin');
+    expect(
+      points.every((p) => p.isCluster != true),
+      isTrue,
+      reason: 'above the cluster ceiling every place gets its own pin',
+    );
     expect(points.first.pin, isNotNull);
   });
 
   test('a single place is never wrapped in a cluster', () {
     final index = buildCareClusters([_place('solo', 30.0444, 31.2357)]);
 
-    final points = careClustersFor(index, const LatLng(29.0, 30.0), const LatLng(31.0, 32.0), 10);
+    final points = careClustersFor(index, const LatLng(29, 30), const LatLng(31, 32), 10);
 
     expect(points, hasLength(1));
     expect(points.single.isCluster, isNot(true));

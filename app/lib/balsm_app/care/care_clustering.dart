@@ -11,9 +11,6 @@ import 'care_entity.dart';
 /// budget goes with them — so points are clustered per zoom level and only
 /// expand as the user zooms in.
 class CarePoint extends Clusterable {
-  /// The pin this point stands for. Null when this point is a cluster.
-  final CarePin? pin;
-
   CarePoint.of(CarePin place)
       : pin = place,
         super(
@@ -36,6 +33,9 @@ class CarePoint extends Clusterable {
           clusterId: id,
           pointsSize: size,
         );
+
+  /// The pin this point stands for. Null when this point is a cluster.
+  final CarePin? pin;
 
   LatLng get position => LatLng(latitude ?? 0, longitude ?? 0);
 
@@ -62,7 +62,7 @@ Fluster<CarePoint> buildCareClusters(List<CarePin> pins) => Fluster<CarePoint>(
       extent: 512,
       nodeSize: 64,
       points: pins.map(CarePoint.of).toList(growable: false),
-      createCluster: (cluster, lng, lat) => CarePoint.cluster(
+      createCluster: (BaseCluster? cluster, double? lng, double? lat) => CarePoint.cluster(
         id: cluster?.id ?? 0,
         lat: lat ?? 0,
         lng: lng ?? 0,

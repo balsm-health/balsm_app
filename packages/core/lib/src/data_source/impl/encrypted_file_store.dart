@@ -113,6 +113,8 @@ class EncryptedFileStore implements UserFileStore {
     final user = _resolve(scope);
     if (user == null) return null;
     final file = _file(user, path);
+    // Async on purpose: the sync variant would block the UI isolate while files are read.
+    // ignore: avoid_slow_async_io
     if (!await file.exists()) return null;
     try {
       final raw = await file.readAsBytes();
@@ -131,6 +133,8 @@ class EncryptedFileStore implements UserFileStore {
   Future<bool> exists(String path, {UserId? scope}) async {
     final user = _resolve(scope);
     if (user == null) return false;
+    // Async on purpose: the sync variant would block the UI isolate while files are read.
+    // ignore: avoid_slow_async_io
     return _file(user, path).exists();
   }
 
@@ -139,6 +143,8 @@ class EncryptedFileStore implements UserFileStore {
     final user = _require(scope);
     final file = _file(user, path);
     try {
+      // Async on purpose: the sync variant would block the UI isolate while files are read.
+      // ignore: avoid_slow_async_io
       if (await file.exists()) await file.delete();
     } catch (e) {
       throw StorageWriteException('delete "$path" failed', e);
@@ -151,6 +157,8 @@ class EncryptedFileStore implements UserFileStore {
     if (user == null) return; // idempotent logout cleanup
     final dir = _partition(user);
     try {
+      // Async on purpose: the sync variant would block the UI isolate while files are read.
+      // ignore: avoid_slow_async_io
       if (await dir.exists()) await dir.delete(recursive: true);
     } catch (e) {
       throw StorageWriteException('clear partition failed', e);
@@ -174,10 +182,14 @@ class EncryptedFileStore implements UserFileStore {
     final toKey = await kc?.readToken(_keyId(to));
     final fromDir = _partitionOf(from);
     final toDir = _partitionOf(to);
+    // Async on purpose: the sync variant would block the UI isolate while files are read.
+    // ignore: avoid_slow_async_io
     final hasFromDir = await fromDir.exists();
     if (fromKey != null && toKey != null && toKey != fromKey) {
       throw StateError('target owner already has files');
     }
+    // Async on purpose: the sync variant would block the UI isolate while files are read.
+    // ignore: avoid_slow_async_io
     if (hasFromDir && await toDir.exists()) {
       throw StateError('target owner already has files');
     }
@@ -199,12 +211,16 @@ class EncryptedFileStore implements UserFileStore {
     if (from == to) return;
     final kc = _keychain;
     final toKey = await kc?.readToken(_keyId(to));
+    // Async on purpose: the sync variant would block the UI isolate while files are read.
+    // ignore: avoid_slow_async_io
     if (toKey == null && !await _partitionOf(to).exists()) {
       return rekeyOwnerFiles(from: from, to: to);
     }
     final src = UserId.value(from);
     final dst = UserId.value(to);
     final fromDir = _partitionOf(from);
+    // Async on purpose: the sync variant would block the UI isolate while files are read.
+    // ignore: avoid_slow_async_io
     if (await fromDir.exists()) {
       await for (final entry in fromDir.list()) {
         if (entry is! File) continue;
@@ -232,6 +248,8 @@ class EncryptedFileStore implements UserFileStore {
     _checkIds([owner]);
     final dir = _partitionOf(owner);
     try {
+      // Async on purpose: the sync variant would block the UI isolate while files are read.
+      // ignore: avoid_slow_async_io
       if (await dir.exists()) await dir.delete(recursive: true);
     } catch (e) {
       throw StorageWriteException('delete owner files failed', e);

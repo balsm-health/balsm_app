@@ -1,10 +1,18 @@
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show immutable;
 
 import '../value_objects/ids.dart';
 
 /// One line on a prescription — a drug and how to take it.
+@immutable
 class PrescribedItem {
   const PrescribedItem({required this.name, this.dose, this.notes});
+
+  factory PrescribedItem.fromJson(Map<String, dynamic> json) => PrescribedItem(
+        name: json['name'] as String,
+        dose: json['dose'] as String?,
+        notes: json['notes'] as String? ?? json['desc'] as String?,
+      );
 
   final String name;
 
@@ -20,12 +28,6 @@ class PrescribedItem {
         if (notes != null) 'notes': notes,
       };
 
-  static PrescribedItem fromJson(Map<String, dynamic> json) => PrescribedItem(
-        name: json['name'] as String,
-        dose: json['dose'] as String?,
-        notes: json['notes'] as String? ?? json['desc'] as String?,
-      );
-
   @override
   bool operator ==(Object other) =>
       other is PrescribedItem && other.name == name && other.dose == dose && other.notes == notes;
@@ -39,11 +41,14 @@ class PrescribedItem {
 /// Patient-entered from a paper or electronic script — there is no
 /// e-prescribing backend to fetch from, and the app does not fabricate
 /// clinicians (same stance as `CareTeamScreen`).
+@immutable
 class Prescription {
   const Prescription({
     required this.id,
     required this.userId,
     required this.clinician,
+    required this.issuedAt,
+    required this.createdAt,
     this.title,
     this.specialty,
     this.reference,
@@ -51,9 +56,7 @@ class Prescription {
     this.attachmentPath,
     this.attachmentKind,
     this.items = const [],
-    required this.issuedAt,
     this.validUntil,
-    required this.createdAt,
   });
 
   final PrescriptionId id;

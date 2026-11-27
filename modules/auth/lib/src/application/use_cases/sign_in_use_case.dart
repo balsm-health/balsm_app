@@ -1,6 +1,7 @@
 import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:core/core.dart';
 
+import '../../../auth.dart' show SignUpUseCase, UserSignedUp;
 import '../../domain/aggregates/auth_session.dart';
 import '../../domain/events/lockout_triggered.dart';
 import '../../domain/events/user_signed_in.dart';
@@ -94,7 +95,7 @@ class SignInUseCase {
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -108,7 +109,7 @@ class SignInUseCase {
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -122,7 +123,7 @@ class SignInUseCase {
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -145,11 +146,13 @@ class SignInUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedIn(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'email',
-      ));
+      _bus.publish(
+        UserSignedIn(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'email',
+        ),
+      );
 
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
@@ -157,7 +160,7 @@ class SignInUseCase {
         return _handleLockout(e, email);
       }
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -186,13 +189,13 @@ class SignInUseCase {
       return AppResult.success(GoOnlineNewId(r.tokens.userId));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') {
-        final locked = await _handleLockout(e, email);
+        final locked = _handleLockout(e, email);
         if (locked.isSuccess && locked.value is SignInLockout) {
           return AppResult.success(GoOnlineLockout((locked.value as SignInLockout).session));
         }
       }
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -213,11 +216,13 @@ class SignInUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedIn(
-        userId: UserId.value(tokens.userId),
-        email: '',
-        provider: 'email_link',
-      ));
+      _bus.publish(
+        UserSignedIn(
+          userId: UserId.value(tokens.userId),
+          email: '',
+          provider: 'email_link',
+        ),
+      );
 
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
@@ -226,7 +231,7 @@ class SignInUseCase {
       // screen can say so instead of "sign in again" (#117).
       if (e.code == 'unauthorized') return AppResult.failure(UnauthorizedFailure(e.message));
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -251,17 +256,19 @@ class SignInUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedIn(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'email',
-      ));
+      _bus.publish(
+        UserSignedIn(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'email',
+        ),
+      );
 
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -278,7 +285,7 @@ class SignInUseCase {
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -292,7 +299,7 @@ class SignInUseCase {
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -316,17 +323,19 @@ class SignInUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedIn(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'google',
-      ));
+      _bus.publish(
+        UserSignedIn(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'google',
+        ),
+      );
 
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -351,17 +360,19 @@ class SignInUseCase {
         userId: tokens.userId,
       );
 
-      _bus.publish(UserSignedIn(
-        userId: UserId.value(tokens.userId),
-        email: email,
-        provider: 'apple',
-      ));
+      _bus.publish(
+        UserSignedIn(
+          userId: UserId.value(tokens.userId),
+          email: email,
+          provider: 'apple',
+        ),
+      );
 
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -375,7 +386,7 @@ class SignInUseCase {
     final until = DateTime.now().toUtc().add(Duration(seconds: seconds));
 
     // Use a hashed/opaque identifier — do not expose raw email.
-    final opaqueId = '${email.hashCode.toRadixString(16)}';
+    final opaqueId = email.hashCode.toRadixString(16);
 
     _bus.publish(LockoutTriggered(identifier: opaqueId, lockedUntil: until));
 

@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../i18n/strings.dart';
 
@@ -10,4 +11,5 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(profileStringsProvider);
 /// ```
-final profileStringsProvider = LocalizationUtil.getProvider<Messages>(profileStrings);
+final NotifierProvider<StringsProvider<Messages>, Messages> profileStringsProvider =
+    LocalizationUtil.getProvider<Messages>(profileStrings);

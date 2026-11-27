@@ -51,12 +51,15 @@ void main() {
   });
 
   test('a source that knows the flag decides it, either way', () async {
-    final flags = FeatureFlags(flags: const [
-      _off,
-      _on
-    ], sources: [
-      _Source('remote', {'alpha': true, 'beta': false})
-    ]);
+    final flags = FeatureFlags(
+      flags: const [
+        _off,
+        _on,
+      ],
+      sources: [
+        _Source('remote', {'alpha': true, 'beta': false}),
+      ],
+    );
     await flags.refresh();
     expect(flags.isOn(_off), isTrue);
     expect(flags.isOn(_on), isFalse);
@@ -65,13 +68,16 @@ void main() {
   });
 
   test('sources are asked in order; one with no opinion passes to the next', () async {
-    final flags = FeatureFlags(flags: const [
-      _off,
-      _on
-    ], sources: [
-      _Source('first', {'alpha': false}),
-      _Source('second', {'alpha': true, 'beta': false}),
-    ]);
+    final flags = FeatureFlags(
+      flags: const [
+        _off,
+        _on,
+      ],
+      sources: [
+        _Source('first', {'alpha': false}),
+        _Source('second', {'alpha': true, 'beta': false}),
+      ],
+    );
     await flags.refresh();
     expect(flags.isOn(_off), isFalse, reason: 'the first source answered');
     expect(flags.isOn(_on), isFalse, reason: 'only the second knows beta');
@@ -114,11 +120,15 @@ void main() {
 
   test('the last known values survive a restart with no network', () async {
     final store = _Store();
-    final first = FeatureFlags(flags: const [
-      _off
-    ], sources: [
-      _Source('remote', {'alpha': true})
-    ], store: store);
+    final first = FeatureFlags(
+      flags: const [
+        _off,
+      ],
+      sources: [
+        _Source('remote', {'alpha': true}),
+      ],
+      store: store,
+    );
     await first.refresh();
 
     final next = FeatureFlags(flags: const [_off], sources: [_Source('remote', {})..down = true], store: store);
@@ -129,11 +139,15 @@ void main() {
   });
 
   test('an override beats the sources, and clearing it gives them back', () async {
-    final flags = FeatureFlags(flags: const [
-      _off
-    ], sources: [
-      _Source('remote', {'alpha': true})
-    ], allowOverrides: true);
+    final flags = FeatureFlags(
+      flags: const [
+        _off,
+      ],
+      sources: [
+        _Source('remote', {'alpha': true}),
+      ],
+      allowOverrides: true,
+    );
     await flags.refresh();
     await flags.setOverride(_off, false);
     expect(flags.isOn(_off), isFalse);

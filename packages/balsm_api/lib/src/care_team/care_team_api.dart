@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../../balsm_api.dart' show CareDirectoryApi;
+import '../care_directory/care_directory_api.dart' show CareDirectoryApi;
 import 'requests.dart';
 import 'responses.dart';
 

@@ -14,18 +14,18 @@ const _validation = ApiException(code: 'validation_error', statusCode: 422);
 
 class _ThrowingApi extends Fake implements AccountApi {
   _ThrowingApi(this.error);
-  final Object error;
+  final Exception error;
 
   @override
   Future<void> changeLanguage(ChangeLanguageRequest request, {CancelToken? cancelToken}) async => throw error;
 }
 
 void main() {
-  ChangeLanguageUseCase useCaseThrowing(Object error) =>
+  ChangeLanguageUseCase useCaseThrowing(Exception error) =>
       ChangeLanguageUseCase(api: _ThrowingApi(error), bus: EventBus());
 
-  Future<AppResult<String>> run(Object error) => useCaseThrowing(error).execute(
-        userId: UserId.value('00000000-0000-0000-0000-0000000000a1'),
+  Future<AppResult<String>> run(Exception error) => useCaseThrowing(error).execute(
+        userId: const UserId.value('00000000-0000-0000-0000-0000000000a1'),
         oldLanguage: 'en',
         newLanguage: 'ar',
       );

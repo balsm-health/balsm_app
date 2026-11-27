@@ -1,5 +1,10 @@
+include: package:balsm_lints/analysis_options.yaml
+
 analyzer:
   exclude:
+    - '**/*.g.dart'
+    - '**/*.i69n.dart'
+    - '**/*.freezed.dart'
     - build/**
   # plugins:  # disabled 2026-07-31: custom_lint isolate leak
   #   - custom_lint

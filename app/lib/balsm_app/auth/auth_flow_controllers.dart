@@ -47,7 +47,7 @@ class CredentialsState {
 /// Data controller for the email + password step: password sign-in and the
 /// sign-up OTP request. The screen keeps text controllers and the
 /// password-visibility toggle (view state).
-class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
+class CredentialsController extends Notifier<CredentialsState> {
   @override
   CredentialsState build() => const CredentialsState();
 
@@ -55,6 +55,7 @@ class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
   Future<bool> signIn({required String email, required String password}) async {
     state = const CredentialsState(submitting: true);
     final result = await ref.read(signInUseCaseProvider).passwordSignIn(email: email, password: password);
+    if (!ref.mounted) return false;
     return result.fold(
       (signIn) => switch (signIn) {
         SignInSuccess() => () {
@@ -81,6 +82,7 @@ class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
   Future<bool> requestContinueOtp({required String email, required String countryCode}) async {
     state = const CredentialsState(submitting: true);
     final result = await ref.read(signInUseCaseProvider).requestContinueOtp(email, countryCode);
+    if (!ref.mounted) return false;
     return result.fold(
       (_) {
         state = const CredentialsState();
@@ -97,6 +99,7 @@ class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
   Future<bool> requestSignupOtp({required String email, required String countryCode}) async {
     state = const CredentialsState(submitting: true);
     final result = await ref.read(signUpUseCaseProvider).requestEmailOtp(email, countryCode);
+    if (!ref.mounted) return false;
     return result.fold(
       (_) {
         state = const CredentialsState();
@@ -104,14 +107,15 @@ class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
       },
       (f) {
         state = CredentialsState(
-            error: f is ConflictFailure ? const AuthError.emailRegistered() : AuthError.server(f.message));
+          error: f is ConflictFailure ? const AuthError.emailRegistered() : AuthError.server(f.message),
+        );
         return false;
       },
     );
   }
 }
 
-final credentialsControllerProvider =
+final NotifierProvider<CredentialsController, CredentialsState> credentialsControllerProvider =
     NotifierProvider.autoDispose<CredentialsController, CredentialsState>(CredentialsController.new);
 
 // ── OTP verification step ───────────────────────────────────────────────────
@@ -136,7 +140,7 @@ class OtpState {
 /// Data controller for the six-digit verification step: the resend countdown
 /// and the verify call. On success the use case has already persisted the
 /// session; the screen only navigates.
-class OtpController extends AutoDisposeNotifier<OtpState> {
+class OtpController extends Notifier<OtpState> {
   Timer? _timer;
   bool _disposed = false;
 
@@ -169,6 +173,7 @@ class OtpController extends AutoDisposeNotifier<OtpState> {
     if (state.resending || state.verifying || state.secs > 0) return false;
     state = state.copyWith(resending: true, error: null);
     final result = await ref.read(signUpUseCaseProvider).requestEmailOtp(email, countryCode);
+    if (!ref.mounted) return false;
     if (_disposed) return false;
     return result.fold(
       (_) {
@@ -178,8 +183,9 @@ class OtpController extends AutoDisposeNotifier<OtpState> {
       },
       (f) {
         state = state.copyWith(
-            resending: false,
-            error: f is ConflictFailure ? const AuthError.emailRegistered() : AuthError.server(f.message));
+          resending: false,
+          error: f is ConflictFailure ? const AuthError.emailRegistered() : AuthError.server(f.message),
+        );
         return false;
       },
     );
@@ -191,6 +197,7 @@ class OtpController extends AutoDisposeNotifier<OtpState> {
     if (state.verifying) return null;
     state = state.copyWith(verifying: true, error: null);
     final result = await ref.read(signInUseCaseProvider).verifyEmailOtp(email: email, code: code);
+    if (!ref.mounted) return null;
     return result.fold(
       (signInResult) => switch (signInResult) {
         SignInSuccess(:final isNewUser) => () {
@@ -210,7 +217,8 @@ class OtpController extends AutoDisposeNotifier<OtpState> {
   }
 }
 
-final otpControllerProvider = NotifierProvider.autoDispose<OtpController, OtpState>(OtpController.new);
+final NotifierProvider<OtpController, OtpState> otpControllerProvider =
+    NotifierProvider.autoDispose<OtpController, OtpState>(OtpController.new);
 
 // ── Forgot-password sheet ───────────────────────────────────────────────────
 
@@ -226,7 +234,7 @@ class PasswordResetState {
 
 /// Step machine behind the forgot-password sheet: request the reset code,
 /// then set the new password. Sheet keeps its text controllers.
-class PasswordResetController extends AutoDisposeNotifier<PasswordResetState> {
+class PasswordResetController extends Notifier<PasswordResetState> {
   @override
   PasswordResetState build() => const PasswordResetState();
 
@@ -234,6 +242,7 @@ class PasswordResetController extends AutoDisposeNotifier<PasswordResetState> {
     if (state.busy) return;
     state = const PasswordResetState(busy: true);
     final r = await ref.read(signInUseCaseProvider).requestEmailOtp(email, countryCode);
+    if (!ref.mounted) return;
     state = r.fold(
       (_) => const PasswordResetState(step: ResetStep.code),
       (f) => PasswordResetState(error: AuthError.server(f.message)),
@@ -244,6 +253,7 @@ class PasswordResetController extends AutoDisposeNotifier<PasswordResetState> {
     if (state.busy) return;
     state = const PasswordResetState(step: ResetStep.code, busy: true);
     final r = await ref.read(signInUseCaseProvider).resetPassword(email: email, code: code, newPassword: newPassword);
+    if (!ref.mounted) return;
     state = r.fold(
       (_) => const PasswordResetState(step: ResetStep.done),
       (f) => PasswordResetState(step: ResetStep.code, error: AuthError.server(f.message)),
@@ -251,5 +261,5 @@ class PasswordResetController extends AutoDisposeNotifier<PasswordResetState> {
   }
 }
 
-final passwordResetControllerProvider =
+final NotifierProvider<PasswordResetController, PasswordResetState> passwordResetControllerProvider =
     NotifierProvider.autoDispose<PasswordResetController, PasswordResetState>(PasswordResetController.new);

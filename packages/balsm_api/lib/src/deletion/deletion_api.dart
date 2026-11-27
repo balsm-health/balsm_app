@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../../balsm_api.dart' show ApiException;
+import '../transport/api_exception.dart' show ApiException;
 import 'responses.dart';
 
 /// Account-deletion endpoints (.NET module: Deletion).

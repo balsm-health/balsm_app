@@ -1,1 +1,1 @@
-[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"app.balsm.health","sha256_cert_fingerprints":["PLACEHOLDER_FILLED_BY_CI"]}}]
+[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"app.balsm.health","sha256_cert_fingerprints":["58:BC:88:4B:F6:4E:3A:54:6D:11:2E:4F:3C:0D:F4:D3:8E:BE:3B:D3:D9:15:DA:6D:2F:9B:07:29:61:8F:85:C1","AA:7B:FD:81:AB:70:9F:25:15:57:70:2A:9B:5A:D9:EC:DF:C7:1D:F5:A9:4A:B1:E8:8B:65:BC:34:31:51:AF:93"]}}]

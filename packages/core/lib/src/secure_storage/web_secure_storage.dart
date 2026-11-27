@@ -48,10 +48,10 @@ class WebSecureStorage extends FlutterSecureStoragePlatform {
         // the one read back below.
         try {
           await _idb.run<JSAny?>(_keys, (s) => s.add(fresh, _wrapKeyId.toJS), write: true);
-        } on StateError {
+        } on IdbException {
           // Lost the race.
         }
-        return (await _idb.run<JSAny?>(_keys, (s) => s.get(_wrapKeyId.toJS))) as web.CryptoKey;
+        return (await _idb.run<JSAny?>(_keys, (s) => s.get(_wrapKeyId.toJS)))! as web.CryptoKey;
       }();
 
   /// The entry name is bound in as associated data, so a ciphertext moved
@@ -69,7 +69,7 @@ class WebSecureStorage extends FlutterSecureStoragePlatform {
     final sealed = await web.window.crypto.subtle
         .encrypt(_params(iv, key) as JSObject, await _wrapKey(), Uint8List.fromList(utf8.encode(value)).toJS)
         .toDart;
-    final cipher = (sealed as JSArrayBuffer).toDart.asUint8List();
+    final cipher = (sealed! as JSArrayBuffer).toDart.asUint8List();
     final record = Uint8List(_ivLength + cipher.length)
       ..setAll(0, iv)
       ..setAll(_ivLength, cipher);
@@ -87,8 +87,8 @@ class WebSecureStorage extends FlutterSecureStoragePlatform {
             Uint8List.sublistView(record, _ivLength).toJS,
           )
           .toDart;
-      return utf8.decode((plain as JSArrayBuffer).toDart.asUint8List());
-    } catch (_) {
+      return utf8.decode((plain! as JSArrayBuffer).toDart.asUint8List());
+    } on Object catch (_) {
       // Sealed under a key that is gone (site data partly cleared): the value
       // is unrecoverable, same as never stored.
       return null;
@@ -113,7 +113,7 @@ class WebSecureStorage extends FlutterSecureStoragePlatform {
     final names = await _idb.run<JSArray<JSAny?>>(_values, (s) => s.getAllKeys());
     final all = <String, String>{};
     for (final name in names.toDart) {
-      final key = (name as JSString).toDart;
+      final key = (name! as JSString).toDart;
       final value = await read(key: key, options: options);
       if (value != null) all[key] = value;
     }

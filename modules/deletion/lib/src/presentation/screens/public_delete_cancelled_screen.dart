@@ -1,9 +1,9 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../../application/use_cases/cancel_deletion_use_case.dart';
 import '../../application/ports/reauth_port.dart';
+import '../../application/use_cases/cancel_deletion_use_case.dart';
 import '../i18n/i18n.dart';
 import '../widgets/reauth_form.dart';
 
@@ -70,7 +70,7 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
   Widget build(BuildContext context) {
     final m = ref.watch(deletionStringsProvider);
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -82,9 +82,9 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
                 Text(
                   m.publicCancelTitle,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: FontSizes.headline,
                     fontWeight: FontWeight.w700,
-                    color: BalsmColors.fg1,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -98,23 +98,23 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
                     ),
                   _Stage.done => Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: const [
-                        Icon(Icons.check_circle_outline, size: 48, color: BalsmColors.success),
-                        SizedBox(height: 16),
+                      children: [
+                        const Icon(Icons.check_circle_outline, size: 48, color: AppColors.success),
+                        const SizedBox(height: 16),
                         Text(
-                          'Deletion cancelled',
+                          m.cancelled,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
+                          style: const TextStyle(
+                            fontSize: FontSizes.subhead,
                             fontWeight: FontWeight.w700,
-                            color: BalsmColors.fg1,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          'Your account is safe. Nothing was deleted.',
+                          m.safeBody,
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
+                          style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
                         ),
                       ],
                     ),

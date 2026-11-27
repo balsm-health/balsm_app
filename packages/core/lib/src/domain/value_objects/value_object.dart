@@ -1,9 +1,12 @@
+import 'package:meta/meta.dart';
+
 /// Base for immutable value objects — equality by [props], not identity.
 ///
 /// Equality is **type-strict**: two VOs are equal only when they are the
 /// exact same runtime type with equal props, so `CurrencyCode('EGP')` never
 /// equals some other `String`-backed VO with value `'EGP'`. Hand-rolled (no
 /// `equatable` dependency), matching the rest of core.
+@immutable
 abstract class ValueObject {
   const ValueObject();
 

@@ -1,10 +1,10 @@
 import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderFamily;
 
 import '../../domain/value_objects/ids.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../ports/medications_data_source.dart';
 import '../../infrastructure/drift/drift_medications_data_source.dart';
+import '../ports/medications_data_source.dart';
 
 /// Soft-deletes a medication (sets end date to yesterday) and rebuilds the OS
 /// reminder schedule so future triggers stop. Dose history is preserved.
@@ -19,7 +19,8 @@ class DeleteMedicationUseCase {
 }
 
 // autoDispose: see [addMedicationUseCaseProvider].
-final deleteMedicationUseCaseProvider = Provider.autoDispose.family<DeleteMedicationUseCase, UserId>((ref, userId) {
+final ProviderFamily<DeleteMedicationUseCase, UserId> deleteMedicationUseCaseProvider =
+    Provider.autoDispose.family<DeleteMedicationUseCase, UserId>((ref, userId) {
   return DeleteMedicationUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
   );

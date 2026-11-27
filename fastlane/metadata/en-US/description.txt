@@ -1,29 +1,23 @@
-Balsm keeps your health record where it belongs: on your phone.
+Every visit, every prescription, every result is part of your story. Balsm keeps it together, close to you, for as long as you need it.
 
-Medications, dose history, prescriptions and health records are stored on your
-device, encrypted. They are not uploaded, not synced to our servers, and not
-shared. We do not track you, we do not advertise, and we do not measure how
-you use the app. Balsm reports crashes so we can fix them, with your health
-data stripped out before anything is sent.
+Your health, remembered
+Your records, lab results and scans in one calm place. Note how you feel each day, and watch your blood pressure, glucose and weight take shape over time. When a doctor asks "since when?", the answer is in your hand.
 
-WHAT YOU CAN DO
-• Keep a medication list with dose history you actually record as you take it
-• Photograph prescriptions and health records and keep them organised
-• Build a care team of the doctors, clinics and pharmacies you use
-• Carry an emergency card for the information someone would need in a crisis
-• Find clinics and pharmacies near you
-• Keep separate profiles for the people you care for
+Medicines, on time
+Gentle reminders for every dose, and a clear history of what you took and when.
 
-ARABIC AND ENGLISH
-Balsm is built for both, not translated into one. The entire interface mirrors
-to right-to-left in Arabic, with Arabic typography throughout.
+For the ones you love
+Keep a profile for each person in your family, and follow a pregnancy week by week.
 
-WHAT BALSM IS NOT
-Balsm does not diagnose, does not give medical advice, and does not replace
-your doctor. It is a record-keeping tool for adults managing their own care.
+Ready when it matters
+Your emergency card carries your blood type, allergies, conditions and the people to call. Show it, or let someone scan it, in the moments that count.
 
-YOUR DATA
-Your account (name, email, country) and your care-team entries reach our
-servers so your account works across devices. Your medications, doses and
-records do not. You can delete your account, and everything with it, from
-inside the app at any time.
+Care, close by
+Pharmacies, clinics and labs near you, on a map of more than 34,000 places across Egypt.
+
+Yours, and only yours
+Your medicines and health records stay on your phone, encrypted, and are never sold. Balsm works without internet, and you can export everything at any time.
+
+Care for You & Yours.
+
+Balsm helps you keep track of your health. It does not replace your doctor's advice.

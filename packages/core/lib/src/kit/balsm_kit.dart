@@ -1,6 +1,6 @@
 // BalsmKit — shared UI widget library.
 // Import this single barrel: import 'package:core/core.dart'; (re-exported from core.dart)
-export '_tokens.dart';
+export 'tokens.dart';
 export 'widgets/balsm_app_bar.dart';
 export 'widgets/balsm_avatar.dart';
 export 'widgets/balsm_bottom_nav.dart';

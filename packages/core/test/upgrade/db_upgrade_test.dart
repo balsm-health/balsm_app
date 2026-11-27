@@ -50,9 +50,9 @@ void main() {
         file = File('${dir.path}/balsm.db');
         // The old build's database, created and filled by plain SQLite so
         // none of today's code touches it before the "update".
-        final raw = sqlite3.open(file.path);
-        raw.execute(fixture.readAsStringSync());
-        raw.dispose();
+        sqlite3.open(file.path)
+          ..execute(fixture.readAsStringSync())
+          ..dispose();
         final seeder = RawDatabase(file);
         seeded = await seedSynthetic(seeder);
         await seeder.close();
@@ -110,17 +110,20 @@ void main() {
   group('schemaDrift', () {
     ColumnShape col(String name, {bool notNull = false, String? dflt}) =>
         ColumnShape(name: name, type: 'TEXT', notNull: notNull, defaultValue: dflt, primaryKey: false);
-    SchemaShape shape(Map<String, Map<String, ColumnShape>> tables,
-            {Map<String, String> indexes = const {}, Set<String> triggers = const {}}) =>
+    SchemaShape shape(
+      Map<String, Map<String, ColumnShape>> tables, {
+      Map<String, String> indexes = const {},
+      Set<String> triggers = const {},
+    }) =>
         SchemaShape(tables: tables, indexes: indexes, triggers: triggers);
 
     test('a column only a fresh install has is reported', () {
       final drift = schemaDrift(
         fresh: shape({
-          't': {'a': col('a'), 'b': col('b')}
+          't': {'a': col('a'), 'b': col('b')},
         }),
         updated: shape({
-          't': {'a': col('a')}
+          't': {'a': col('a')},
         }),
       );
       expect(drift.single, contains('t.b'));
@@ -130,10 +133,10 @@ void main() {
       expect(
         schemaDrift(
           fresh: shape({
-            't': {'a': col('a')}
+            't': {'a': col('a')},
           }),
           updated: shape({
-            't': {'a': col('a'), 'old': col('old', notNull: true)}
+            't': {'a': col('a'), 'old': col('old', notNull: true)},
           }),
         ).single,
         contains('t.old'),
@@ -141,10 +144,10 @@ void main() {
       expect(
         schemaDrift(
           fresh: shape({
-            't': {'a': col('a')}
+            't': {'a': col('a')},
           }),
           updated: shape({
-            't': {'a': col('a'), 'old': col('old')}
+            't': {'a': col('a'), 'old': col('old')},
           }),
         ),
         isEmpty,
@@ -153,16 +156,20 @@ void main() {
 
     test('missing tables, changed columns, indexes and triggers are reported', () {
       final drift = schemaDrift(
-        fresh: shape({
-          't': {'a': col('a', notNull: true)},
-          'u': {}
-        }, indexes: {
-          'i': 't(a)'
-        }, triggers: {
-          'g'
-        }),
+        fresh: shape(
+          {
+            't': {'a': col('a', notNull: true)},
+            'u': {},
+          },
+          indexes: {
+            'i': 't(a)',
+          },
+          triggers: {
+            'g',
+          },
+        ),
         updated: shape({
-          't': {'a': col('a')}
+          't': {'a': col('a')},
         }),
       );
       expect(drift, hasLength(4));

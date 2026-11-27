@@ -9,9 +9,9 @@ import '../../domain/aggregates/check_in.dart';
 import '../../domain/value_objects/body_region.dart';
 import '../../domain/value_objects/body_tissue.dart';
 import '../../domain/value_objects/ids.dart';
-import '../../domain/value_objects/pain_site.dart';
 import '../../domain/value_objects/mood.dart';
 import '../../domain/value_objects/pain_level.dart';
+import '../../domain/value_objects/pain_site.dart';
 import '../../domain/value_objects/symptom.dart';
 import '../../domain/value_objects/symptom_detail.dart';
 import '../../domain/value_objects/vitals.dart';
@@ -29,9 +29,12 @@ const _moodNotReported = 0;
 /// return empty. Check-ins are immutable — [put] inserts; [delete] removes an
 /// erroneous entry (child rows cascade).
 class DriftCheckInsDataSource extends CheckInsDataSource {
-  DriftCheckInsDataSource(this._db, this.activeProfile);
+  DriftCheckInsDataSource(this._db, this.activeProfile) : _history = EntryProvenanceStore(_db, 'check_in');
 
   final AppDatabase _db;
+
+  /// Append-only history of who else added, edited or shared each check-in.
+  final EntryProvenanceStore _history;
   final HealthProfileId? Function() activeProfile;
 
   final _changes = StreamController<void>.broadcast();
@@ -58,7 +61,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       variables: [Variable<String>(key.value), Variable<String>(p.value)],
     ).get();
     if (rows.isEmpty) return null;
-    return _hydrate(rows.first.data);
+    return _hydrate(rows.first.data, await _history.historyOf(key.value, p));
   }
 
   @override
@@ -70,7 +73,8 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       'ORDER BY recorded_at DESC',
       variables: [Variable<String>(p.value)],
     ).get();
-    return [for (final r in rows) await _hydrate(r.data)];
+    final histories = await _history.historiesOf(p);
+    return [for (final r in rows) await _hydrate(r.data, histories[r.data['id']])];
   }
 
   @override
@@ -94,7 +98,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
     if (p == null) return Stream.value(null);
     return Stream<CheckIn?>.multi((emitter) async {
       emitter.add(await find(key, scope: p));
-      emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: p)));
+      unawaited(emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: p))));
     });
   }
 
@@ -104,7 +108,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
     if (p == null) return Stream.value(const []);
     return Stream<List<CheckIn>>.multi((emitter) async {
       emitter.add(await findAll(scope: p));
-      emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: p)));
+      unawaited(emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: p))));
     });
   }
 
@@ -141,10 +145,16 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
         ],
       );
       // Children: clear then re-insert (idempotent on REPLACE).
-      await _db.customUpdate('DELETE FROM check_in_symptom WHERE check_in_id = ?',
-          variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
-      await _db.customUpdate('DELETE FROM check_in_pain_region WHERE check_in_id = ?',
-          variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
+      await _db.customUpdate(
+        'DELETE FROM check_in_symptom WHERE check_in_id = ?',
+        variables: [Variable<String>(key.value)],
+        updateKind: UpdateKind.delete,
+      );
+      await _db.customUpdate(
+        'DELETE FROM check_in_pain_region WHERE check_in_id = ?',
+        variables: [Variable<String>(key.value)],
+        updateKind: UpdateKind.delete,
+      );
       for (final s in value.symptoms) {
         final detail = value.symptomDetails[s];
         await _db.customInsert(
@@ -154,8 +164,8 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
             Variable<String>(s.id),
             // Nullable columns go in as an untyped null Variable — the typed
             // constructor's bound is non-nullable.
-            detail?.urineColor == null ? const Variable(null) : Variable.withString(detail!.urineColor!.id),
-            detail?.urineMl == null ? const Variable(null) : Variable.withInt(detail!.urineMl!),
+            if (detail?.urineColor == null) const Variable(null) else Variable.withString(detail!.urineColor!.id),
+            if (detail?.urineMl == null) const Variable(null) else Variable.withInt(detail!.urineMl!),
             Variable<int>(detail?.blood ?? false ? 1 : 0),
           ],
         );
@@ -170,6 +180,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
           ],
         );
       }
+      await _history.append(key.value, p, value.history);
     });
     _notifyChanged();
   }
@@ -220,7 +231,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
 
   // ── Hydration ──────────────────────────────────────────────────────────
 
-  Future<CheckIn> _hydrate(Map<String, dynamic> row) async {
+  Future<CheckIn> _hydrate(Map<String, dynamic> row, EntryHistory? history) async {
     final id = row['id'] as String;
     final symptomRows = await _db.customSelect(
       'SELECT * FROM check_in_symptom WHERE check_in_id = ?',
@@ -263,6 +274,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       vitals: Vitals.fromRow(row),
       note: row['note'] as String?,
       photoRecordId: row['photo_record_id'] as String?,
+      history: history ?? EntryHistory.none,
     );
   }
 
