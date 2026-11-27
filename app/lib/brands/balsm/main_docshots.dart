@@ -8,11 +8,15 @@
 //     --dart-define-from-file=env/balsm/dev.json \
 //     --dart-define-from-file=env/shared.json -d <simulator>
 
+import 'dart:convert';
+
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 
 import 'docshots_persona.dart';
 import 'docshots_places.dart';
+import 'docshots_pregnancy_weeks.dart';
 import 'docshots_seed.dart';
 import 'main_balsm.dart' as app;
 
@@ -56,10 +60,31 @@ Future<void> main() async {
       // cannot show. `docshotsPlaces` is 60 real Cairo facilities generated
       // from OpenStreetMap — see docshots_places.dart.
       careDirectory: FakeCareDirectoryApi(places: docshotsPlaces),
+      // The API's real weekly guidance, in each language, so the pregnancy
+      // captures show production copy and artwork (docshots_pregnancy_weeks.dart).
+      content: _DocshotsContentApi(),
     ),
     // Populates the on-device DB with a synthetic record so the clinical
     // screens capture with content instead of empty states. Docshots only —
     // see the header of docshots_seed.dart.
     onContainerReady: seedDocshotsData,
   );
+}
+
+/// Serves [docshotsPregnancyWeeksJson] in the language asked for, as the API
+/// does. `FakeContentApi` holds one document for every language, which would
+/// photograph English guidance on the Arabic screens.
+class _DocshotsContentApi extends FakeContentApi {
+  @override
+  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({
+    required String lang,
+    String? etag,
+    CancelToken? cancelToken,
+  }) async {
+    final body = docshotsPregnancyWeeksJson[lang] ?? docshotsPregnancyWeeksJson['en']!;
+    return Modified(
+      PregnancyWeeksResponse.fromJson(jsonDecode(body) as Map<String, dynamic>),
+      etag: '"docshots-$lang"',
+    );
+  }
 }

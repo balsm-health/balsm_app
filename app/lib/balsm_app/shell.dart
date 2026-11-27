@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:pregnancy/pregnancy.dart' show PregnancyBaby, activePregnancyOfProvider, pregnancyBabiesProvider;
 import 'package:profile/profile.dart';
 
 import '../update/update_gate.dart';
@@ -40,6 +41,10 @@ import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
 import 'screens/personal_details.dart';
+import 'screens/pregnancy/baby_screen.dart';
+import 'screens/pregnancy/pregnancy_card_screen.dart';
+import 'screens/pregnancy/pregnancy_guidance.dart';
+import 'screens/pregnancy/pregnancy_screen.dart';
 import 'screens/prescriptions_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/profile_subscreens.dart';
@@ -369,6 +374,16 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       await Future<void>.delayed(const Duration(milliseconds: 200));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'gender': state.gender.name}));
     });
+    registerExtensionOnce('ext.balsm.setFlag', (method, params) async {
+      // Captures a flagged feature (docs screenshots) without leaving it on for
+      // the rest of the run. `on`: true / false, or absent to clear the
+      // override. Takes effect only where overrides are allowed (dev/staging).
+      final flag = state.flags.flags.where((f) => f.key == params['key']).firstOrNull;
+      if (flag == null) return developer.ServiceExtensionResponse.error(1, 'unknown flag ${params['key']}');
+      await state.flags.setOverride(flag, switch (params['on']) { 'true' => true, 'false' => false, _ => null });
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'on': state.flags.isOn(flag)}));
+    });
     registerExtensionOnce('ext.balsm.checkinNext', (method, params) async {
       state.qaCheckinAdvance?.call();
       await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -415,6 +430,19 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
           unawaited(showAddPrescription(next));
         case 'switcher':
           unawaited(showAccountSwitcher(next));
+        case 'pregnancy':
+          unawaited(openPregnancy(next, ref));
+        case 'pregnancyWeeks':
+          unawaited(openPregnancyWeeks(next));
+        case 'pregnancyCard':
+          unawaited(openPregnancyCard(next));
+        case 'baby':
+          // The first baby of the account holder's active pregnancy.
+          final preg = ref.read(activePregnancyOfProvider(null));
+          final babies =
+              preg == null ? const <PregnancyBaby>[] : await ref.read(pregnancyBabiesProvider(preg.id).future);
+          final baby = babies.where((b) => b.isActive).firstOrNull;
+          if (baby != null && next.mounted) unawaited(openBaby(next, baby.id));
       }
       await Future<void>.delayed(const Duration(milliseconds: 80));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'screen': screen}));

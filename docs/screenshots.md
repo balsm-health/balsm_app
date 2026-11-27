@@ -73,6 +73,19 @@ fvm dart run tool/docshots.dart <vm-service-uri-from-run-output> $UDID \
 # Point it at the marketing tree instead for a store deck.
 ```
 
+The pregnancy captures (13–16) are part of Mother & Child, which ships off: the
+driver turns `mother_child` on through `ext.balsm.setFlag` for those four shots
+only, so every other capture shows the app as shipped. The persona's pregnancy
+is seeded at week 12 day 3 on the capture day (`docshots_seed.dart`), the last
+week the content has artwork for. The weekly guidance is the API's real content,
+per language, from `docshots_pregnancy_weeks.dart`. Regenerate it when the
+API's content changes (from `app/`):
+
+```sh
+python3 tool/docshots_pregnancy_weeks.py \
+  <Balsm-API-DotNet>/src/Balsm.API/Content/pregnancy-weeks.v1.json
+```
+
 The map fixture (`docshots_places.dart`) is 60 real Cairo facilities generated
 from OpenStreetMap. Regenerate it with:
 
@@ -126,6 +139,23 @@ Brand `balsm`, entrypoint `lib/brands/balsm/main_docshots.dart`.
 | Records | Trends | Profile |
 |---|---|---|
 | <img src="../app/screenshots/balsm/iphone/ar/08_records.png" width="170" alt="Records"> | <img src="../app/screenshots/balsm/iphone/ar/09_trends.png" width="170" alt="Trends"> | <img src="../app/screenshots/balsm/iphone/ar/10_profile.png" width="170" alt="Profile"> |
+
+### Pregnancy tracking
+
+Mother & Child, behind the `mother_child` flag. Week 12 of a seeded pregnancy:
+the tracker, the week-by-week guidance (the API's content and artwork), the
+emergency card in pregnancy mode, and the baby's screen.
+
+| Pregnancy | Week by week | Emergency card | Baby |
+|---|---|---|---|
+| <img src="../app/screenshots/balsm/iphone/en/13_pregnancy.png" width="170" alt="Pregnancy"> | <img src="../app/screenshots/balsm/iphone/en/14_pregnancy_weeks.png" width="170" alt="Week by week"> | <img src="../app/screenshots/balsm/iphone/en/15_pregnancy_card.png" width="170" alt="Pregnancy emergency card"> | <img src="../app/screenshots/balsm/iphone/en/16_pregnancy_baby.png" width="170" alt="Baby"> |
+| <img src="../app/screenshots/balsm/iphone/ar/13_pregnancy.png" width="170" alt="Pregnancy"> | <img src="../app/screenshots/balsm/iphone/ar/14_pregnancy_weeks.png" width="170" alt="Week by week"> | <img src="../app/screenshots/balsm/iphone/ar/15_pregnancy_card.png" width="170" alt="Pregnancy emergency card"> | <img src="../app/screenshots/balsm/iphone/ar/16_pregnancy_baby.png" width="170" alt="Baby"> |
+
+On iPad:
+
+| Pregnancy (en) | Week by week (en) | Pregnancy (ar) | Week by week (ar) |
+|---|---|---|---|
+| <img src="../app/screenshots/balsm/ipad/en/13_pregnancy.png" width="240" alt="Pregnancy"> | <img src="../app/screenshots/balsm/ipad/en/14_pregnancy_weeks.png" width="240" alt="Week by week"> | <img src="../app/screenshots/balsm/ipad/ar/13_pregnancy.png" width="240" alt="Pregnancy"> | <img src="../app/screenshots/balsm/ipad/ar/14_pregnancy_weeks.png" width="240" alt="Week by week"> |
 
 ### iPad
 
