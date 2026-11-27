@@ -1,1 +1,1 @@
-medication,reminder,pill,prescription,doctor,clinic,pharmacy,medical,tracker,care,dose,records
+medical,patient,prescription,lab,results,offline,doctor,clinic,history,file,document,arabic,health
