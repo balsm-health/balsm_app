@@ -638,12 +638,11 @@ jobs:
         if: env.HAS_TESTFLIGHT == 'true'
         with:
           persist-credentials: false
-      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
+      # The SDK pinned in .fvmrc, like every other build: FLUTTER_VERSION no
+      # longer exists, and an empty version would install whatever stable is
+      # newest that day.
+      - uses: ./.github/actions/setup-flutter
         if: env.HAS_TESTFLIGHT == 'true'
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
       - name: Generate drift code (core)
         if: env.HAS_TESTFLIGHT == 'true'
         run: (cd packages/core && flutter pub get && dart run build_runner build)
