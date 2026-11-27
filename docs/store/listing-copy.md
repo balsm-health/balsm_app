@@ -13,7 +13,7 @@ Limits: App Store name and subtitle 30, promotional text 170, keywords 100, desc
 
 **Name** (all stores): `Balsm – Your Health Story`  
 **Subtitle** (App Store): `Care for You & Yours`  
-**Short description** (Play, AppGallery brief introduction): `Care for You & Yours: your health story, kept close, even offline`  
+**Short description** (Play, AppGallery brief introduction): `For You & Yours: Every detail matters. Every story deserves care.`  
 **Keywords** (App Store): `medical,patient,prescription,lab,results,offline,doctor,clinic,history,file,document,arabic,health`
 
 **Promotional text** (App Store)
@@ -67,7 +67,7 @@ This update is about the small moments: fixing a reading, finding a day, keeping
 
 **Name** (all stores): `بلسم – حكايتك الصحية`  
 **Subtitle** (App Store): `بلسم – لك ولمن تحب`  
-**Short description** (Play, AppGallery brief introduction): `لك ولمن تحب: حكايتك الصحية قريبة منك، حتى دون إنترنت`  
+**Short description** (Play, AppGallery brief introduction): `لك ولمن تحب: كل تفصيلة تهم، وكل حكاية تستحق الرعاية.`  
 **Keywords** (App Store): `ملف طبي,مريض,روشتة,وصفة,تحاليل,أشعة,دواء,طبيب,عيادة,مستشفى,تاريخ مرضي,سجل صحي,مصر`
 
 **Promotional text** (App Store)
