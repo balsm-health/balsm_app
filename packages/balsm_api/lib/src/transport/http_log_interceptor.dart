@@ -31,13 +31,15 @@ class HttpLogInterceptor extends Interceptor {
 
   /// Body keys whose value is always a credential. Matched case-insensitively
   /// and by containment, so `new_password`, `refreshToken` and `id_token` are
-  /// covered without listing every spelling the API uses.
+  /// covered without listing every spelling the API uses. `nonce` is the raw
+  /// Apple sign-in nonce that binds an ID token to one request.
   static const _secretKeyParts = [
     'password',
     'token',
     'secret',
     'authorization',
     'cookie',
+    'nonce',
   ];
 
   /// `code` is not one of them. It is the one-time code on the way out and the
