@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
@@ -10,10 +13,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// Google sign-in ships on Android/web/macOS only — iOS shows no third-party
-/// sign-in at all (App Review 4.8), and the Apple provider stays off until
-/// team ownership settles. A new social account enters the app directly; the
-/// Profile tab's gaps card owns completion and everything DOB-gated stays
+/// Sign in with Apple and Google, per the Auth Flow design: the providers sit
+/// above "Create an account" on Welcome and above the email field on the
+/// sign-up / sign-in screens, Apple first. Which providers show is
+/// `availableSocialProviders` (Apple on iOS only; Google on Android, macOS and
+/// iOS with an iOS client id). A new social account enters the app directly;
+/// the Profile tab's gaps card owns completion and everything DOB-gated stays
 /// fail-closed until Personal details is saved.
 class _MockSignInUseCase extends Mock implements SignInUseCase {}
 
@@ -31,6 +36,22 @@ class _StubCredentials implements SocialCredentialsPort {
     return result;
   }
 }
+
+/// Holds the provider sheet open until the test completes it.
+class _PendingCredentials implements SocialCredentialsPort {
+  final completer = Completer<SocialCredentialsResult>();
+
+  @override
+  Future<SocialCredentialsResult> obtain() => completer.future;
+}
+
+const _appleTokens = SocialCredentials(
+  idToken: 'apple-id-token',
+  authorizationCode: 'apple-code',
+  nonce: 'raw-n',
+  givenName: 'Layla',
+  familyName: 'Hassan',
+);
 
 const _googleTokens = SocialCredentials(
   idToken: 'google-id-token',
@@ -79,10 +100,11 @@ void main() {
     WidgetTester tester, {
     SocialCredentialsPort? apple,
     SocialCredentialsPort? google,
+    Size size = const Size(402, 1400),
   }) async {
-    // A tall phone surface: the welcome layout overflows the default 800×600,
-    // and an overflow exception fails every finder that follows it.
-    tester.view.physicalSize = const Size(402, 1400);
+    // A tall phone surface by default: the welcome layout overflows the
+    // default 800×600, and an overflow exception fails every finder after it.
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
@@ -111,6 +133,7 @@ void main() {
 
   Finder appleButton() => find.text('Continue with Apple');
   Finder googleButton() => find.text('Continue with Google');
+  Finder orEmail() => find.text('or with email');
 
   void stubGoogle(AppResult<SignInResult> result) {
     when(
@@ -122,32 +145,70 @@ void main() {
     ).thenAnswer((_) async => result);
   }
 
-  /// Taps Google and lets the awaits in the handler settle.
-  Future<void> tapGoogle(WidgetTester tester) async {
-    await tester.tap(googleButton());
+  void stubApple(AppResult<SignInResult> result) {
+    when(
+      () => signIn.signInWithApple(
+        idToken: any(named: 'idToken'),
+        authCode: any(named: 'authCode'),
+        nonce: any(named: 'nonce'),
+        email: any(named: 'email'),
+        countryCode: any(named: 'countryCode'),
+      ),
+    ).thenAnswer((_) async => result);
+  }
+
+  /// Taps [button] and lets the awaits in the handler settle.
+  Future<void> tapAndSettle(WidgetTester tester, Finder button) async {
+    await tester.tap(button);
     await tester.pumpAndSettle();
   }
 
-  group('button availability', () {
-    testWidgets('iOS offers NO third-party sign-in (App Review 4.8)', (tester) async {
+  void initFlavor({String googleIosClientId = 'ios-client.apps.googleusercontent.com'}) => FlavorConfig.init(
+        brand: AppBrand.balsm,
+        flavor: Flavor.dev,
+        servers: const [ServerPreset(label: 'Local', apiBaseUrl: 'http://localhost:5050')],
+        socialSignInEnabled: true,
+        googleServerClientId: 'web-client.apps.googleusercontent.com',
+        googleIosClientId: googleIosClientId,
+      );
+
+  group('welcome', () {
+    testWidgets('welcome_onIos_showsAppleAboveGoogleAboveCreateAccount', (tester) async {
       await onPlatform(TargetPlatform.iOS, () async {
         await pump(tester);
 
-        expect(appleButton(), findsNothing);
+        final apple = tester.getTopLeft(appleButton()).dy;
+        final google = tester.getTopLeft(googleButton()).dy;
+        final divider = tester.getTopLeft(orEmail()).dy;
+        final create = tester.getTopLeft(find.text('Create an account')).dy;
+        expect(apple, lessThan(google));
+        expect(google, lessThan(divider));
+        expect(divider, lessThan(create));
+      });
+    });
+
+    testWidgets('welcome_onIosWithoutIosClientId_showsAppleOnly', (tester) async {
+      initFlavor(googleIosClientId: '');
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester);
+
+        expect(appleButton(), findsOneWidget);
         expect(googleButton(), findsNothing);
       });
     });
 
-    testWidgets('Android offers Google only — Apple stays off', (tester) async {
+    testWidgets('welcome_onAndroid_showsGoogleOnly', (tester) async {
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester);
 
         expect(appleButton(), findsNothing);
         expect(googleButton(), findsOneWidget);
+        expect(orEmail(), findsOneWidget);
       });
     });
 
-    testWidgets('neither provider is offered while social sign-in is disabled', (tester) async {
+    testWidgets('welcome_socialSignInDisabled_showsNoProviderAndNoDivider', (tester) async {
       // The shipped default. Both flows stay implemented and tested; the switch
       // is what decides whether users can reach them.
       FlavorConfig.init(
@@ -164,58 +225,240 @@ void main() {
 
         expect(appleButton(), findsNothing);
         expect(googleButton(), findsNothing);
+        expect(orEmail(), findsNothing);
       });
     });
 
-    testWidgets('Google is hidden without a configured server client id', (tester) async {
-      FlavorConfig.init(
-        brand: AppBrand.balsm,
-        flavor: Flavor.dev,
-        servers: const [ServerPreset(label: 'Local', apiBaseUrl: 'http://localhost:5050')],
-        socialSignInEnabled: true,
-        googleServerClientId: '',
-      );
+    for (final (name, size) in [('402x900', const Size(402, 900)), ('a short phone', const Size(360, 700))]) {
+      testWidgets('welcome_bothProvidersAndAnError_fitWithoutOverflowOn $name', (tester) async {
+        await onPlatform(TargetPlatform.iOS, () async {
+          await pump(tester, size: size, google: _StubCredentials(const SocialCredentialsFailure()));
+          await tapAndSettle(tester, googleButton());
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
+        });
+      });
+    }
+  });
+
+  group('email screen', () {
+    testWidgets('emailScreen_signIn_showsSocialBlock', (tester) async {
+      state
+        ..setAuthIntent(AuthIntent.signIn)
+        ..go(AppRoutes.phone);
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester);
+
+        expect(appleButton(), findsOneWidget);
+        expect(googleButton(), findsOneWidget);
+        expect(
+          tester.getTopLeft(orEmail()).dy,
+          lessThan(tester.getTopLeft(find.byType(TextField).first).dy),
+          reason: 'the providers sit above the email field',
+        );
+      });
+    });
+
+    testWidgets('emailScreen_signUp_showsSocialBlock', (tester) async {
+      state
+        ..setAuthIntent(AuthIntent.signUp)
+        ..go(AppRoutes.phone);
 
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester);
 
+        expect(googleButton(), findsOneWidget);
+      });
+    });
+
+    testWidgets('emailScreen_deviceOnly_hidesSocialBlock', (tester) async {
+      state
+        ..setAuthIntent(AuthIntent.deviceOnly)
+        ..go(AppRoutes.phone);
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester);
+
+        expect(appleButton(), findsNothing);
         expect(googleButton(), findsNothing);
+        expect(orEmail(), findsNothing);
       });
     });
   });
 
-  group('routing after a successful exchange', () {
-    testWidgets('a new account enters the app — completion is the gaps card', (tester) async {
-      stubGoogle(AppResult.success(const SignInSuccess(isNewUser: true)));
+  group('Apple', () {
+    testWidgets('apple_success_newUser_sendsAuthCodeAndPrefillsName', (tester) async {
+      stubApple(AppResult.success(const SignInSuccess(isNewUser: true)));
+      state.country = CountryCode.fromCode('SA');
 
-      await onPlatform(TargetPlatform.android, () async {
-        await pump(tester, google: _StubCredentials(_googleTokens));
-        await tapGoogle(tester);
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tapAndSettle(tester, appleButton());
       });
 
-      expect(state.route, isNot('profile'), reason: 'profile setup left the registration flow');
-      expect(state.socialGivenName, 'Layla', reason: 'the provider name prefills Personal details');
+      verify(
+        () => signIn.signInWithApple(
+          idToken: 'apple-id-token',
+          authCode: 'apple-code',
+          nonce: 'raw-n',
+          email: '',
+          countryCode: 'SA',
+        ),
+      ).called(1);
+      expect(
+        find.byWidgetPredicate((w) => w.runtimeType.toString() == '_DisclosureGateScreen'),
+        findsOneWidget,
+        reason: 'enterAfterSignIn presents the disclosure gate when it is not yet accepted',
+      );
+      expect(state.route, isNot('profile'), reason: 'profile setup is not part of the social flow');
+      expect(state.socialGivenName, 'Layla');
+      expect(state.socialFamilyName, 'Hassan');
     });
 
-    testWidgets('a returning account goes straight through', (tester) async {
+    testWidgets('apple_exchange404_showsUnavailable', (tester) async {
+      stubApple(AppResult.failure(const NotFoundFailure('x')));
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tapAndSettle(tester, appleButton());
+
+        expect(find.text('Sign-in is unavailable right now. Use your email instead.'), findsOneWidget);
+      });
+    });
+
+    testWidgets('apple_exchange401_showsFailed', (tester) async {
+      stubApple(AppResult.failure(const UnauthorizedFailure('x')));
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tapAndSettle(tester, appleButton());
+
+        expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
+      });
+    });
+
+    testWidgets('apple_cancelled_showsNoError', (tester) async {
+      final port = _StubCredentials(const SocialCredentialsCancelled());
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: port);
+        await tapAndSettle(tester, appleButton());
+
+        expect(find.text('Sign-in failed. Please try again.'), findsNothing);
+        expect(find.text('Sign-in is unavailable right now. Use your email instead.'), findsNothing);
+      });
+
+      expect(port.calls, 1);
+      expect(state.route, 'welcome');
+      verifyNever(
+        () => signIn.signInWithApple(
+          idToken: any(named: 'idToken'),
+          authCode: any(named: 'authCode'),
+          nonce: any(named: 'nonce'),
+          email: any(named: 'email'),
+          countryCode: any(named: 'countryCode'),
+        ),
+      );
+    });
+
+    testWidgets('apple_useCaseThrows_clearsBusyAndAllowsRetry', (tester) async {
+      when(
+        () => signIn.signInWithApple(
+          idToken: any(named: 'idToken'),
+          authCode: any(named: 'authCode'),
+          nonce: any(named: 'nonce'),
+          email: any(named: 'email'),
+          countryCode: any(named: 'countryCode'),
+        ),
+      ).thenThrow(StateError('boom'));
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tester.tap(appleButton());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing, reason: 'the spinner must not stick');
+      });
+    });
+
+    testWidgets('whileAppleRuns_inactiveGoogleIsDimmedAndAppleAnnouncesLoading', (tester) async {
+      final apple = _PendingCredentials();
+      final semantics = tester.ensureSemantics();
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: apple, google: _StubCredentials(_googleTokens));
+        await tester.tap(appleButton());
+        await tester.pump();
+
+        final dimmed = tester.widget<Opacity>(
+          find.ancestor(of: googleButton(), matching: find.byType(Opacity)).first,
+        );
+        expect(dimmed.opacity, 0.4);
+        expect(tester.getSemantics(find.bySemanticsLabel('Continue with Apple')).value, 'Loading');
+
+        apple.completer.complete(const SocialCredentialsCancelled());
+        await tester.pumpAndSettle();
+      });
+      semantics.dispose();
+    });
+
+    testWidgets('whileAppleRuns_googleTapDoesNothing', (tester) async {
+      final apple = _PendingCredentials();
+      final google = _StubCredentials(_googleTokens);
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: apple, google: google);
+        await tester.tap(appleButton());
+        await tester.pump();
+
+        await tester.tap(googleButton());
+        await tester.pump();
+        expect(google.calls, 0, reason: 'both buttons are disabled while one flow runs');
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        apple.completer.complete(const SocialCredentialsCancelled());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
+    });
+  });
+
+  group('Google', () {
+    testWidgets('a returning account goes straight through without a prefill', (tester) async {
       stubGoogle(AppResult.success(const SignInSuccess()));
+      when(() => disclosure.watchAcceptance(any(), any())).thenAnswer(
+        (_) => Stream.value(
+          DisclosureAcceptance(
+            disclosureId: const DisclosureId.value('consolidated'),
+            version: '1',
+            countryCodeAtAccept: 'EG',
+            supervisoryAuthorityNameAtAccept: 'x',
+            preferredLanguageAtAccept: 'en',
+            acceptedAt: DateTime.utc(2026),
+          ),
+        ),
+      );
 
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester, google: _StubCredentials(_googleTokens));
-        await tapGoogle(tester);
+        await tapAndSettle(tester, googleButton());
       });
 
-      expect(state.route, isNot('profile'));
+      expect(state.route, 'app', reason: 'an accepted disclosure lets enterAfterSignIn enter the app');
       expect(state.socialGivenName, isNull, reason: 'no prefill for an existing account');
     });
 
-    testWidgets('the exchange carries the account country', (tester) async {
+    testWidgets('a new account carries the country and prefills the name', (tester) async {
       stubGoogle(AppResult.success(const SignInSuccess(isNewUser: true)));
       state.country = CountryCode.fromCode('SA');
 
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester, google: _StubCredentials(_googleTokens));
-        await tapGoogle(tester);
+        await tapAndSettle(tester, googleButton());
       });
 
       verify(
@@ -225,36 +468,14 @@ void main() {
           countryCode: 'SA',
         ),
       ).called(1);
-    });
-  });
-
-  group('provider outcomes that never reach the exchange', () {
-    testWidgets('cancelling stays on welcome and shows nothing', (tester) async {
-      final port = _StubCredentials(const SocialCredentialsCancelled());
-
-      await onPlatform(TargetPlatform.android, () async {
-        await pump(tester, google: port);
-        await tapGoogle(tester);
-
-        expect(find.text('Sign-in failed. Please try again.'), findsNothing);
-      });
-
-      expect(port.calls, 1);
-      expect(state.route, 'welcome');
-      verifyNever(
-        () => signIn.signInWithGoogle(
-          idToken: any(named: 'idToken'),
-          email: any(named: 'email'),
-          countryCode: any(named: 'countryCode'),
-        ),
-      );
+      expect(state.socialGivenName, 'Layla');
     });
 
-    testWidgets('a missing ID token reads as unavailable, not as the user failing', (tester) async {
+    testWidgets('google_missingToken_showsUnavailable', (tester) async {
       // On Android this is the signature of an unconfigured serverClientId.
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester, google: _StubCredentials(const SocialCredentialsFailure(missingToken: true)));
-        await tapGoogle(tester);
+        await tapAndSettle(tester, googleButton());
 
         expect(find.text('Sign-in is unavailable right now. Use your email instead.'), findsOneWidget);
       });
@@ -265,29 +486,65 @@ void main() {
     testWidgets('a failed flow shows the retry message', (tester) async {
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester, google: _StubCredentials(const SocialCredentialsFailure()));
-        await tapGoogle(tester);
+        await tapAndSettle(tester, googleButton());
 
         expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
       });
     });
-  });
 
-  testWidgets('a lockout surfaces the countdown instead of navigating', (tester) async {
-    stubGoogle(
-      AppResult.success(
-        SignInLockout(
-          session: LockedOut(until: DateTime.now().add(const Duration(seconds: 90)), identifier: 'x'),
-        ),
+    // The exchange's refusals: 404 (not offered — e.g. switched off for new
+    // accounts) and 403 CountryDenied say "unavailable, use email"; 401 (the
+    // token did not check out) says "failed, try again"; anything else shows
+    // the adapter's localized message (429 → rate limited).
+    for (final (name, failure, shown) in [
+      (
+        'google_exchange404_showsUnavailable',
+        const NotFoundFailure('x'),
+        'Sign-in is unavailable right now. Use your email instead.'
       ),
-    );
+      ('google_exchange401_showsFailed', const UnauthorizedFailure('x'), 'Sign-in failed. Please try again.'),
+      (
+        'google_exchange403CountryDenied_showsUnavailable',
+        const GeofenceFailure('x'),
+        'Sign-in is unavailable right now. Use your email instead.'
+      ),
+      (
+        'google_exchange429_showsRateLimitedMessage',
+        const NetworkFailure('Too many requests. Please wait before trying again.'),
+        'Too many requests. Please wait before trying again.'
+      ),
+    ]) {
+      testWidgets(name, (tester) async {
+        stubGoogle(AppResult.failure(failure));
 
-    await onPlatform(TargetPlatform.android, () async {
-      await pump(tester, google: _StubCredentials(_googleTokens));
-      await tapGoogle(tester);
+        await onPlatform(TargetPlatform.android, () async {
+          await pump(tester, google: _StubCredentials(_googleTokens));
+          await tapAndSettle(tester, googleButton());
 
-      expect(find.textContaining('Account temporarily locked'), findsOneWidget);
+          expect(find.text(shown), findsOneWidget);
+        });
+
+        expect(state.route, 'welcome');
+      });
+    }
+
+    testWidgets('a lockout surfaces the countdown instead of navigating', (tester) async {
+      stubGoogle(
+        AppResult.success(
+          SignInLockout(
+            session: LockedOut(until: DateTime.now().add(const Duration(seconds: 90)), identifier: 'x'),
+          ),
+        ),
+      );
+
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: _StubCredentials(_googleTokens));
+        await tapAndSettle(tester, googleButton());
+
+        expect(find.textContaining('Account temporarily locked'), findsOneWidget);
+      });
+
+      expect(state.route, 'welcome');
     });
-
-    expect(state.route, 'welcome');
   });
 }

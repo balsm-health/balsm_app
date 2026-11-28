@@ -139,6 +139,7 @@ class BalsmAuthAdapter {
   Future<AuthTokens> signInWithApple(
     String idToken,
     String authCode,
+    String nonce,
     String deviceId,
     String deviceLabel,
     String countryCode, {
@@ -150,6 +151,7 @@ class BalsmAuthAdapter {
             AppleSignInRequest(
               idToken: idToken,
               authorizationCode: authCode,
+              nonce: nonce,
               deviceId: deviceId,
               deviceLabel: deviceLabel,
               countryCode: countryCode,
@@ -261,13 +263,18 @@ class BalsmAuthAdapter {
         message: authStrings.current.errorLockedFor(retryAfter),
       );
     }
-    // Use generic message; never echo server text (may contain PII).
-    return AuthException(code: e.code, message: _messageFromCode(e.code));
+    // Use generic message; never echo server text (may contain PII). The code
+    // stays the server's, since callers branch on names like EmailRegistered;
+    // only the message falls back to the status when the name is not one we
+    // know (CountryDenied → 403 → "Access denied.").
+    final message = _messageFromCode(e.code) ?? _messageFromCode(ApiException.codeForStatus(e.statusCode));
+    return AuthException(code: e.code, message: message ?? authStrings.current.errorUnexpected);
   }
 
-  /// The user-facing message for an API error [code], in the active language. Infrastructure reads the
-  /// module bundle synchronously (`authStrings.current`), as its docs allow outside presentation.
-  String _messageFromCode(String code) {
+  /// The user-facing message for an API error [code], in the active language, or null for a code this
+  /// adapter does not know. Infrastructure reads the module bundle synchronously (`authStrings.current`),
+  /// as its docs allow outside presentation.
+  String? _messageFromCode(String code) {
     final m = authStrings.current;
     return switch (code) {
       'invalid_request' => m.errorInvalidRequest,
@@ -277,11 +284,11 @@ class BalsmAuthAdapter {
       'conflict' => m.errorConflict,
       'validation_error' => m.errorValidation,
       'account_locked' => m.errorLocked,
-      'rate_limited' => m.errorRateLimited,
+      'rate_limited' || 'RateLimitExceeded' => m.errorRateLimited,
       'server_error' => m.errorServer,
       'otp_expired' => m.errorOtpExpired,
       'otp_invalid' => m.errorOtpInvalid,
-      _ => m.errorUnexpected,
+      _ => null,
     };
   }
 }

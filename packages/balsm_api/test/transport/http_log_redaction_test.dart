@@ -34,6 +34,15 @@ void main() {
       expect(out['email'], 'patient@example.test', reason: 'still useful for debugging');
     });
 
+    test('hides the Apple sign-in nonce', () {
+      // The raw nonce binds an Apple ID token to one request; logged next to
+      // the (already redacted) token it would help replay a captured exchange.
+      final out = HttpLogInterceptor.redactBody({'nonce': 'raw-nonce-value', 'device_label': 'iPhone'})! as Map;
+
+      expect(out['nonce'], HttpLogInterceptor.redacted);
+      expect(out['device_label'], 'iPhone');
+    });
+
     test('hides a one-time code, a new password, and a token', () {
       final out = HttpLogInterceptor.redactBody({
         'code': '123456',

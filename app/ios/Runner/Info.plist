@@ -129,13 +129,11 @@
 			</array>
 		</dict>
 		<!--
-			No Google sign-in redirect scheme here. Sign in with Google is not
-			offered on iOS (auth_flow.dart, _googleAvailable), and the entry that
-			used to sit here held a REPLACE_ME placeholder, which App Store Connect
-			rejects: an underscore is not allowed in a URL scheme (error 90158).
-			If Google sign-in ever ships on iOS, add the REVERSED_CLIENT_ID of the
-			real iOS OAuth client as a second URL type; docs/social-sign-in-setup.md
-			has the block.
+			No Google sign-in redirect scheme here yet. The Google URL type is added
+			with the real REVERSED_CLIENT_ID once GOOGLE_IOS_CLIENT_ID is filled in;
+			until then the iOS Google button stays hidden (social_providers.dart).
+			Never add a placeholder scheme: App Store Connect rejects an underscore
+			in a URL scheme (error 90158). docs/social-sign-in-setup.md has the block.
 		-->
 	</array>
 </dict>

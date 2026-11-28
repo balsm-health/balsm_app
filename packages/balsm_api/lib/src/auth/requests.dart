@@ -132,18 +132,24 @@ class AppleSignInRequest {
   const AppleSignInRequest({
     required this.idToken,
     required this.authorizationCode,
+    required this.nonce,
     required this.deviceId,
     required this.deviceLabel,
     required this.countryCode,
   });
   final String idToken;
   final String authorizationCode;
+
+  /// The RAW nonce; the server hashes it (SHA-256 hex) and compares it with the
+  /// ID token's `nonce` claim. Never log it.
+  final String nonce;
   final String deviceId;
   final String deviceLabel;
   final String countryCode;
   Map<String, dynamic> toJson() => {
         'id_token': idToken,
         'authorization_code': authorizationCode,
+        'nonce': nonce,
         'device_id': deviceId,
         'device_label': deviceLabel,
         'country_code': countryCode,

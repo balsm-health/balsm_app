@@ -133,10 +133,11 @@ class SignUpUseCase {
   // ── Apple sign-up ─────────────────────────────────────────────────────────
 
   /// Complete sign-up via Apple.
-  /// [idToken] and [authCode] come from the sign_in_with_apple package.
+  /// [idToken], [authCode] and the raw [nonce] come from the sign_in_with_apple package.
   Future<AppResult<void>> signUpWithApple({
     required String idToken,
     required String authCode,
+    required String nonce,
     required String countryCode,
     required String email,
   }) async {
@@ -144,7 +145,7 @@ class SignUpUseCase {
       final deviceId = await _ensureDeviceId();
       final deviceLabel = await _deviceLabel();
 
-      final tokens = await _adapter.signInWithApple(idToken, authCode, deviceId, deviceLabel, countryCode);
+      final tokens = await _adapter.signInWithApple(idToken, authCode, nonce, deviceId, deviceLabel, countryCode);
 
       await _persistTokens(
         accessToken: tokens.accessToken,

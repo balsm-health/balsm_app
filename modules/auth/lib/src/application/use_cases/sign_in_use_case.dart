@@ -334,7 +334,7 @@ class SignInUseCase {
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
-      return AppResult.failure(NetworkFailure(e.message));
+      return AppResult.failure(_socialFailure(e));
     } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
@@ -345,6 +345,7 @@ class SignInUseCase {
   Future<AppResult<SignInResult>> signInWithApple({
     required String idToken,
     required String authCode,
+    required String nonce,
     required String email,
     required String countryCode,
   }) async {
@@ -352,7 +353,7 @@ class SignInUseCase {
       final deviceId = await _ensureDeviceId();
       final deviceLabel = _deviceLabel();
 
-      final tokens = await _adapter.signInWithApple(idToken, authCode, deviceId, deviceLabel, countryCode);
+      final tokens = await _adapter.signInWithApple(idToken, authCode, nonce, deviceId, deviceLabel, countryCode);
 
       await _persistTokens(
         accessToken: tokens.accessToken,
@@ -371,13 +372,23 @@ class SignInUseCase {
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
-      return AppResult.failure(NetworkFailure(e.message));
+      return AppResult.failure(_socialFailure(e));
     } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /// The Apple/Google exchange's refusals, by kind, so the screen can say
+  /// "unavailable" (404: not offered, e.g. switched off for new accounts; 403
+  /// CountryDenied) or "failed" (401: the token or nonce did not check out).
+  AppFailure _socialFailure(AuthException e) => switch (e.code) {
+        'not_found' => NotFoundFailure(e.message),
+        'unauthorized' => UnauthorizedFailure(e.message),
+        'CountryDenied' => GeofenceFailure(e.message),
+        _ => NetworkFailure(e.message),
+      };
 
   AppResult<SignInResult> _handleLockout(AuthException e, String email) {
     // Parse seconds from message: "...in X seconds."

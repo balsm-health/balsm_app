@@ -15,6 +15,7 @@ final class SocialCredentials extends SocialCredentialsResult {
   const SocialCredentials({
     required this.idToken,
     this.authorizationCode = '',
+    this.nonce = '',
     this.email = '',
     this.givenName,
     this.familyName,
@@ -25,6 +26,10 @@ final class SocialCredentials extends SocialCredentialsResult {
 
   /// Apple's single-use authorization code; empty for Google.
   final String authorizationCode;
+
+  /// The raw nonce whose SHA-256 hex Apple embedded in the ID token; the API
+  /// verifies it. Empty for Google. Never logged.
+  final String nonce;
 
   /// Empty when the provider withheld it (Apple's "Hide My Email" still returns
   /// a relay address, but the claim is absent on repeat authorizations).
