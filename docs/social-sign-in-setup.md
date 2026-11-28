@@ -94,9 +94,9 @@ scheme is rejected by App Store Connect (error 90158).
    </dict>
    ```
 
-   Only with the real value. The entry was removed because a placeholder there
-   is rejected by App Store Connect (a URL scheme cannot contain `_`), and the
-   a placeholder scheme must never be committed. Google's console
+   Add the iOS client's `REVERSED_CLIENT_ID` as a URL type only once the real id
+   exists; a placeholder must never be committed (App Store Connect error 90158:
+   `_` is not allowed in a URL scheme). Google's console
    shows it directly; a downloaded `GoogleService-Info.plist` has it as
    `REVERSED_CLIENT_ID`. The app does not need that plist file — the client ids
    come from `shared.json`.
@@ -143,14 +143,17 @@ Apple__ClientId=app.balsm.health
 With `SocialSignIn:Enabled=true`, `AddSharedInfrastructure` throws at startup
 when either is missing, so a misconfigured deployment fails to boot instead of
 500-ing on the first user's sign-in tap. While the flag is off the audiences are
-not required and the endpoints 404. The three endpoints share a per-IP rate
-limit of 20 requests per 10 minutes.
+not required and the endpoints 404. The three endpoints share a rate limit per
+client IP of 20 requests per 10 minutes.
+
+Apple sign-in sends a per-attempt nonce: its SHA-256 goes to Apple and the raw
+value to the API, which compares them. `/auth/apple` returns 401 without it.
 
 ### Apple token revocation
 
 At sign-in the API exchanges the Apple authorization code for a refresh token
-and stores it encrypted (AES-256-GCM, with a key derived from
-`DobEncryption:Key`, so that key must be set and must not be rotated casually).
+and stores it encrypted (AES-256-GCM, with a key HKDF-SHA256-derived
+from `DobEncryption:Key`, info `balsm/apple-refresh-token/v1`, so that key must be set and must not be rotated casually).
 When an account is purged the token is revoked with Apple, which needs a Sign in
 with Apple key from the portal (Keys → Sign in with Apple). Set these as Railway
 **secrets**:
@@ -164,6 +167,8 @@ Apple__PrivateKey=<contents of the .p8, PKCS8 PEM>
 Without them the revocation is skipped and logged as `config_missing`; the
 purge still completes and erases the account's auth identities and refresh
 tokens.
+
+### Account linking
 
 Email identities are keyed on a stable id, and Gmail dot and `+tag` variants are
 treated as one address.
