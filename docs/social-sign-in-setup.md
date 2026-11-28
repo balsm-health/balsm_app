@@ -1,20 +1,19 @@
 # Sign in with Google / Apple — console setup
 
-> **Status: DISABLED.** Both buttons are hidden and both API endpoints return
-> 404. An Apple account identifier is scoped to the developer team that owns the
-> app, so transferring the app to another team changes it and every Apple user
-> needs a migration through Apple to keep their account. Until app ownership is
-> settled, not accruing those users is cheaper than migrating them.
+> **Status: ENABLED.** `SOCIAL_SIGN_IN_ENABLED` is `true` in the app env and
+> the Apple entitlement is in `Runner.entitlements`. The API gate is
+> `SocialSignIn:Enabled`; off, `/auth/google`, `/auth/apple` and
+> `/auth/apple/notifications` return 404. With it on, the API refuses to boot
+> if `Google:ClientId` or `Apple:ClientId` is missing.
 >
-> **To re-enable**, all three:
-> 1. `SOCIAL_SIGN_IN_ENABLED: true` in `app/env/shared.json`
-> 2. `SocialSignIn:Enabled = true` in the API config (or `SocialSignIn__Enabled=true`)
-> 3. Restore `com.apple.developer.applesignin` in `app/ios/Runner/Runner.entitlements`
->    — the snippet is in a comment there. Only after enabling the capability on
->    the App ID, or the build fails to sign.
+> **Switching off** (e.g. to stop accruing users):
+> 1. `SOCIAL_SIGN_IN_ENABLED: false` in `app/env/shared.json`; the buttons hide.
+> 2. `SocialSignIn__Enabled=false` on the API (Railway); the endpoints 404.
 >
-> Then fill in the credentials below. The API refuses to boot with the flag on
-> and the client ids missing.
+> Leave the Apple entitlement in place: removing it only matters if the
+> capability is removed from the App ID. An Apple account identifier is scoped
+> to the developer team that owns the app, so transferring the app to another
+> team changes it and every Apple user needs a migration through Apple.
 
 The code is complete on both sides: `modules/auth` obtains the provider token
 natively and posts it to `POST /auth/google` / `POST /auth/apple`, which
@@ -25,21 +24,24 @@ console configuration that produces the identifiers both sides validate against.
 Every value below is a **public** OAuth identifier, not a secret — client ids
 are designed to be shipped inside apps. Nothing here belongs in a secret store.
 
-**Scope:** Google on iOS + Android; Apple on iOS only. The Apple button is
-hidden off iOS (`social_sign_in_screen.dart`) because the Android web flow needs
+**Scope:** Google on iOS, Android and macOS; Apple on iOS only. Provider
+availability lives in `social_providers.dart`, and the buttons are
+`social_sign_in_block.dart` (Welcome and email screens). The Apple button is
+hidden off iOS because the Android web flow needs
 a Service ID whose token audience differs from the bundle id the API validates.
 
-## Placeholders to replace
+## Values to fill in
 
-| Placeholder | Lives in | Becomes |
+| Setting | Lives in | Becomes |
 |---|---|---|
-| `GOOGLE_SERVER_CLIENT_ID` | `app/env/shared.json` | Google **Web** client id |
-| `GOOGLE_IOS_CLIENT_ID` | `app/env/shared.json` | Google **iOS** client id |
+| `GOOGLE_SERVER_CLIENT_ID` | `app/env/shared.json` | Google **Web** client id (`""` until set; Android and macOS hide Google while empty) |
+| `GOOGLE_IOS_CLIENT_ID` | `app/env/shared.json` | Google **iOS** client id (`""` until set; the iOS Google button stays hidden while empty) |
 | *(no entry today)* | `app/ios/Runner/Info.plist` | iOS **reversed** client id, added as a new URL type — see step 4 |
-| `Google:ClientId` | API `appsettings.Development.json` / `.Local.json` | Google **Web** client id |
-| `Apple:ClientId` | API `appsettings.Development.json` / `.Local.json` | `app.balsm.health` (already correct) |
+| `Google:ClientId` | API `appsettings.Development.json` / `.Local.json`, Railway `Google__ClientId` | Google **Web** client id |
+| `Apple:ClientId` | API config | `app.balsm.health` (already correct) |
 
-Search for `REPLACE_ME` to find them all.
+The placeholders are empty strings, not `REPLACE_ME`: a placeholder in a URL
+scheme is rejected by App Store Connect (error 90158).
 
 ## 1. Google Cloud console
 
@@ -94,7 +96,7 @@ Search for `REPLACE_ME` to find them all.
 
    Only with the real value. The entry was removed because a placeholder there
    is rejected by App Store Connect (a URL scheme cannot contain `_`), and the
-   build tool refuses a production iOS build with `REPLACE_ME` in that file. Google's console
+   a placeholder scheme must never be committed. Google's console
    shows it directly; a downloaded `GoogleService-Info.plist` has it as
    `REVERSED_CLIENT_ID`. The app does not need that plist file — the client ids
    come from `shared.json`.
@@ -105,11 +107,10 @@ Search for `REPLACE_ME` to find them all.
 
 1. **Identifiers** → App ID `app.balsm.health` → tick **Sign in with Apple** →
    *Save*. Leave it as a primary App ID (no grouping needed).
-2. Restore the entitlement in `app/ios/Runner/Runner.entitlements` — it was
-   removed while the feature is disabled, and the exact snippet is in a comment
-   in that file. Do this only *after* step 1: a build carrying the entitlement
-   without the capability on the App ID fails provisioning. With automatic
-   signing, Xcode regenerates the profile on the next build.
+2. The entitlement `com.apple.developer.applesignin` is already in
+   `app/ios/Runner/Runner.entitlements`. It signs only once step 1 is done: a
+   build carrying it without the capability on the App ID fails provisioning.
+   With automatic signing, Xcode regenerates the profile on the next build.
 3. The API's `Apple:ClientId` is the **bundle id** `app.balsm.health`: for the
    native iOS flow, that is the `aud` claim Apple puts in the ID token.
 
@@ -118,8 +119,16 @@ capability, because free personal-team signing rejects it. Apple sign-in does
 not work in personal-team builds (`scripts/ios_personal_signing.sh on`) — use a
 paid-team build to test it.
 
-No Service ID, key, or client secret is required: the native flow validates the
-ID token against Apple's public JWKS, which the API already fetches and caches.
+Sign-in itself needs no Service ID, key, or client secret: the native flow
+validates the ID token against Apple's public JWKS, which the API fetches and
+caches. Account deletion does need a key, to revoke the user's Apple token (see
+*Apple token revocation* in section 3).
+
+**Server-to-server notifications.** In the portal, set the notification endpoint
+for the App ID to `https://api.balsm.health/auth/apple/notifications`. Consent
+revoked and account deleted sign the user out everywhere (unless the event is
+older than the user's latest Apple sign-in); email disabled/enabled refresh the
+stored email snapshot.
 
 ## 3. API configuration
 
@@ -134,7 +143,30 @@ Apple__ClientId=app.balsm.health
 With `SocialSignIn:Enabled=true`, `AddSharedInfrastructure` throws at startup
 when either is missing, so a misconfigured deployment fails to boot instead of
 500-ing on the first user's sign-in tap. While the flag is off the audiences are
-not required and the endpoints 404.
+not required and the endpoints 404. The three endpoints share a per-IP rate
+limit of 20 requests per 10 minutes.
+
+### Apple token revocation
+
+At sign-in the API exchanges the Apple authorization code for a refresh token
+and stores it encrypted (AES-256-GCM, with a key derived from
+`DobEncryption:Key`, so that key must be set and must not be rotated casually).
+When an account is purged the token is revoked with Apple, which needs a Sign in
+with Apple key from the portal (Keys → Sign in with Apple). Set these as Railway
+**secrets**:
+
+```
+Apple__TeamId=<10-character team id>
+Apple__KeyId=<key id>
+Apple__PrivateKey=<contents of the .p8, PKCS8 PEM>
+```
+
+Without them the revocation is skipped and logged as `config_missing`; the
+purge still completes and erases the account's auth identities and refresh
+tokens.
+
+Email identities are keyed on a stable id, and Gmail dot and `+tag` variants are
+treated as one address.
 
 ## 4. Verify
 
