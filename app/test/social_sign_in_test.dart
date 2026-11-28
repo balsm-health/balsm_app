@@ -317,6 +317,28 @@ void main() {
       expect(state.socialFamilyName, 'Hassan');
     });
 
+    testWidgets('apple_exchange404_showsUnavailable', (tester) async {
+      stubApple(AppResult.failure(const NotFoundFailure('x')));
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tapAndSettle(tester, appleButton());
+
+        expect(find.text('Sign-in is unavailable right now. Use your email instead.'), findsOneWidget);
+      });
+    });
+
+    testWidgets('apple_exchange401_showsFailed', (tester) async {
+      stubApple(AppResult.failure(const UnauthorizedFailure('x')));
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tapAndSettle(tester, appleButton());
+
+        expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
+      });
+    });
+
     testWidgets('apple_cancelled_showsNoError', (tester) async {
       final port = _StubCredentials(const SocialCredentialsCancelled());
 
@@ -469,6 +491,42 @@ void main() {
         expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
       });
     });
+
+    // The exchange's refusals: 404 (not offered — e.g. switched off for new
+    // accounts) and 403 CountryDenied say "unavailable, use email"; 401 (the
+    // token did not check out) says "failed, try again"; anything else shows
+    // the adapter's localized message (429 → rate limited).
+    for (final (name, failure, shown) in [
+      (
+        'google_exchange404_showsUnavailable',
+        const NotFoundFailure('x'),
+        'Sign-in is unavailable right now. Use your email instead.'
+      ),
+      ('google_exchange401_showsFailed', const UnauthorizedFailure('x'), 'Sign-in failed. Please try again.'),
+      (
+        'google_exchange403CountryDenied_showsUnavailable',
+        const GeofenceFailure('x'),
+        'Sign-in is unavailable right now. Use your email instead.'
+      ),
+      (
+        'google_exchange429_showsRateLimitedMessage',
+        const NetworkFailure('Too many requests. Please wait before trying again.'),
+        'Too many requests. Please wait before trying again.'
+      ),
+    ]) {
+      testWidgets(name, (tester) async {
+        stubGoogle(AppResult.failure(failure));
+
+        await onPlatform(TargetPlatform.android, () async {
+          await pump(tester, google: _StubCredentials(_googleTokens));
+          await tapAndSettle(tester, googleButton());
+
+          expect(find.text(shown), findsOneWidget);
+        });
+
+        expect(state.route, 'welcome');
+      });
+    }
 
     testWidgets('a lockout surfaces the countdown instead of navigating', (tester) async {
       stubGoogle(

@@ -213,6 +213,25 @@ void main() {
 
       verify(() => adapter.signInWithGoogle('idtok', 'dev-1', _label, 'SA')).called(1);
     });
+
+    // The exchange's refusals reach the screen as distinct failure types, so it
+    // can say "unavailable" or "failed" instead of a generic server message.
+    for (final (code, type) in [
+      ('not_found', NotFoundFailure),
+      ('unauthorized', UnauthorizedFailure),
+      ('CountryDenied', GeofenceFailure),
+      ('RateLimitExceeded', NetworkFailure),
+    ]) {
+      test('$code from the exchange is reported as $type', () async {
+        when(() => adapter.signInWithGoogle(any(), any(), any(), any()))
+            .thenThrow(AuthException(code: code, message: 'm'));
+
+        final r = await usecase.signInWithGoogle(idToken: 'idtok', email: '', countryCode: 'EG');
+
+        expect(r.error.runtimeType, type);
+        expect(r.error.message, 'm');
+      });
+    }
   });
 
   group('signInWithApple', () {
@@ -250,6 +269,27 @@ void main() {
 
       verify(() => adapter.signInWithApple('idtok', 'authcode', 'raw-n', 'dev-1', _label, 'SA')).called(1);
     });
+
+    for (final (code, type) in [
+      ('not_found', NotFoundFailure),
+      ('unauthorized', UnauthorizedFailure),
+      ('CountryDenied', GeofenceFailure),
+    ]) {
+      test('$code from the exchange is reported as $type', () async {
+        when(() => adapter.signInWithApple(any(), any(), any(), any(), any(), any()))
+            .thenThrow(AuthException(code: code, message: 'm'));
+
+        final r = await usecase.signInWithApple(
+          idToken: 'idtok',
+          authCode: 'authcode',
+          nonce: 'raw-n',
+          email: '',
+          countryCode: 'EG',
+        );
+
+        expect(r.error.runtimeType, type);
+      });
+    }
   });
 
   group('setPassword', () {

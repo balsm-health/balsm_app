@@ -108,7 +108,16 @@ class _SocialSignInBlockState extends ConsumerState<SocialSignInBlock> {
             setState(() => _error = s.strings.auth.auth_locked_retry(secsLeft.toString()));
         }
       },
-      (failure) => setState(() => _error = failure.message),
+      (failure) => setState(
+        () => _error = switch (failure) {
+          // Not offered (404: e.g. switched off for new accounts) or not in
+          // this country (403 CountryDenied): point at email instead.
+          NotFoundFailure() || GeofenceFailure() => s.strings.auth.social_unavailable,
+          // The provider's token did not check out (401): try again.
+          UnauthorizedFailure() => s.strings.auth.social_failed,
+          _ => failure.message,
+        },
+      ),
     );
   }
 
