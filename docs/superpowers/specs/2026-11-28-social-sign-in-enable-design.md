@@ -33,7 +33,17 @@ Claude Design "Auth Flow" page (`auth.jsx` → `WelcomeScreen`, `PhoneScreen`,
   it encrypted (same AES-256-GCM pattern as DOB), and `AppleRevokeService`
   revokes with it (`token_type_hint=refresh_token`).
 
+- Accounts are linked to the sign-in id, never the email (added 2026-11-28
+  at the user's request): Google/Apple by `sub`; email identities get a stable
+  opaque subject so the address can change later. Gmail variants differing
+  only by case, dots or `+tag` are one address
+  (`hossamEldin.M.I@gmail.com` ≡ `hossameldinmi@gmail.com`). The stored
+  provider email is a refreshable snapshot. No cross-provider merge by email.
+
 ## Non-goals
+
+- An email-change screen/endpoint (this work only makes it possible).
+- Linking a Google/Apple sign-in to an existing email account.
 
 - Apple on Android/web (needs a Service ID audience + server support).
 - Google/Apple console setup — the user does it; ids stay `REPLACE_ME` until

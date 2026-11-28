@@ -30,11 +30,12 @@
 
 ## Review Focus
 
-1. **iOS build with Google ids still empty** — Google button must stay hidden on iOS and no placeholder URL scheme may enter `Info.plist` (ASC error 90158). Test in Task 5.
-2. **Apple returns no email on a repeat authorization** — existing account must still sign in by `sub`; handler must not require email. Test in Task 2.
-3. **Apple code exchange fails or Apple key config absent** — sign-in still returns tokens; identity keeps no refresh token. Test in Task 2.
-4. **Account purged without any Apple identity, or with an identity but no token** — purge continues, status `no_apple_identity` / `no_refresh_token`, other accounts in the batch still purged. Test in Task 3.
-5. **Two taps on different providers** — while one provider flow runs, both buttons are disabled. Test in Task 5.
+1. **iOS build with Google ids still empty** — Google button must stay hidden on iOS and no placeholder URL scheme may enter `Info.plist` (ASC error 90158). Test in Task 6.
+2. **Apple returns no email on a repeat authorization** — existing account must still sign in by `sub`; handler must not require email. Test in Task 3.
+3. **Apple code exchange fails or Apple key config absent** — sign-in still returns tokens; identity keeps no refresh token. Test in Task 3.
+4. **Account purged without any Apple identity, or with an identity but no token** — purge continues, status `no_apple_identity` / `no_refresh_token`, other accounts in the batch still purged. Test in Task 4.
+5. **Two taps on different providers** — while one provider flow runs, both buttons are disabled. Test in Task 6.
+6. **Same person, two spellings of one Gmail address** — sign-up with a dotted/cased variant must hit the existing account, not create a second. Test in Task 2.
 
 ---
 
@@ -68,7 +69,57 @@ git add src/Modules/Auth/Balsm.Auth.Api src/Balsm.Infrastructure/DependencyInjec
 git commit -m "[Auth] Gate social sign-in behind SocialSignIn:Enabled and check audiences at boot"
 ```
 
-### Task 2: API — capture the Apple refresh token at sign-in
+### Task 2: API — key every identity on a stable sign-in id, never the email
+
+Accounts link to the sign-in id: Google/Apple `sub` (already the unique key) and, for email identities, a stable opaque id instead of the address. The email becomes changeable data. Gmail addresses that differ only by case, dots or a `+tag` are one mailbox and must resolve to one identity (`hossamEldin.M.I@gmail.com` ≡ `hossameldinmi@gmail.com`). No account is ever merged or linked across providers by email.
+
+**Files:**
+- Create: `src/Modules/Auth/Balsm.Auth.Domain/ValueObjects/EmailCanonical.cs`
+- Modify: `src/Modules/Auth/Balsm.Auth.Domain/Entities/UserIdentity.cs`
+- Modify: `src/Modules/Auth/Balsm.Auth.Infrastructure/Configuration/UserIdentityConfiguration.cs` (column `email_canonical` text; partial unique index on `email_canonical` where `provider = 'email'`, replacing the old partial unique on `email_normalized`)
+- Modify: every email lookup — `VerifyOtpHandler`, `VerifyLinkHandler`, `ResetPasswordHandler`, `RequestOtpHandler`, `PasswordSignInHandler`, `RecoveryClaimHandler` — to match on `EmailCanonical == EmailCanonical.From(input)`; `VerifyOtpHandler`/`VerifyLinkHandler` create email identities with `UserIdentity.CreateEmail(...)`
+- Modify: `ExchangeGoogleTokenHandler` (email optional; refresh snapshot), `ExchangeAppleTokenHandler` (refresh snapshot only when the token carries an email; drop the synthetic `apple_{sub}@private.balsm.app` from the stored column — use it only for the JWT `email` claim if one is required)
+- Create: migration `KeyEmailIdentitiesOnStableId` in both Auth migration projects. `Up()`: add `email_canonical`; backfill it from `email_normalized` with the same rules (SQL for Postgres; C# loop acceptable in the SQLite set); set `provider_subject = id::text` for `provider = 'email'`; swap the unique index. If two existing email rows collapse to the same canonical value, **abort the migration** with a message listing their `id`s (no auto-merge — ops resolve by hand). `Down()`: restore `provider_subject = email_normalized` and the old index, drop the column.
+- Test: `tests/Modules/Balsm.Auth.Tests/EmailCanonicalTests.cs`, `tests/Modules/Balsm.Auth.Tests/StableIdentityKeyTests.cs`
+
+**Interfaces:**
+- Produces:
+  ```csharp
+  public static class EmailCanonical
+  {
+      /// Trim + lowercase. For gmail.com / googlemail.com: drop dots and any "+suffix"
+      /// in the local part, domain → gmail.com. Other domains: lowercase only.
+      public static string From(string email);
+  }
+  ```
+- Produces (`UserIdentity`): `string? EmailCanonical { get; private set; }`; `static UserIdentity CreateEmail(Guid userId, string email)` (subject = the new row's `Id.ToString()`; sets `EmailNormalized` = trimmed lowercase as typed, `EmailCanonical`); `void ChangeEmail(string email)` (updates both, clears `EmailConfirmedAt` — the new address is unproven); `void RefreshProviderEmail(string? email)` (social only; no-op on null/blank; keeps `EmailConfirmedAt` handling to the caller).
+- `Create(...)` for google/apple unchanged (subject = `sub`) but also fills `EmailCanonical` when an email is given.
+
+Emails keep going to the address as typed (`EmailNormalized`), never to the canonical form.
+
+- [ ] **Step 1: Write failing tests**
+  - `From_GmailDotsAndCase_Collapse` (`"hossamEldin.M.I@gmail.com"` and `"hossameldinmi@gmail.com"` → both `"hossameldinmi@gmail.com"`)
+  - `From_GmailPlusTag_Dropped` (`"a.b+balsm@googlemail.com"` → `"ab@gmail.com"`)
+  - `From_OtherDomain_KeepsDots` (`"First.Last@Balsm.Health"` → `"first.last@balsm.health"`)
+  - `PasswordSignIn_WithDottedGmailVariant_FindsSameIdentity`
+  - `RequestOtp_SignUpWithDottedVariantOfExisting_ReportsExists` (no second account)
+  - `ChangeEmail_KeepsProviderSubjectAndUserId_ClearsConfirmation`
+  - `GoogleSignIn_EmailChangedAtGoogle_SameUserAndSnapshotUpdated` (same `sub`, new email → `IsNewUser == false`, `EmailNormalized` updated)
+  - `GoogleSignIn_TokenWithoutEmail_Succeeds`
+  - `AppleRepeatSignInWithoutEmail_KeepsStoredEmail`
+  - `SocialSignIn_EmailMatchesExistingEmailAccount_CreatesSeparateAccount` (pins "no merge by email")
+  - Migration test against SQLite: seed two email rows, run `Up()`, assert `provider_subject == id` and canonical filled; seed a colliding pair → `Up()` throws naming both ids.
+- [ ] **Step 2: Run** `dotnet test tests/Modules/Balsm.Auth.Tests --filter "FullyQualifiedName~EmailCanonical|FullyQualifiedName~StableIdentityKey"` — Expected: FAIL.
+- [ ] **Step 3: Implement** value object, entity members, handler lookups, social handlers, EF config, migrations.
+- [ ] **Step 4: Run** the filter above, then `dotnet test tests/Modules/Balsm.Auth.Tests` and `dotnet test tests/Balsm.API.IntegrationTests` — Expected: PASS (existing auth flows unchanged for non-Gmail addresses).
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/Modules/Auth tests/Modules/Balsm.Auth.Tests
+git commit -m "[Auth] Key identities on a stable sign-in id and treat Gmail variants as one address"
+```
+
+### Task 3: API — capture the Apple refresh token at sign-in
 
 **Files:**
 - Create: `src/Balsm.Infrastructure/Auth/AppleTokenClient.cs`
@@ -117,7 +168,7 @@ git add src tests
 git commit -m "[Auth] Store an encrypted Apple refresh token at Apple sign-in"
 ```
 
-### Task 3: API — revoke the Apple grant when an account is purged
+### Task 4: API — revoke the Apple grant when an account is purged
 
 **Files:**
 - Create: `src/Balsm.SharedKernel/Contracts/IAppleGrantRevoker.cs`
@@ -128,7 +179,7 @@ git commit -m "[Auth] Store an encrypted Apple refresh token at Apple sign-in"
 - Test: `tests/Modules/Balsm.Auth.Tests/AppleGrantRevokerTests.cs`, `tests/Modules/Balsm.Deletion.Tests/AppleRevokePurgeTests.cs`
 
 **Interfaces:**
-- Consumes: `AppleTokenClient.RevokeAsync`, `AppleRefreshTokenCipher.Decrypt`, `UserIdentity.ClearAppleRefreshToken` (Task 2).
+- Consumes: `AppleTokenClient.RevokeAsync`, `AppleRefreshTokenCipher.Decrypt`, `UserIdentity.ClearAppleRefreshToken` (Task 3).
 - Produces:
   ```csharp
   public interface IAppleGrantRevoker
@@ -147,14 +198,14 @@ Purge job: resolve `IAppleGrantRevoker` from the scope; for each expired account
 - [ ] **Step 2: Run** `dotnet test tests/Modules/Balsm.Auth.Tests --filter "FullyQualifiedName~AppleGrantRevoker"` and `dotnet test tests/Modules/Balsm.Deletion.Tests --filter "FullyQualifiedName~AppleRevokePurge"` — Expected: FAIL.
 - [ ] **Step 3: Implement** contract, revoker, Program.cs wiring, purge call; delete the old service + registration.
 - [ ] **Step 4: Run** those tests, then the whole suite `dotnet test Balsm.API.slnx` — Expected: PASS.
-- [ ] **Step 5: Update** `../balsm_app/docs/social-sign-in-setup.md` later (Task 6) — nothing here. Commit:
+- [ ] **Step 5: Update** `../balsm_app/docs/social-sign-in-setup.md` later (Task 7) — nothing here. Commit:
 
 ```bash
 git add src tests
 git commit -m "[Deletion] Revoke the Apple grant with the stored refresh token on purge"
 ```
 
-### Task 4: App — provider availability rule
+### Task 5: App — provider availability rule
 
 **Files:**
 - Create: `app/lib/balsm_app/screens/social_providers.dart`
@@ -179,7 +230,7 @@ git commit -m "[Deletion] Revoke the Apple grant with the stored refresh token o
 - [ ] **Step 4: Run** — Expected: PASS.
 - [ ] **Step 5: Commit** `git add app/lib/balsm_app/screens/social_providers.dart app/test/social_providers_test.dart && git commit -m "Decide which social sign-in providers each platform offers"`
 
-### Task 5: App — `SocialSignInBlock` on Welcome and email screens
+### Task 6: App — `SocialSignInBlock` on Welcome and email screens
 
 **Files:**
 - Create: `app/lib/balsm_app/screens/social_sign_in_block.dart` (move `_SocialButton`, `_GoogleMark`, `_kGoogleGSvg` here from `auth_flow.dart` as private members; add `_AppleMark` using the design's Apple path, `currentColor` → white)
@@ -191,7 +242,7 @@ git commit -m "[Deletion] Revoke the Apple grant with the stored refresh token o
 - Modify: `app/test/social_sign_in_test.dart` (rewrite header doc + cases for the new rules)
 
 **Interfaces:**
-- Consumes: `availableSocialProviders` (Task 4); `googleCredentialsPortProvider`, `appleCredentialsPortProvider`, `signInUseCaseProvider` (`signInWithGoogle({idToken, email, countryCode})`, `signInWithApple({idToken, authCode, email, countryCode})`), `enterAfterSignIn(context, ref, s)`, `s.setSocialName(...)`, `s.strings.auth.social_failed / social_unavailable / auth_locked_retry`.
+- Consumes: `availableSocialProviders` (Task 5); `googleCredentialsPortProvider`, `appleCredentialsPortProvider`, `signInUseCaseProvider` (`signInWithGoogle({idToken, email, countryCode})`, `signInWithApple({idToken, authCode, email, countryCode})`), `enterAfterSignIn(context, ref, s)`, `s.setSocialName(...)`, `s.strings.auth.social_failed / social_unavailable / auth_locked_retry`.
 - Produces: `class SocialSignInBlock extends ConsumerStatefulWidget { const SocialSignInBlock({super.key, required this.compact}); }` — renders nothing (`SizedBox.shrink`) when no provider is available; otherwise buttons (gap 10) → 14 px → divider labelled `w_or_email` → error line (live region, `AppColors.danger`) when set. Holds `SocialProvider? _busy`; while non-null both buttons get `onTap: null` and the busy one shows the spinner. Outcome handling is exactly today's `_signInGoogle` logic generalised per provider (cancel → silent; failure → `social_unavailable` if `missingToken` else `social_failed`; success → `setSocialName` when `isNewUser`, then `enterAfterSignIn`; lockout → `auth_locked_retry`). Apple passes `credentials.authorizationCode` as `authCode`.
 
 - [ ] **Step 1: Write failing widget tests** in `app/test/social_sign_in_test.dart` (use `debugDefaultTargetPlatformOverride`, existing `_StubCredentials`/mocks):
@@ -213,11 +264,11 @@ git add app/lib/balsm_app/screens app/lib/balsm_app/i18n app/test
 git commit -m "Lay out Apple and Google sign-in per the Auth Flow design"
 ```
 
-### Task 6: Turn it on — iOS capability, env, docs, changelog
+### Task 7: Turn it on — iOS capability, env, docs, changelog
 
 **Files:**
 - Modify: `app/ios/Runner/Runner.entitlements` — replace the "DISABLED" comment with `<key>com.apple.developer.applesignin</key><array><string>Default</string></array>`. Leave `Runner-Personal.entitlements` untouched.
-- Modify: `app/ios/Runner/Info.plist` — keep the comment, reworded: the Google URL type is added with the real `REVERSED_CLIENT_ID` when `GOOGLE_IOS_CLIENT_ID` is filled in; until then the iOS Google button stays hidden (Task 4 rule). Do not add a placeholder scheme.
+- Modify: `app/ios/Runner/Info.plist` — keep the comment, reworded: the Google URL type is added with the real `REVERSED_CLIENT_ID` when `GOOGLE_IOS_CLIENT_ID` is filled in; until then the iOS Google button stays hidden (Task 5 rule). Do not add a placeholder scheme.
 - Modify: `app/env/shared.json` and `app/env/shared.example.json` — `"SOCIAL_SIGN_IN_ENABLED": true`, both Google ids `""` (example keeps a comment-free `""` too).
 - Modify: `app/lib/balsm_app/screens/auth_flow.dart` / `modules/auth/.../apple_credentials_adapter.dart` doc comments that still say the provider is off pending team ownership.
 - Modify: `docs/social-sign-in-setup.md` — status **ENABLED**; re-enable section becomes "switching off" (`SOCIAL_SIGN_IN_ENABLED`, `SocialSignIn__Enabled=false`); add the Apple revocation keys (`Apple__TeamId`, `Apple__KeyId`, `Apple__PrivateKey` as Railway secrets) and that the refresh token is encrypted with a key derived from `DobEncryption:Key`; placeholders table: Google ids are `""`, not `REPLACE_ME`; fix the stale `social_sign_in_screen.dart` reference → `social_sign_in_block.dart`.
