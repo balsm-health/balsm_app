@@ -40,6 +40,14 @@ Claude Design "Auth Flow" page (`auth.jsx` → `WelcomeScreen`, `PhoneScreen`,
   (`hossamEldin.M.I@gmail.com` ≡ `hossameldinmi@gmail.com`). The stored
   provider email is a refreshable snapshot. No cross-provider merge by email.
 
+- Hardening (added 2026-11-28): Apple sign-in carries a per-attempt nonce
+  (app sends SHA-256 to Apple, raw value to the API, API compares);
+  `/auth/google` + `/auth/apple` are rate limited per IP (20 / 10 min);
+  `POST /auth/apple/notifications` handles Apple's server-to-server events —
+  consent-revoked / account-delete sign the user out everywhere and drop the
+  stored Apple token (the Balsm account itself is never auto-deleted);
+  email-disabled / email-enabled refresh the email snapshot.
+
 ## Non-goals
 
 - An email-change screen/endpoint (this work only makes it possible).

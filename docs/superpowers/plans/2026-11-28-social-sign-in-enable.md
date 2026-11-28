@@ -46,10 +46,11 @@
 - Modify: `src/Balsm.Infrastructure/DependencyInjection.cs` (after `services.AddScoped<AppleOidcValidator>()`)
 - Modify: `src/Balsm.API/appsettings.Development.json`, `src/Balsm.API/appsettings.Local.json` (`"SocialSignIn": { "Enabled": true }`)
 - Modify: `docs/api/insomnia/auth.yaml` (both social bodies snake_case incl. `country_code`; Apple body adds `authorization_code`; add a 404-while-disabled note in each description)
+- Create: `src/Modules/Auth/Balsm.Auth.Api/SocialSignInRateLimitAttribute.cs` — copy the `CareDirectoryRateLimitAttribute` pattern (`IRateLimitStore`, per-IP fixed window, `429 {"error":{"code":"RateLimitExceeded"}}` + `Retry-After`): key `auth:social:ip:{ip}`, `Limit = 20`, `Window = 10 min`. Apply to the `Google` and `Apple` actions (the filter runs before the 404 gate; that is intended — disabled endpoints are still bounded).
 - Test: `tests/Balsm.API.IntegrationTests/AuthSocialSignInEndpointTests.cs`, `tests/Balsm.API.Tests/SocialSignInBootValidationTests.cs`
 
 **Interfaces:**
-- Produces: `public sealed record OidcRequest(string IdToken, Guid DeviceId, string DeviceLabel, string CountryCode, string? AuthorizationCode = null);`
+- Produces: `public sealed record OidcRequest(string IdToken, Guid DeviceId, string DeviceLabel, string CountryCode, string? AuthorizationCode = null, string? Nonce = null);`
 - Produces: `internal static void RequireSocialSignInAudiences(IConfiguration configuration)` (throws `InvalidOperationException` naming every missing key of `Google:ClientId`, `Apple:ClientId`), called only when `SocialSignIn:Enabled` is true.
 
 Port the code from `git show 8cb9743 -- src/Balsm.Infrastructure/DependencyInjection.cs src/Modules/Auth/Balsm.Auth.Api/Controllers/AuthController.cs` (reference only — do not merge the branch). Drop the old comment about team ownership; the gate now exists so ops can switch the feature off without a release.
@@ -59,6 +60,7 @@ Port the code from `git show 8cb9743 -- src/Balsm.Infrastructure/DependencyInjec
   - `PostApple_WhenCountryCodeBlank_Returns400CountryCodeRequired` (enabled; body `country_code: ""`; assert JSON `error.code == "CountryCodeRequired"`)
   - `AddSharedInfrastructure_WhenEnabledAndGoogleClientIdMissing_ThrowsNamingKey` (message contains `Google:ClientId`)
   - `AddSharedInfrastructure_WhenDisabledAndIdsMissing_DoesNotThrow`
+  - `PostApple_21stCallFromOneIpInWindow_Returns429WithRetryAfter`
 - [ ] **Step 2: Run** `dotnet test tests/Balsm.API.IntegrationTests --filter "FullyQualifiedName~AuthSocialSignIn"` and `dotnet test tests/Balsm.API.Tests --filter "FullyQualifiedName~SocialSignInBootValidation"` — Expected: FAIL.
 - [ ] **Step 3: Implement** gate (`if (!SocialSignInEnabled) return NotFound();` then blank-country 400) in both actions, `AuthorizationCode` on `OidcRequest`, `RequireSocialSignInAudiences` in DI, appsettings, insomnia.
 - [ ] **Step 4: Run** the same tests — Expected: PASS. Then `dotnet build Balsm.API.slnx -c Release` — 0 warnings.
@@ -147,7 +149,10 @@ git commit -m "[Auth] Key identities on a stable sign-in id and treat Gmail vari
   `ExchangeCodeAsync` → POST `https://appleid.apple.com/auth/token` form `client_id, client_secret, code, grant_type=authorization_code`. `RevokeAsync` → POST `https://appleid.apple.com/auth/revoke` form `client_id, client_secret, token, token_type_hint=refresh_token`. Move `BuildClientSecret` (ES256 JWT, `iss`=TeamId, `sub`/client_id=`Apple:ClientId`, `aud`=`https://appleid.apple.com`, 5-minute expiry, `kid`=KeyId) here from `AppleRevokeService`.
 - Produces (`Balsm.Infrastructure.Encryption`): `public sealed class AppleRefreshTokenCipher { byte[] Encrypt(string token); string Decrypt(byte[] blob); }` — AES-256-GCM, layout `nonce(12)||tag(16)||ciphertext` like `DobEncryptionService`; key = `HKDF.DeriveKey(HashAlgorithmName.SHA256, dobKey, 32, info: "balsm/apple-refresh-token/v1")` from `DobEncryption:Key`.
 - Produces (`UserIdentity`): `byte[]? AppleRefreshTokenCiphertext { get; private set; }`, `void SetAppleRefreshToken(byte[] ciphertext)`, `void ClearAppleRefreshToken()`.
-- Produces: `ExchangeAppleTokenCommand(string IdToken, Guid DeviceId, string DeviceLabel, string CountryCode, string? AuthorizationCode)`.
+- Produces: `ExchangeAppleTokenCommand(string IdToken, Guid DeviceId, string DeviceLabel, string CountryCode, string? AuthorizationCode, string? Nonce)`.
+- Modifies: `AppleTokenPayload` (in `AppleOidcValidator.cs`) gains `string? Nonce` read from the `nonce` claim.
+
+**Nonce (replay protection):** the app hashes a fresh random value and gives Apple the SHA-256 hex; Apple echoes that hash in the ID token's `nonce` claim; the app sends the raw value as `nonce`. Handler first step after validation: reject unless `Nonce` is non-blank **and** `Convert.ToHexString(SHA256(UTF8(Nonce))).ToLowerInvariant()` equals `payload.Nonce` (fixed-time compare, `CryptographicOperations.FixedTimeEquals`). Rejection throws `UnauthorizedAccessException` → the controller's existing 401 path. Apple-only; Google has no nonce in `google_sign_in`'s native flow. Insomnia Apple body adds `nonce`.
 
 Handler: after resolving/creating the identity, if `AuthorizationCode` is non-blank **and** `appleTokens.IsConfigured`, call `ExchangeCodeAsync`; on a non-null result `identity.SetAppleRefreshToken(cipher.Encrypt(token))` (replaces any older one). On null/exception: log a warning with `UserId` only and continue. Never let this path throw.
 
@@ -157,6 +162,7 @@ Handler: after resolving/creating the identity, if `AuthorizationCode` is non-bl
   - `Handle_ExchangeReturnsNull_StillReturnsTokensAndStoresNothing`
   - `Handle_ClientNotConfigured_DoesNotCallExchange`
   - `Handle_RepeatSignInWithoutEmail_ResolvesExistingIdentityBySubject` (payload `Email=null`, existing identity with same `sub`; `IsNewUser == false`, same `UserId`)
+  - `Handle_NonceMissing_Throws401` / `Handle_NonceHashMismatch_Throws401` / `Handle_NonceMatches_Succeeds` (raw `"n-1"`, payload nonce = sha256 hex of `"n-1"`)
 - [ ] **Step 2: Run** `dotnet test tests/Modules/Balsm.Auth.Tests --filter "FullyQualifiedName~AppleRefreshTokenCipher|FullyQualifiedName~ExchangeAppleTokenHandler"` — Expected: FAIL.
 - [ ] **Step 3: Implement** the client, cipher, entity members, command field, handler, controller pass-through, EF config.
 - [ ] **Step 4: Add migrations** with the CLAUDE.md `dotnet ef migrations add` form for both projects (`--context AuthDbContext`); confirm each has `Up()` adding and `Down()` dropping the column.
@@ -198,7 +204,7 @@ Purge job: resolve `IAppleGrantRevoker` from the scope; for each expired account
 - [ ] **Step 2: Run** `dotnet test tests/Modules/Balsm.Auth.Tests --filter "FullyQualifiedName~AppleGrantRevoker"` and `dotnet test tests/Modules/Balsm.Deletion.Tests --filter "FullyQualifiedName~AppleRevokePurge"` — Expected: FAIL.
 - [ ] **Step 3: Implement** contract, revoker, Program.cs wiring, purge call; delete the old service + registration.
 - [ ] **Step 4: Run** those tests, then the whole suite `dotnet test Balsm.API.slnx` — Expected: PASS.
-- [ ] **Step 5: Update** `../balsm_app/docs/social-sign-in-setup.md` later (Task 7) — nothing here. Commit:
+- [ ] **Step 5: Update** `../balsm_app/docs/social-sign-in-setup.md` later (Task 9) — nothing here. Commit:
 
 ```bash
 git add src tests
@@ -264,7 +270,51 @@ git add app/lib/balsm_app/screens app/lib/balsm_app/i18n app/test
 git commit -m "Lay out Apple and Google sign-in per the Auth Flow design"
 ```
 
-### Task 7: Turn it on — iOS capability, env, docs, changelog
+### Task 7: App — Apple sign-in nonce
+
+**Files:**
+- Modify: `modules/auth/lib/src/application/ports/social_credentials_port.dart` (`SocialCredentials` gains `final String nonce;` default `''`, doc: raw nonce, never logged)
+- Modify: `modules/auth/lib/src/infrastructure/social/apple_credentials_adapter.dart`
+- Modify: `packages/balsm_api/lib/src/auth/requests.dart` (`AppleSignInRequest.nonce`, JSON key `nonce`)
+- Modify: `modules/auth/lib/src/infrastructure/api/balsm_auth_adapter.dart` (`signInWithApple(..., String nonce, ...)`), `modules/auth/lib/src/application/use_cases/sign_in_use_case.dart` (`signInWithApple({..., required String nonce})`)
+- Modify: `app/lib/balsm_app/screens/social_sign_in_block.dart` (pass `credentials.nonce`)
+- Test: `modules/auth/test/infrastructure/apple_nonce_test.dart`, `packages/balsm_api/test/auth/dio_auth_api_test.dart`, `app/test/social_sign_in_test.dart`
+
+**Interfaces:**
+- Produces (adapter file, top-level, `@visibleForTesting`): `String generateNonce([Random? random])` — 32 bytes from `Random.secure()`, base64url without padding; `String sha256Hex(String input)` — lowercase hex (`package:crypto` if already a dependency of `modules/auth`, else `package:cryptography`, which the module already uses for offline hashing — no new package).
+- Adapter passes `nonce: sha256Hex(raw)` to `SignInWithApple.getAppleIDCredential` and returns `SocialCredentials(nonce: raw, ...)`.
+
+- [ ] **Step 1: Write failing tests** — `generateNonce_isUrlSafeAnd43Chars`, `generateNonce_twoCallsDiffer`, `sha256Hex_knownVector` (`"abc"` → `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`), `appleSignInRequest_toJson_includesNonce`, widget test `apple_success_sendsRawNonce` (verify `signInWithApple(nonce: 'raw-n', ...)`).
+- [ ] **Step 2: Run** `fvm flutter test` in `modules/auth`, `packages/balsm_api`, `app` (filtered to those files) — FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** the same + `fvm flutter analyze` in all three — PASS, 0 issues.
+- [ ] **Step 5: Commit** `git add modules/auth packages/balsm_api app/lib app/test && git commit -m "Send a per-sign-in nonce with Sign in with Apple"`
+
+### Task 8: API — Apple server-to-server notifications
+
+Apple POSTs `{"payload":"<JWT>"}` to a URL registered in the Apple Developer portal when a user stops using Sign in with Apple for Balsm, deletes their Apple account, or toggles Hide-My-Email forwarding.
+
+**Files:**
+- Modify: `src/Balsm.Infrastructure/Auth/AppleOidcValidator.cs` — add `Task<AppleServerEvent?> ValidateServerNotificationAsync(string payloadJwt, CancellationToken ct)` reusing the same JWKS, issuer `https://appleid.apple.com`, audience `Apple:ClientId`, lifetime check; parse the `events` claim (a JSON string) into `public sealed record AppleServerEvent(string Type, string Subject, DateTimeOffset EventTime, string? Email, bool? IsPrivateEmail);`
+- Create: `src/Modules/Auth/Balsm.Auth.Application/Commands/HandleAppleServerEventCommand.cs` (`record HandleAppleServerEventCommand(AppleServerEvent Event) : IRequest`)
+- Create: `src/Modules/Auth/Balsm.Auth.Infrastructure/Handlers/HandleAppleServerEventHandler.cs`
+- Modify: `AuthController` — `POST /auth/apple/notifications`, `[AllowAnonymous]` (Apple cannot authenticate; the signed JWT is the authentication — document this in `<remarks>`), `[SocialSignInRateLimit]`, `404` while `SocialSignIn:Enabled` is false, `400` when the JWT fails validation, `200` otherwise (including unknown `sub` or unknown event type — Apple retries non-2xx).
+- Modify: `docs/api/insomnia/auth.yaml` (new request), `docs/social-sign-in-setup.md` (Task 9 adds the URL `https://api.balsm.health/auth/apple/notifications` to the portal steps)
+- Test: `tests/Modules/Balsm.Auth.Tests/HandleAppleServerEventHandlerTests.cs`, `tests/Balsm.API.IntegrationTests/AppleNotificationsEndpointTests.cs` (sign test JWTs with a test EC key injected as the validator's JWKS)
+
+**Behaviour per `Type`** (look up the identity by `provider == "apple" && ProviderSubject == Subject`; absent → no-op):
+- `consent-revoked`, `account-delete` → `ClearAppleRefreshToken()` and `Revoke()` every active `UserRefreshToken` of that `UserId` (signs the user out everywhere; the Balsm account and on-device data stay — deleting a health account is the user's own action, never automatic).
+- `email-disabled`, `email-enabled` → `RefreshProviderEmail(Email)` when present; nothing else (Balsm sends no mail to social identities today).
+- anything else → log `Type` at Information, no-op.
+Never log `Subject` or `Email`; log the identity `UserId` and `Type`.
+
+- [ ] **Step 1: Write failing tests** — handler: `ConsentRevoked_ClearsAppleTokenAndRevokesAllSessions`, `AccountDelete_SameAsConsentRevoked_AccountRowUntouched`, `EmailDisabled_UpdatesSnapshotOnly`, `UnknownSubject_NoOp`, `UnknownType_NoOp`; endpoint: `Post_ValidSignedPayload_Returns200`, `Post_WrongAudience_Returns400`, `Post_Expired_Returns400`, `Post_WhenDisabled_Returns404`.
+- [ ] **Step 2: Run** `dotnet test tests/Modules/Balsm.Auth.Tests --filter "FullyQualifiedName~HandleAppleServerEvent"` and `dotnet test tests/Balsm.API.IntegrationTests --filter "FullyQualifiedName~AppleNotifications"` — FAIL.
+- [ ] **Step 3: Implement** validator method, command, handler, action (full OpenAPI annotations per CLAUDE.md), insomnia entry.
+- [ ] **Step 4: Run** those + `dotnet test Balsm.API.slnx` — PASS.
+- [ ] **Step 5: Commit** `git add src tests docs/api && git commit -m "[Auth] Handle Sign in with Apple server-to-server notifications"`
+
+### Task 9: Turn it on — iOS capability, env, docs, changelog
 
 **Files:**
 - Modify: `app/ios/Runner/Runner.entitlements` — replace the "DISABLED" comment with `<key>com.apple.developer.applesignin</key><array><string>Default</string></array>`. Leave `Runner-Personal.entitlements` untouched.
@@ -289,6 +339,6 @@ git commit -m "Turn on Sign in with Apple and Google"
 
 ## After the plan (user, not the implementer)
 
-- Apple Developer: enable Sign in with Apple on App ID `app.balsm.health`; create a Sign in with Apple key → Railway secrets `Apple__TeamId`, `Apple__KeyId`, `Apple__PrivateKey`.
+- Apple Developer: enable Sign in with Apple on App ID `app.balsm.health`; create a Sign in with Apple key → Railway secrets `Apple__TeamId`, `Apple__KeyId`, `Apple__PrivateKey`; set the server-to-server notification endpoint to `https://api.balsm.health/auth/apple/notifications`.
 - Google Cloud: Web, iOS, Android OAuth clients per `docs/social-sign-in-setup.md`; send the Web + iOS ids; add the iOS reversed id URL type.
 - Railway: `SocialSignIn__Enabled=true`, `Google__ClientId=<web id>`.
