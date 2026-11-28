@@ -164,9 +164,13 @@ Apple__KeyId=<key id>
 Apple__PrivateKey=<contents of the .p8, PKCS8 PEM>
 ```
 
-Without them the revocation is skipped and logged as `config_missing`; the
-purge still completes and erases the account's auth identities and refresh
-tokens.
+A revocation that fails (Apple unreachable, or these secrets missing:
+`config_missing`) is recorded as `failed_retrying` on the deletion log, and the
+account is kept, auth identities and stored token included, for the next nightly
+purge. Five days past the deletion grace period the purge gives up: it records
+`failed_final` and erases the account's auth identities, refresh tokens and
+account anyway. So set these secrets before the first Apple user can reach the
+end of a deletion grace period.
 
 ### Account linking
 
