@@ -159,6 +159,45 @@ of 20 requests per 10 minutes, counted whatever the flag says.
 Apple sign-in sends a per-attempt nonce: its SHA-256 goes to Apple and the raw
 value to the API, which compares them. `/auth/apple` returns 401 without it.
 
+### Before deploying and enabling
+
+1. **Email collision check (before the deploy).** The migration
+   `KeyEmailIdentitiesOnStableId` keys email identities on a canonical address
+   (lowercase; Gmail dots and `+tag` dropped, `googlemail.com` folded into
+   `gmail.com`) and **aborts the deploy** if two email identities share one.
+   Run this read-only query against production first; it must return no rows:
+
+   ```sql
+   SELECT canonical, string_agg(id::text, ', ' ORDER BY id) AS identity_ids
+   FROM (
+       SELECT id, CASE
+           WHEN position('@' IN lower(btrim(email_normalized))) = 0
+               THEN lower(btrim(email_normalized))
+           WHEN substr(lower(btrim(email_normalized)), position('@' IN lower(btrim(email_normalized))) + 1)
+                IN ('gmail.com', 'googlemail.com')
+               THEN replace(split_part(split_part(lower(btrim(email_normalized)), '@', 1), '+', 1), '.', '')
+                    || '@gmail.com'
+           ELSE lower(btrim(email_normalized))
+       END AS canonical
+       FROM public.user_identities
+       WHERE provider = 'email' AND email_normalized IS NOT NULL
+   ) c
+   GROUP BY canonical
+   HAVING count(*) > 1;
+   ```
+
+   Any row is two accounts on one mailbox: resolve them by hand (support
+   decides which account keeps the address) before deploying.
+
+2. **Proxy hop count (before enabling).** The social endpoints rate-limit per
+   client IP (20 requests per 10 minutes), read from `X-Forwarded-For` by
+   `UseForwardedHeaders` in `Program.cs`, which trusts one hop (the default
+   `ForwardLimit = 1`). Confirm how many proxies append to `X-Forwarded-For`
+   in production. Railway's edge alone is one hop, which is correct. Behind a
+   CDN in front of Railway (Cloudflare, for example) there are two: set
+   `ForwardLimit = 2`, or key the limit on `CF-Connecting-IP`; otherwise every
+   user behind one CDN edge shares that edge's IP and its 20-request budget.
+
 ### Apple token revocation
 
 At sign-in the API exchanges the Apple authorization code for a refresh token
