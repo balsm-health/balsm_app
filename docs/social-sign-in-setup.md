@@ -2,13 +2,21 @@
 
 > **Status: ENABLED.** `SOCIAL_SIGN_IN_ENABLED` is `true` in the app env and
 > the Apple entitlement is in `Runner.entitlements`. The API gate is
-> `SocialSignIn:Enabled`; off, `/auth/google`, `/auth/apple` and
-> `/auth/apple/notifications` return 404. With it on, the API refuses to boot
-> if `Google:ClientId` or `Apple:ClientId` is missing.
+> `SocialSignIn:Enabled`. With it on, the API refuses to boot if
+> `Google:ClientId` or `Apple:ClientId` is missing.
 >
 > **Switching off** (e.g. to stop accruing users):
-> 1. `SOCIAL_SIGN_IN_ENABLED: false` in `app/env/shared.json`; the buttons hide.
-> 2. `SocialSignIn__Enabled=false` on the API (Railway); the endpoints 404.
+> 1. `SOCIAL_SIGN_IN_ENABLED: false` in `app/env/shared.json`; the buttons hide
+>    in builds made after the change.
+> 2. `SocialSignIn__Enabled=false` on the API (Railway). This stops **new**
+>    accounts only: a `/auth/google` or `/auth/apple` sign-in from a subject
+>    that has no Balsm account yet returns 404 (the app says sign-in is
+>    unavailable and points to email). Users who already signed in with Apple
+>    or Google keep signing in — for many it is their only way in, and builds
+>    already installed still show the buttons. `/auth/apple/notifications`
+>    keeps working, so an Apple user who withdraws consent is still signed
+>    out. Leave `Google:ClientId` and `Apple:ClientId` set: without them the
+>    existing users are refused too (404) and Apple notifications return 404.
 >
 > Leave the Apple entitlement in place: removing it only matters if the
 > capability is removed from the App ID. An Apple account identifier is scoped
@@ -143,8 +151,10 @@ Apple__ClientId=app.balsm.health
 With `SocialSignIn:Enabled=true`, `AddSharedInfrastructure` throws at startup
 when either is missing, so a misconfigured deployment fails to boot instead of
 500-ing on the first user's sign-in tap. While the flag is off the audiences are
-not required and the endpoints 404. The three endpoints share a rate limit per
-client IP of 20 requests per 10 minutes.
+not required, existing Apple/Google identities still sign in, and a sign-in that
+would create an account returns 404; a provider whose client id is missing also
+returns 404, for everyone. The three endpoints share a rate limit per client IP
+of 20 requests per 10 minutes, counted whatever the flag says.
 
 Apple sign-in sends a per-attempt nonce: its SHA-256 goes to Apple and the raw
 value to the API, which compares them. `/auth/apple` returns 401 without it.
