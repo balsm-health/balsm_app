@@ -2431,7 +2431,7 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   String get w_create => "Create an account";
   String get w_device => "Use on this device only";
   String get w_signin => "Sign in";
-  String get w_or => "or";
+  String get w_or_email => "or with email";
   String get w_apple => "Continue with Apple";
   String get w_google => "Continue with Google";
   String get lang_to_en => "Switch to English";
@@ -2474,8 +2474,8 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
         return w_device;
       case 'w_signin':
         return w_signin;
-      case 'w_or':
-        return w_or;
+      case 'w_or_email':
+        return w_or_email;
       case 'w_apple':
         return w_apple;
       case 'w_google':

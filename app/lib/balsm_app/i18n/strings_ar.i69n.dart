@@ -2599,9 +2599,9 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get w_create => "إنشاء حساب";
   String get w_device => "استخدمه على هذا الجهاز فقط";
   String get w_signin => "تسجيل الدخول";
-  String get w_or => "أو";
-  String get w_apple => "المتابعة مع Apple";
-  String get w_google => "المتابعة مع Google";
+  String get w_or_email => "أو بالبريد الإلكتروني";
+  String get w_apple => "المتابعة باستخدام Apple";
+  String get w_google => "المتابعة باستخدام Google";
   String get lang_to_en => "التبديل إلى الإنجليزية";
   String get lang_to_ar => "التبديل إلى العربية";
   String get pf_title => "عرّفنا بنفسك";
@@ -2645,8 +2645,8 @@ class OnboardingStrings_ar extends OnboardingStrings {
         return w_device;
       case 'w_signin':
         return w_signin;
-      case 'w_or':
-        return w_or;
+      case 'w_or_email':
+        return w_or_email;
       case 'w_apple':
         return w_apple;
       case 'w_google':
