@@ -66,21 +66,32 @@ class _SocialSignInBlockState extends ConsumerState<SocialSignInBlock> {
     }
 
     final useCase = ref.read(signInUseCaseProvider);
-    final result = await switch (provider) {
-      SocialProvider.apple => useCase.signInWithApple(
-          idToken: credentials.idToken,
-          authCode: credentials.authorizationCode,
-          email: credentials.email,
-          countryCode: s.country.value,
-        ),
-      SocialProvider.google => useCase.signInWithGoogle(
-          idToken: credentials.idToken,
-          email: credentials.email,
-          countryCode: s.country.value,
-        ),
-    };
+    final AppResult<SignInResult> result;
+    try {
+      result = await switch (provider) {
+        SocialProvider.apple => useCase.signInWithApple(
+            idToken: credentials.idToken,
+            authCode: credentials.authorizationCode,
+            nonce: credentials.nonce,
+            email: credentials.email,
+            countryCode: s.country.value,
+          ),
+        SocialProvider.google => useCase.signInWithGoogle(
+            idToken: credentials.idToken,
+            email: credentials.email,
+            countryCode: s.country.value,
+          ),
+      };
+    } on Object catch (_) {
+      // The use case reports failures as values; this is a bug or a platform
+      // fault. Never surface the exception's text — say it failed and stop.
+      if (mounted) setState(() => _error = s.strings.auth.social_failed);
+      return;
+    } finally {
+      // Cleared even if the use case throws, so the buttons never stay inert.
+      if (mounted) setState(() => _busy = null);
+    }
     if (!mounted) return;
-    setState(() => _busy = null);
 
     result.fold(
       (signInResult) {
@@ -158,7 +169,7 @@ class _OrDivider extends StatelessWidget {
           children: [
             const Expanded(child: ColoredBox(color: AppColors.ink200, child: SizedBox(height: 1))),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
               child: Text(label, style: Typo.meta(ar: ar)),
             ),
             const Expanded(child: ColoredBox(color: AppColors.ink200, child: SizedBox(height: 1))),
@@ -192,46 +203,53 @@ class _SocialButton extends StatelessWidget {
     final s = AppScope.of(context);
     final dark = provider == SocialProvider.apple;
     final foreground = dark ? AppColors.white : AppColors.textPrimary;
+    // Inactive because the OTHER provider's flow is running: dim it, as PButton does.
+    final dimmed = onTap == null && !busy;
     return Semantics(
       button: true,
       enabled: onTap != null,
       label: label,
+      // Screen readers hear progress while this provider's flow runs.
+      value: busy ? s.strings.common.loading : null,
       excludeSemantics: true,
-      child: Pressable(
-        onTap: onTap,
-        child: Container(
-          height: height,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: dark ? AppColors.nearBlack : AppColors.white,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: dark ? AppColors.nearBlack : AppColors.ink200),
-          ),
-          child: busy
-              ? Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SvgPicture.string(dark ? _kAppleSvg : _kGoogleGSvg, width: 18, height: 18),
-                    const SizedBox(width: 10),
-                    // Flexible, not bare: the label is translated and text-scaled,
-                    // so a fixed-width row overflows on a narrow phone in Arabic.
-                    Flexible(
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: foreground),
-                      ),
+      child: Opacity(
+        opacity: dimmed ? 0.4 : 1,
+        child: Pressable(
+          onTap: onTap,
+          child: Container(
+            height: height,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: dark ? AppColors.nearBlack : AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: dark ? AppColors.nearBlack : AppColors.ink200),
+            ),
+            child: busy
+                ? Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
                     ),
-                  ],
-                ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SvgPicture.string(dark ? _kAppleSvg : _kGoogleGSvg, width: 18, height: 18),
+                      const SizedBox(width: 10),
+                      // Flexible, not bare: the label is translated and text-scaled,
+                      // so a fixed-width row overflows on a narrow phone in Arabic.
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: foreground),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

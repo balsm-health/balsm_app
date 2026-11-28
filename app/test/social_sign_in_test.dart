@@ -48,6 +48,7 @@ class _PendingCredentials implements SocialCredentialsPort {
 const _appleTokens = SocialCredentials(
   idToken: 'apple-id-token',
   authorizationCode: 'apple-code',
+  nonce: 'raw-n',
   givenName: 'Layla',
   familyName: 'Hassan',
 );
@@ -149,6 +150,7 @@ void main() {
       () => signIn.signInWithApple(
         idToken: any(named: 'idToken'),
         authCode: any(named: 'authCode'),
+        nonce: any(named: 'nonce'),
         email: any(named: 'email'),
         countryCode: any(named: 'countryCode'),
       ),
@@ -300,10 +302,16 @@ void main() {
         () => signIn.signInWithApple(
           idToken: 'apple-id-token',
           authCode: 'apple-code',
+          nonce: 'raw-n',
           email: '',
           countryCode: 'SA',
         ),
       ).called(1);
+      expect(
+        find.byWidgetPredicate((w) => w.runtimeType.toString() == '_DisclosureGateScreen'),
+        findsOneWidget,
+        reason: 'enterAfterSignIn presents the disclosure gate when it is not yet accepted',
+      );
       expect(state.route, isNot('profile'), reason: 'profile setup is not part of the social flow');
       expect(state.socialGivenName, 'Layla');
       expect(state.socialFamilyName, 'Hassan');
@@ -326,10 +334,53 @@ void main() {
         () => signIn.signInWithApple(
           idToken: any(named: 'idToken'),
           authCode: any(named: 'authCode'),
+          nonce: any(named: 'nonce'),
           email: any(named: 'email'),
           countryCode: any(named: 'countryCode'),
         ),
       );
+    });
+
+    testWidgets('apple_useCaseThrows_clearsBusyAndAllowsRetry', (tester) async {
+      when(
+        () => signIn.signInWithApple(
+          idToken: any(named: 'idToken'),
+          authCode: any(named: 'authCode'),
+          nonce: any(named: 'nonce'),
+          email: any(named: 'email'),
+          countryCode: any(named: 'countryCode'),
+        ),
+      ).thenThrow(StateError('boom'));
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: _StubCredentials(_appleTokens));
+        await tester.tap(appleButton());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing, reason: 'the spinner must not stick');
+      });
+    });
+
+    testWidgets('whileAppleRuns_inactiveGoogleIsDimmedAndAppleAnnouncesLoading', (tester) async {
+      final apple = _PendingCredentials();
+      final semantics = tester.ensureSemantics();
+
+      await onPlatform(TargetPlatform.iOS, () async {
+        await pump(tester, apple: apple, google: _StubCredentials(_googleTokens));
+        await tester.tap(appleButton());
+        await tester.pump();
+
+        final dimmed = tester.widget<Opacity>(
+          find.ancestor(of: googleButton(), matching: find.byType(Opacity)).first,
+        );
+        expect(dimmed.opacity, 0.4);
+        expect(tester.getSemantics(find.bySemanticsLabel('Continue with Apple')).value, 'Loading');
+
+        apple.completer.complete(const SocialCredentialsCancelled());
+        await tester.pumpAndSettle();
+      });
+      semantics.dispose();
     });
 
     testWidgets('whileAppleRuns_googleTapDoesNothing', (tester) async {
@@ -357,13 +408,25 @@ void main() {
   group('Google', () {
     testWidgets('a returning account goes straight through without a prefill', (tester) async {
       stubGoogle(AppResult.success(const SignInSuccess()));
+      when(() => disclosure.watchAcceptance(any(), any())).thenAnswer(
+        (_) => Stream.value(
+          DisclosureAcceptance(
+            disclosureId: const DisclosureId.value('consolidated'),
+            version: '1',
+            countryCodeAtAccept: 'EG',
+            supervisoryAuthorityNameAtAccept: 'x',
+            preferredLanguageAtAccept: 'en',
+            acceptedAt: DateTime.utc(2026),
+          ),
+        ),
+      );
 
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester, google: _StubCredentials(_googleTokens));
         await tapAndSettle(tester, googleButton());
       });
 
-      expect(state.route, isNot('profile'));
+      expect(state.route, 'app', reason: 'an accepted disclosure lets enterAfterSignIn enter the app');
       expect(state.socialGivenName, isNull, reason: 'no prefill for an existing account');
     });
 

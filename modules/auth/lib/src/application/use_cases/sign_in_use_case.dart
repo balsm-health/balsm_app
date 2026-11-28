@@ -345,6 +345,7 @@ class SignInUseCase {
   Future<AppResult<SignInResult>> signInWithApple({
     required String idToken,
     required String authCode,
+    required String nonce,
     required String email,
     required String countryCode,
   }) async {
@@ -352,7 +353,7 @@ class SignInUseCase {
       final deviceId = await _ensureDeviceId();
       final deviceLabel = _deviceLabel();
 
-      final tokens = await _adapter.signInWithApple(idToken, authCode, deviceId, deviceLabel, countryCode);
+      final tokens = await _adapter.signInWithApple(idToken, authCode, nonce, deviceId, deviceLabel, countryCode);
 
       await _persistTokens(
         accessToken: tokens.accessToken,

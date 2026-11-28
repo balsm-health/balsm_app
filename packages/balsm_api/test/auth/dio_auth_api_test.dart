@@ -140,6 +140,7 @@ void main() {
       const AppleSignInRequest(
         idToken: 'aid',
         authorizationCode: 'code',
+        nonce: 'raw-n',
         deviceId: 'd1',
         deviceLabel: 'iPhone',
         countryCode: 'EG',
@@ -150,6 +151,7 @@ void main() {
     expect(adapter.requests.single.data, {
       'id_token': 'aid',
       'authorization_code': 'code',
+      'nonce': 'raw-n',
       'device_id': 'd1',
       'device_label': 'iPhone',
       'country_code': 'EG',

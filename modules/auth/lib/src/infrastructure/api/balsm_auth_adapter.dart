@@ -139,6 +139,7 @@ class BalsmAuthAdapter {
   Future<AuthTokens> signInWithApple(
     String idToken,
     String authCode,
+    String nonce,
     String deviceId,
     String deviceLabel,
     String countryCode, {
@@ -150,6 +151,7 @@ class BalsmAuthAdapter {
             AppleSignInRequest(
               idToken: idToken,
               authorizationCode: authCode,
+              nonce: nonce,
               deviceId: deviceId,
               deviceLabel: deviceLabel,
               countryCode: countryCode,

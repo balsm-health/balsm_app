@@ -157,13 +157,13 @@ void main() {
       when(() => adapter.passwordSignIn(any(), any(), any(), any())).thenAnswer((_) async => tokens);
       when(() => adapter.verifyLink(any(), any(), any())).thenAnswer((_) async => tokens);
       when(() => adapter.signInWithGoogle(any(), any(), any(), any())).thenAnswer((_) async => tokens);
-      when(() => adapter.signInWithApple(any(), any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.signInWithApple(any(), any(), any(), any(), any(), any())).thenAnswer((_) async => tokens);
 
       await usecase.verifyEmailOtp(email: 'a@b.com', code: '123456');
       await usecase.passwordSignIn(email: 'a@b.com', password: 'pw-12345678');
       await usecase.verifyMagicLink(token: 'tok');
       await usecase.signInWithGoogle(idToken: 'id', email: 'a@b.com', countryCode: 'EG');
-      await usecase.signInWithApple(idToken: 'id', authCode: 'c', email: 'a@b.com', countryCode: 'EG');
+      await usecase.signInWithApple(idToken: 'id', authCode: 'c', nonce: 'n', email: 'a@b.com', countryCode: 'EG');
 
       verify(() => storage.writeToken(kAccountModeKey, AccountMode.online.wire)).called(5);
     });
@@ -217,12 +217,13 @@ void main() {
 
   group('signInWithApple', () {
     test('success persists tokens and publishes UserSignedIn(apple)', () async {
-      when(() => adapter.signInWithApple('idtok', 'authcode', 'dev-1', _label, 'EG'))
+      when(() => adapter.signInWithApple('idtok', 'authcode', 'raw-n', 'dev-1', _label, 'EG'))
           .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U7', isNewUser: true));
 
       final r = await usecase.signInWithApple(
         idToken: 'idtok',
         authCode: 'authcode',
+        nonce: 'raw-n',
         email: 'a@privaterelay.appleid.com',
         countryCode: 'EG',
       );
@@ -235,13 +236,19 @@ void main() {
     });
 
     test('forwards the account country to the adapter', () async {
-      when(() => adapter.signInWithApple(any(), any(), any(), any(), any()))
+      when(() => adapter.signInWithApple(any(), any(), any(), any(), any(), any()))
           .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U7', isNewUser: false));
 
-      await usecase.signInWithApple(idToken: 'idtok', authCode: 'authcode', email: '', countryCode: 'SA');
+      await usecase.signInWithApple(
+        idToken: 'idtok',
+        authCode: 'authcode',
+        nonce: 'raw-n',
+        email: '',
+        countryCode: 'SA',
+      );
       await flush();
 
-      verify(() => adapter.signInWithApple('idtok', 'authcode', 'dev-1', _label, 'SA')).called(1);
+      verify(() => adapter.signInWithApple('idtok', 'authcode', 'raw-n', 'dev-1', _label, 'SA')).called(1);
     });
   });
 
